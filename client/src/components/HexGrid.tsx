@@ -1,25 +1,23 @@
-import { useRef, useEffect, useCallback } from "react";
+import { useRef, useEffect, useCallback, useState } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { createHexagonShape } from "../three/hexagon-geometry";
 import { getWorldPositionForHex, type HexPosition } from "../three/utils";
 import { HEX_SIZE } from "../three/constants";
 
-// --- Eternum-inspired color palette ---
+// --- Color palette ---
 const COLOR_PLAYER = new THREE.Color(0xf5a623);
 const COLOR_HOVER_VALID = new THREE.Color(0x44cc44);
 
-// Biome palette for visual variety
 const BIOME_COLORS = [
-  new THREE.Color(0x5a8c4a), // grassland
-  new THREE.Color(0x4a7c59), // forest
-  new THREE.Color(0x6b9a5a), // light meadow
-  new THREE.Color(0x3d6b47), // dark forest
-  new THREE.Color(0x7aaa5a), // bright grassland
-  new THREE.Color(0x4e7a3e), // woodland
+  new THREE.Color(0x5a8c4a),
+  new THREE.Color(0x4a7c59),
+  new THREE.Color(0x6b9a5a),
+  new THREE.Color(0x3d6b47),
+  new THREE.Color(0x7aaa5a),
+  new THREE.Color(0x4e7a3e),
 ];
 
-// Slightly brightened version for "adjacent" indication
 const BIOME_ADJACENT = [
   new THREE.Color(0x7aac6a),
   new THREE.Color(0x6a9c79),
@@ -43,7 +41,6 @@ function hexKey(pos: HexPosition): string {
   return `${pos.col},${pos.row}`;
 }
 
-/** Deterministic biome index from hex coordinates (matches Eternum's hash approach) */
 function biomeIndex(hex: HexPosition): number {
   const hash = Math.sin(hex.col * 12.9898 + hex.row * 78.233) * 43758.5453;
   return Math.floor((hash - Math.floor(hash)) * BIOME_COLORS.length);
@@ -55,6 +52,12 @@ function isNeighbor(a: HexPosition, b: HexPosition): boolean {
   const wb = getWorldPositionForHex(b);
   const dist = Math.sqrt((wa.x - wb.x) ** 2 + (wa.z - wb.z) ** 2);
   return Math.abs(dist - NEIGHBOR_DIST) < NEIGHBOR_TOLERANCE;
+}
+
+interface TooltipState {
+  hex: HexPosition;
+  screenX: number;
+  screenY: number;
 }
 
 export default function HexGrid({
@@ -72,7 +75,9 @@ export default function HexGrid({
   const raycaster = useRef(new THREE.Raycaster());
   const pointer = useRef(new THREE.Vector2());
 
-  // Update instance colors based on player position and hover
+  const [tooltip, setTooltip] = useState<TooltipState | null>(null);
+  const tooltipRef = useRef<TooltipState | null>(null);
+
   const updateColors = useCallback(
     (hoverIndex: number) => {
       const mesh = meshRef.current;
@@ -101,18 +106,35 @@ export default function HexGrid({
     [playerPosition]
   );
 
-  // --- Scene setup (runs once) ---
+  // Project a hex's world position to screen coordinates
+  const projectToScreen = useCallback(
+    (hex: HexPosition): { x: number; y: number } | null => {
+      const camera = cameraRef.current;
+      const container = mountRef.current;
+      if (!camera || !container) return null;
+
+      const worldPos = getWorldPositionForHex(hex);
+      const vec = new THREE.Vector3(worldPos.x, 0.05, worldPos.z);
+      vec.project(camera);
+
+      const rect = container.getBoundingClientRect();
+      const x = ((vec.x + 1) / 2) * rect.width;
+      const y = ((-vec.y + 1) / 2) * rect.height;
+      return { x, y };
+    },
+    []
+  );
+
+  // --- Scene setup ---
   useEffect(() => {
     if (!mountRef.current) return;
     const container = mountRef.current;
     if (container.clientWidth === 0 || container.clientHeight === 0) return;
 
-    // Scene
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x3b2d5e);
     scene.fog = new THREE.Fog(0x3b2d5e, 200, 500);
 
-    // Camera (Eternum uses FOV 45)
     const camera = new THREE.PerspectiveCamera(
       45,
       container.clientWidth / container.clientHeight,
@@ -123,7 +145,6 @@ export default function HexGrid({
     camera.lookAt(0, 0, 0);
     cameraRef.current = camera;
 
-    // Renderer
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(container.clientWidth, container.clientHeight);
     renderer.setPixelRatio(window.devicePixelRatio);
@@ -134,7 +155,6 @@ export default function HexGrid({
     container.appendChild(renderer.domElement);
     rendererRef.current = renderer;
 
-    // Controls
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.05;
@@ -144,12 +164,10 @@ export default function HexGrid({
     controls.maxDistance = 120;
     controls.panSpeed = 2.0;
 
-    // --- Lighting ---
-    // Hemisphere: warm sky + cool ground for natural outdoor feel
+    // Lighting
     const hemiLight = new THREE.HemisphereLight(0xb0c4de, 0x556b2f, 1.0);
     scene.add(hemiLight);
 
-    // Warm directional sunlight
     const sunLight = new THREE.DirectionalLight(0xfff4e0, 1.5);
     sunLight.position.set(-10, 25, 15);
     sunLight.castShadow = true;
@@ -164,15 +182,12 @@ export default function HexGrid({
     sunLight.shadow.bias = -0.002;
     scene.add(sunLight);
 
-    // Ambient fill
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
     scene.add(ambientLight);
 
-    // --- Build hex grid ---
+    // Hex grid
     const hexagonShape = createHexagonShape(HEX_SIZE);
     const hexagonGeometry = new THREE.ShapeGeometry(hexagonShape);
-
-    // White base color so instanceColor directly controls appearance
     const material = new THREE.MeshStandardMaterial({
       color: 0xffffff,
       flatShading: true,
@@ -196,7 +211,6 @@ export default function HexGrid({
     }
     hexesRef.current = hexes;
 
-    // Main hex mesh
     const instancedMesh = new THREE.InstancedMesh(
       hexagonGeometry,
       material,
@@ -206,7 +220,6 @@ export default function HexGrid({
     instancedMesh.receiveShadow = true;
     meshRef.current = instancedMesh;
 
-    // Border/outline hex mesh (slightly larger, dark, sits just below)
     const borderShape = createHexagonShape(HEX_SIZE * 1.04);
     const borderGeometry = new THREE.ShapeGeometry(borderShape);
     const borderMaterial = new THREE.MeshStandardMaterial({
@@ -226,7 +239,6 @@ export default function HexGrid({
     hexes.forEach((hex, index) => {
       const position = getWorldPositionForHex(hex);
 
-      // Main hex
       dummy.position.set(position.x, 0.05, position.z);
       dummy.rotation.x = -Math.PI / 2;
       const rotationSeed =
@@ -238,11 +250,9 @@ export default function HexGrid({
       dummy.updateMatrix();
       instancedMesh.setMatrixAt(index, dummy.matrix);
 
-      // Set initial biome color
       const bi = biomeIndex(hex);
       instancedMesh.setColorAt(index, BIOME_COLORS[bi]);
 
-      // Border hex (slightly below, slightly larger)
       dummy.position.set(position.x, 0.0, position.z);
       dummy.updateMatrix();
       borderMesh.setMatrixAt(index, dummy.matrix);
@@ -256,7 +266,6 @@ export default function HexGrid({
     scene.add(borderMesh);
     scene.add(instancedMesh);
 
-    // Ground plane
     const groundGeometry = new THREE.PlaneGeometry(400, 400);
     const groundMaterial = new THREE.MeshStandardMaterial({
       color: 0x1b1e2b,
@@ -269,15 +278,30 @@ export default function HexGrid({
     ground.receiveShadow = true;
     scene.add(ground);
 
-    // Animation loop
+    // Animation loop — also updates tooltip screen position if camera moves
     const animate = () => {
       requestAnimationFrame(animate);
       controls.update();
       renderer.render(scene, camera);
+
+      // Keep tooltip pinned to hex while camera orbits
+      const tt = tooltipRef.current;
+      if (tt) {
+        const worldPos = getWorldPositionForHex(tt.hex);
+        const vec = new THREE.Vector3(worldPos.x, 0.005, worldPos.z);
+        vec.project(camera);
+        const rect = container.getBoundingClientRect();
+        const sx = ((vec.x + 1) / 2) * rect.width;
+        const sy = ((-vec.y + 1) / 2) * rect.height;
+        if (Math.abs(sx - tt.screenX) > 1 || Math.abs(sy - tt.screenY) > 1) {
+          const updated = { hex: tt.hex, screenX: sx, screenY: sy };
+          tooltipRef.current = updated;
+          setTooltip(updated);
+        }
+      }
     };
     animate();
 
-    // Resize
     const handleResize = () => {
       if (!mountRef.current) return;
       const w = mountRef.current.clientWidth;
@@ -343,27 +367,44 @@ export default function HexGrid({
       if (newHover !== hoveredRef.current) {
         hoveredRef.current = newHover;
         updateColors(newHover);
-      }
-    };
 
-    const onClick = () => {
-      const idx = hoveredRef.current;
-      if (idx >= 0) {
-        const hex = hexesRef.current[idx];
-        if (hex) {
-          onMove(hex);
+        if (newHover >= 0) {
+          const hex = hexesRef.current[newHover];
+          const screen = projectToScreen(hex);
+          if (screen) {
+            const tt = { hex, screenX: screen.x, screenY: screen.y };
+            tooltipRef.current = tt;
+            setTooltip(tt);
+          }
+        } else {
+          tooltipRef.current = null;
+          setTooltip(null);
         }
       }
     };
 
     container.addEventListener("pointermove", onPointerMove);
-    container.addEventListener("click", onClick);
 
     return () => {
       container.removeEventListener("pointermove", onPointerMove);
-      container.removeEventListener("click", onClick);
     };
-  }, [playerPosition, onMove, updateColors]);
+  }, [playerPosition, updateColors, projectToScreen]);
+
+  const handleConfirm = useCallback(() => {
+    if (tooltip) {
+      onMove(tooltip.hex);
+      tooltipRef.current = null;
+      setTooltip(null);
+      hoveredRef.current = -1;
+    }
+  }, [tooltip, onMove]);
+
+  const handleCancel = useCallback(() => {
+    tooltipRef.current = null;
+    setTooltip(null);
+    hoveredRef.current = -1;
+    updateColors(-1);
+  }, [updateColors]);
 
   return (
     <div
@@ -375,6 +416,85 @@ export default function HexGrid({
         top: 0,
         left: 0,
       }}
-    />
+    >
+      {tooltip && (
+        <div
+          style={{
+            position: "absolute",
+            left: tooltip.screenX,
+            top: tooltip.screenY,
+            transform: "translate(-50%, -120%)",
+            pointerEvents: "auto",
+            zIndex: 100,
+          }}
+        >
+          <div
+            style={{
+              background: "rgba(10, 10, 30, 0.92)",
+              border: "1px solid rgba(255,255,255,0.15)",
+              borderRadius: 8,
+              padding: "8px 10px",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: 6,
+              fontFamily: "monospace",
+              fontSize: 12,
+              color: "#e0e0e0",
+              boxShadow: "0 4px 16px rgba(0,0,0,0.5)",
+              whiteSpace: "nowrap",
+            }}
+          >
+            <span style={{ color: "#44cc44", fontWeight: 600 }}>
+              Move to ({tooltip.hex.col}, {tooltip.hex.row})?
+            </span>
+            <div style={{ display: "flex", gap: 6 }}>
+              <button
+                onClick={handleConfirm}
+                style={{
+                  background: "#44cc44",
+                  color: "#0a0a1e",
+                  border: "none",
+                  borderRadius: 4,
+                  padding: "4px 12px",
+                  fontFamily: "monospace",
+                  fontSize: 12,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                }}
+              >
+                Confirm
+              </button>
+              <button
+                onClick={handleCancel}
+                style={{
+                  background: "transparent",
+                  color: "#aaa",
+                  border: "1px solid rgba(255,255,255,0.2)",
+                  borderRadius: 4,
+                  padding: "4px 12px",
+                  fontFamily: "monospace",
+                  fontSize: 12,
+                  cursor: "pointer",
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+          {/* Arrow pointing down */}
+          <div
+            style={{
+              width: 0,
+              height: 0,
+              borderLeft: "6px solid transparent",
+              borderRight: "6px solid transparent",
+              borderTop: "6px solid rgba(10, 10, 30, 0.92)",
+              margin: "0 auto",
+            }}
+          />
+        </div>
+      )}
+    </div>
   );
 }
