@@ -7,7 +7,7 @@ edition = "2024_07"
 sierra-replace-ids = true
 
 [scripts]
-migrate = "PROFILE=sepolia && sozo -P $PROFILE clean && sozo -P $PROFILE build && sozo -P $PROFILE migrate && sozo -P $PROFILE inspect"
+migrate = "PROFILE=sepolia && sozo -P $PROFILE clean && sozo -P $PROFILE build && sozo -P $PROFILE migrate && cp ./manifest_sepolia.json ../client/src/manifests/manifest_sepolia.json && sozo -P $PROFILE inspect"
 spawn = "PROFILE=sepolia && sozo -P $PROFILE execute untitled-actions spawn --wait"
 move = "PROFILE=sepolia && sozo -P $PROFILE execute untitled-actions move 1 --wait"
 

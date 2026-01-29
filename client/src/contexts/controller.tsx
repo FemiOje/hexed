@@ -30,7 +30,6 @@ export const ControllerProvider = ({ children }: PropsWithChildren) => {
   useEffect(() => {
     const getUsername = async () => {
       try {
-        // Try to get username from Cartridge Controller
         const name = await (connector as any)?.username?.();
         if (name) setUserName(name);
       } catch (error) {
@@ -48,9 +47,12 @@ export const ControllerProvider = ({ children }: PropsWithChildren) => {
     );
     const targetConnector = controllerConnector || connectors[0];
 
-    if (targetConnector) {
-      connect({ connector: targetConnector });
+    if (!targetConnector) {
+      console.error("No connector found");
+      return;
     }
+
+    connect({ connector: targetConnector });
   };
 
   const handleOpenProfile = () => {
