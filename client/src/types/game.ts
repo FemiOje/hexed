@@ -44,19 +44,34 @@ export interface Moves {
 }
 
 /**
- * DirectionsAvailable model - Available movement directions for player
+ * GameSession model - Maps game_id to player and tracks active state
  */
-export interface DirectionsAvailable {
-  player: string;  // ContractAddress as hex string
-  directions: Direction[];
+export interface GameSession {
+  game_id: number;  // u32
+  player: string;   // ContractAddress as hex string
+  is_active: boolean;
 }
 
 /**
- * PositionCount model - Tracking positions
+ * PlayerState model - All mutable game state for a session
  */
-export interface PositionCount {
-  identity: string;  // ContractAddress as hex string
-  position: Array<[number, bigint]>;  // Span<(u8, u128)> in Cairo
+export interface PlayerState {
+  game_id: number;  // u32
+  position: Vec2;
+  last_direction: Direction | null;
+  can_move: boolean;
+}
+
+/**
+ * GameState - Return struct from get_game_state view function
+ */
+export interface GameState {
+  game_id: number;       // u32
+  player: string;        // ContractAddress as hex string
+  position: Vec2;
+  last_direction: Direction | null;
+  can_move: boolean;
+  is_active: boolean;
 }
 
 /**

@@ -1,25 +1,37 @@
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { KeysClause, ToriiQueryBuilder } from "@dojoengine/sdk";
 // import { useAccount } from "@starknet-react/core";
 import { useEntityQuery } from "@dojoengine/sdk/react";
 import { Button } from "@mui/material";
+import { num } from "starknet";
 import HexGrid from "../components/HexGrid";
 import Header from "../components/Header";
 import type { HexPosition } from "../three/utils";
-import { useCurrentPosition, useIsSpawned, useCanPlayerMove, usePlayerMoves } from "../stores/gameStore";
+import { useCurrentPosition, useIsSpawned, useCanPlayerMove, usePlayerMoves, useGameStore } from "../stores/gameStore";
 import { useGameActions } from "../dojo/useGameActions";
 import { useGameDirector } from "../contexts/GameDirector";
+import { useController } from "../contexts/controller";
+import { useStarknetApi } from "../api/starknet";
 import { vec2ToHexPosition, calculateDirection } from "../utils/coordinateMapping";
 
 export default function GamePage() {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const { refreshGameState } = useGameDirector();
+    const { address } = useController();
+    const { getGameState } = useStarknetApi();
+
+    // Get store actions for populating game state
+    const { setPosition, setMoves, setIsSpawned, setGameId } = useGameStore();
 
     // Get game_id from URL
     const gameIdFromUrl = searchParams.get("id");
     const gameId = gameIdFromUrl ? parseInt(gameIdFromUrl, 10) : null;
+
+    // Ownership validation state
+    const [isValidatingOwnership, setIsValidatingOwnership] = useState(true);
+    const [ownershipValid, setOwnershipValid] = useState(false);
 
     // Query all entities - for debugging/overview
     // Note: This can be expensive, use specific queries in production
@@ -44,30 +56,94 @@ export default function GamePage() {
         await refreshGameState();
     }, [refreshGameState]);
 
-    useEffect(() => {
-        console.log("GamePage state:", {
-            isSpawned,
-            blockchainPosition,
-            canMove,
-            moves,
-            isLoading
-        });
-    }, [isSpawned, blockchainPosition, canMove, moves, isLoading]);
+    // useEffect(() => {
+    //     console.log("GamePage state:", {
+    //         isSpawned,
+    //         blockchainPosition,
+    //         canMove,
+    //         moves,
+    //         isLoading
+    //     });
+    // }, [isSpawned, blockchainPosition, canMove, moves, isLoading]);
 
-    // URL validation - redirect if no game_id or invalid game_id
+    // URL validation and ownership check
     useEffect(() => {
-        if (!gameId || gameId <= 0) {
-            console.log("No valid game ID in URL, redirecting to start page...");
-            navigate("/");
+        // Skip if already validated or currently validating
+        if (ownershipValid) {
             return;
         }
 
-        // TODO: When game_id is in URL, validate it belongs to connected wallet
-        // For now, we'll just check if we're spawned
-        // Future: call getGameState(gameId) to verify ownership
+        const validateOwnership = async () => {
+            // First check: valid game_id in URL
+            if (!gameId || gameId <= 0) {
+                console.log("No valid game ID in URL, redirecting to start page...");
+                navigate("/");
+                return;
+            }
 
-        console.log("Game page loaded with game_id:", gameId);
-    }, [gameId, navigate]);
+            // Wait for wallet connection
+            if (!address) {
+                setIsValidatingOwnership(true);
+                return;
+            }
+
+            try {
+                setIsValidatingOwnership(true);
+
+                // Fetch game state to verify ownership
+                const gameState = await getGameState(gameId);
+
+                if (!gameState) {
+                    console.warn("Game not found:", gameId);
+                    navigate("/");
+                    return;
+                }
+
+                // Check ownership - normalize addresses using starknet.js utilities
+                // This handles different padding/formatting of Starknet addresses
+                const normalizeAddress = (addr: string) => {
+                    try {
+                        // Convert to BigInt and back to hex to normalize
+                        return num.toHex(num.toBigInt(addr));
+                    } catch {
+                        return addr.toLowerCase();
+                    }
+                };
+
+                const gamePlayer = normalizeAddress(gameState.player);
+                const connectedAddress = normalizeAddress(address);
+
+                if (gamePlayer === connectedAddress) {
+                    // Populate store with game state
+                    setGameId(gameId);
+                    setPosition({
+                        player: address,
+                        vec: gameState.position,
+                    });
+                    setMoves({
+                        player: address,
+                        last_direction: gameState.last_direction,
+                        can_move: gameState.can_move,
+                    });
+                    setIsSpawned(gameState.is_active);
+
+                    setOwnershipValid(true);
+                    setIsValidatingOwnership(false);
+                } else {
+                    console.warn("❌ Ownership mismatch");
+                    console.warn("Game belongs to:", gameState.player, "→", gamePlayer);
+                    console.warn("Connected wallet:", address, "→", connectedAddress);
+                    navigate("/");
+                }
+            } catch (error) {
+                console.error("Error validating ownership:", error);
+                navigate("/");
+            }
+        };
+
+        validateOwnership();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [gameId, address, ownershipValid]);
 
     // Convert blockchain Vec2 to HexPosition for display
     const playerPosition: HexPosition = blockchainPosition
@@ -76,12 +152,6 @@ export default function GamePage() {
 
     // Handle move from HexGrid
     const handleMove = useCallback((targetPos: HexPosition) => {
-        console.log("Move attempt:", {
-            targetPos,
-            blockchainPosition,
-            canMove,
-            isSpawned
-        });
 
         if (!blockchainPosition) {
             console.warn("Cannot move: player position not available");
@@ -97,18 +167,27 @@ export default function GamePage() {
         const currentHexPos = vec2ToHexPosition(blockchainPosition);
         const direction = calculateDirection(currentHexPos, targetPos);
 
-        if (!direction) {
+        if (direction === null) {
             console.warn("Invalid move: positions are not adjacent");
             return;
         }
-
-        console.log("Executing move:", { currentHexPos, targetPos, direction });
 
         // Execute blockchain move
         handleBlockchainMove(direction);
     }, [blockchainPosition, canMove, handleBlockchainMove, isSpawned]);
 
-    // Show loading state while waiting for blockchain sync
+    // Show loading state while validating ownership or waiting for blockchain sync
+    if (isValidatingOwnership || !ownershipValid) {
+        return (
+            <div style={{ width: "100%", height: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "linear-gradient(135deg, #0a0a1e 0%, #1a1a3e 50%, #0a0a1e 100%)" }}>
+                <div style={{ textAlign: "center", color: "#e0e0e0" }}>
+                    <div style={{ fontSize: "1.5rem", marginBottom: "1rem" }}>Validating game ownership...</div>
+                    <div style={{ fontSize: "0.9rem", color: "#aaa" }}>Checking blockchain</div>
+                </div>
+            </div>
+        );
+    }
+
     if (!isSpawned || !blockchainPosition) {
         return (
             <div style={{ width: "100%", height: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "linear-gradient(135deg, #0a0a1e 0%, #1a1a3e 50%, #0a0a1e 100%)" }}>

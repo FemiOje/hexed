@@ -35,7 +35,6 @@ export function vec2ToHexPosition(vec: Vec2): HexPosition {
     col: vec.x,
     row: vec.y,
   };
-  console.log("📍 vec2ToHexPosition:", { vec, result });
   return result;
 }
 
@@ -75,15 +74,6 @@ export function calculateDirection(from: HexPosition, to: HexPosition): number |
 
   const key = `${dx},${dy}`;
   const direction = directionMap[key] ?? null;
-
-  console.log("🧭 calculateDirection:", {
-    from,
-    to,
-    delta: { dx, dy },
-    key,
-    direction,
-    directionName: direction !== null ? ["East", "NorthEast", "NorthWest", "West", "SouthWest", "SouthEast"][direction] : "Invalid"
-  });
 
   return direction;
 }

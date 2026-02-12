@@ -99,9 +99,15 @@ export const useGameStore = create<GameState>((set, get) => ({
         }
       }
 
+      // Only clear optimistic position if the new position matches it
+      // This prevents race conditions where blockchain refresh returns stale data
+      const shouldClearOptimistic =
+        !state.optimisticPosition ||
+        (position && isVec2Equal(state.optimisticPosition, position.vec));
+
       return {
         position,
-        optimisticPosition: null, // Clear optimistic update
+        optimisticPosition: shouldClearOptimistic ? null : state.optimisticPosition,
       };
     }),
 

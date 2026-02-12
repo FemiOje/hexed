@@ -13,6 +13,7 @@ import {
   useState,
   useCallback,
 } from "react";
+import { num } from "starknet";
 import { useController } from "./controller";
 import { useGameStore, initializePlayerState } from "@/stores/gameStore";
 import { useUIStore } from "@/stores/uiStore";
@@ -33,16 +34,29 @@ const GameDirectorContext = createContext<GameDirectorContext>(
 );
 
 /**
+ * Normalize Starknet address for comparison
+ * Handles different padding/formatting
+ */
+const normalizeAddress = (addr: string): string => {
+  try {
+    return num.toHex(num.toBigInt(addr));
+  } catch {
+    return addr.toLowerCase();
+  }
+};
+
+/**
  * Game Director Provider
  * Manages game initialization, state synchronization, and event processing
  */
 export const GameDirectorProvider = ({ children }: PropsWithChildren) => {
   const { address, account } = useController();
-  const { getPlayerState } = useStarknetApi();
+  const { getGameState } = useStarknetApi();
   const { refreshState } = useRefreshPlayerState();
 
   const {
     playerAddress,
+    gameId,
     setPlayerAddress,
     setPosition,
     setMoves,
@@ -65,10 +79,10 @@ export const GameDirectorProvider = ({ children }: PropsWithChildren) => {
    */
   useEffect(() => {
     if (address && address !== playerAddress) {
-      debugLog("Wallet connected, initializing game state", address);
+      // debugLog("Wallet connected, initializing game state", address);
       initializeGame();
     } else if (!address && playerAddress) {
-      debugLog("Wallet disconnected, resetting game state");
+      // debugLog("Wallet disconnected, resetting game state");
       resetGameState();
       setPlayerAddress(null);
       setIsInitialized(false);
@@ -77,6 +91,7 @@ export const GameDirectorProvider = ({ children }: PropsWithChildren) => {
 
   /**
    * Initialize game state from blockchain
+   * Uses single get_game_state call following death-mountain pattern
    */
   const initializeGame = useCallback(async () => {
     if (!address) {
@@ -88,7 +103,7 @@ export const GameDirectorProvider = ({ children }: PropsWithChildren) => {
       setIsInitializing(true);
       clearError();
 
-      debugLog("Initializing game for player", address);
+      // debugLog("Initializing game for player", address);
 
       // Set player address in store
       initializePlayerState(address);
@@ -96,36 +111,59 @@ export const GameDirectorProvider = ({ children }: PropsWithChildren) => {
       // Load game_id from localStorage if available
       const storageKey = `untitled_game_id_${address}`;
       const savedGameId = localStorage.getItem(storageKey);
+
       if (savedGameId) {
         const gameId = parseInt(savedGameId, 10);
         if (!isNaN(gameId) && gameId > 0) {
-          debugLog("Loaded game_id from localStorage", gameId);
+          // debugLog("Loaded game_id from localStorage", gameId);
           setGameId(gameId);
+
+          // Fetch complete game state with single RPC call
+          const gameState = await getGameState(gameId);
+
+          if (gameState) {
+            // Validate ownership with normalized addresses
+            const gamePlayer = normalizeAddress(gameState.player);
+            const connectedAddr = normalizeAddress(address);
+
+            if (gamePlayer === connectedAddr) {
+              // debugLog("Game state loaded successfully", gameState);
+
+              // Populate store
+              setPosition({
+                player: address,
+                vec: gameState.position,
+              });
+              setMoves({
+                player: address,
+                last_direction: gameState.last_direction,
+                can_move: gameState.can_move,
+              });
+              setIsSpawned(gameState.is_active);
+
+              // Trigger entity sync refresh
+              await refreshState();
+
+              setIsInitialized(true);
+              // debugLog("Game initialization complete");
+              return;
+            } else {
+              console.warn("Game ownership mismatch, clearing localStorage");
+              console.warn("Game player:", gameState.player, "→", gamePlayer);
+              console.warn("Connected:", address, "→", connectedAddr);
+              localStorage.removeItem(storageKey);
+              setGameId(null);
+            }
+          } else {
+            debugLog("Game state not found, player may need to spawn");
+          }
         }
       }
 
-      // Fetch initial state from blockchain
-      const state = await getPlayerState(address);
-
-      if (state.position) {
-        debugLog("Player position found", state.position);
-        setPosition(state.position);
-        setIsSpawned(true);
-      } else {
-        debugLog("Player not spawned yet");
-        setIsSpawned(false);
-      }
-
-      if (state.moves) {
-        debugLog("Player moves state found", state.moves);
-        setMoves(state.moves);
-      }
-
-      // Trigger entity sync refresh
-      await refreshState();
-
+      // No saved game or validation failed - player needs to spawn
+      debugLog("No active game found, player needs to spawn");
+      setIsSpawned(false);
       setIsInitialized(true);
-      debugLog("Game initialization complete");
     } catch (error) {
       console.error("Error initializing game:", error);
       setError("Failed to initialize game state");
@@ -135,7 +173,7 @@ export const GameDirectorProvider = ({ children }: PropsWithChildren) => {
   }, [
     address,
     setGameId,
-    getPlayerState,
+    getGameState,
     setPosition,
     setMoves,
     setIsSpawned,
@@ -200,6 +238,7 @@ export const GameDirectorProvider = ({ children }: PropsWithChildren) => {
 
   /**
    * Manually refresh game state from blockchain
+   * Uses single get_game_state call following death-mountain pattern
    */
   const refreshGameState = useCallback(async () => {
     if (!address) {
@@ -207,32 +246,57 @@ export const GameDirectorProvider = ({ children }: PropsWithChildren) => {
       return;
     }
 
+    if (!gameId) {
+      console.warn("Cannot refresh: no gameId");
+      return;
+    }
+
     try {
       debugLog("Manually refreshing game state");
 
-      // Fetch fresh state
-      const state = await getPlayerState(address);
+      // Fetch fresh state with single RPC call
+      const gameState = await getGameState(gameId);
 
-      if (state.position) {
-        setPosition(state.position);
-        setIsSpawned(true);
+      if (gameState) {
+        // Validate ownership with normalized addresses
+        const gamePlayer = normalizeAddress(gameState.player);
+        const connectedAddr = normalizeAddress(address);
+
+        if (gamePlayer === connectedAddr) {
+          // Update store
+          setPosition({
+            player: address,
+            vec: gameState.position,
+          });
+          setMoves({
+            player: address,
+            last_direction: gameState.last_direction,
+            can_move: gameState.can_move,
+          });
+          setIsSpawned(gameState.is_active);
+
+          // Trigger entity sync
+          await refreshState();
+
+          debugLog("Game state refreshed successfully");
+        } else {
+          console.warn("Game ownership mismatch during refresh");
+          console.warn("Game player:", gameState.player, "→", gamePlayer);
+          console.warn("Connected:", address, "→", connectedAddr);
+          setError("Game ownership validation failed");
+        }
+      } else {
+        console.warn("Game state not found during refresh");
+        setError("Failed to load game state");
       }
-
-      if (state.moves) {
-        setMoves(state.moves);
-      }
-
-      // Trigger entity sync
-      await refreshState();
-
-      debugLog("Game state refreshed successfully");
     } catch (error) {
       console.error("Error refreshing game state:", error);
       setError("Failed to refresh game state");
     }
   }, [
     address,
-    getPlayerState,
+    gameId,
+    getGameState,
     setPosition,
     setMoves,
     setIsSpawned,

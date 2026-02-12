@@ -26,17 +26,17 @@ export const usePlayerPositionSync = () => {
   const lastSyncRef = useRef<number>(0);
 
   // Subscribe to Position entity for this player
-  useEntityQuery(
-    new ToriiQueryBuilder()
-      .withClause(
-        KeysClause(
-          ["untitled-Position"],
-          [`${address || "0x0"}`],
-          "FixedLen"
-        ).build()
-      )
-      .includeHashedKeys()
-  );
+  // useEntityQuery(
+  //   new ToriiQueryBuilder()
+  //     .withClause(
+  //       KeysClause(
+  //         ["untitled-Position"],
+  //         [`${address || "0x0"}`],
+  //         "FixedLen"
+  //       ).build()
+  //     )
+  //     .includeHashedKeys()
+  // );
 
   // Process entity updates
   useEffect(() => {
@@ -108,17 +108,17 @@ export const usePlayerMovesSync = () => {
   const lastSyncRef = useRef<number>(0);
 
   // Subscribe to Moves entity for this player
-  useEntityQuery(
-    new ToriiQueryBuilder()
-      .withClause(
-        KeysClause(
-          ["untitled-Moves"],
-          [address || "0x0"],
-          "FixedLen"
-        ).build()
-      )
-      .includeHashedKeys()
-  );
+  // useEntityQuery(
+  //   new ToriiQueryBuilder()
+  //     .withClause(
+  //       KeysClause(
+  //         ["untitled-Moves"],
+  //         [address || "0x0"],
+  //         "FixedLen"
+  //       ).build()
+  //     )
+  //     .includeHashedKeys()
+  // );
 
   // Process entity updates
   useEffect(() => {
@@ -130,7 +130,7 @@ export const usePlayerMovesSync = () => {
 
         // Find moves entity for this player
         const entityArray = Object.values(entities);
-        console.log("🔍 Searching for Moves entity. Total entities:", entityArray.length);
+        // console.log("🔍 Searching for Moves entity. Total entities:", entityArray.length);
 
         const movesEntity = entityArray.find((entity: any) => {
           const models = entity?.models || {};
@@ -170,7 +170,7 @@ export const usePlayerMovesSync = () => {
             }
           }
         } else {
-          console.warn("⚠️ No Moves entity found for player:", address);
+          // console.warn("⚠️ No Moves entity found for player:", address);
         }
       } catch (error) {
         console.error("Error syncing moves:", error);
@@ -213,14 +213,13 @@ export const useRefreshPlayerState = () => {
       debugLog("Force refreshing player state");
 
       const entityArray = Object.values(entities);
-      console.log("🔍 Total entities in store:", entityArray.length);
-      console.log("🔍 Looking for player address:", address);
+      // console.log("🔍 Total entities in store:", entityArray.length);
 
       // Log first few entities to see structure
-      if (entityArray.length > 0) {
-        console.log("📦 Sample entity:", entityArray[0]);
-        console.log("📦 All entity keys:", Object.keys(entities));
-      }
+      // if (entityArray.length > 0) {
+      //   console.log("📦 Sample entity:", entityArray[0]);
+      //   console.log("📦 All entity keys:", Object.keys(entities));
+      // }
 
       // Find and process all relevant entities
       let positionFound = false;
@@ -292,8 +291,8 @@ export const useRefreshPlayerState = () => {
           movesFound,
         });
       } else {
-        console.error("❌ No player state found in entities");
-        debugLog("No player state found in entities");
+        // console.error("❌ No player state found in entities");
+        // debugLog("No player state found in entities");
       }
     } catch (error) {
       console.error("Error refreshing player state:", error);

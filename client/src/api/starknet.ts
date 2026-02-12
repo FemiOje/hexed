@@ -6,9 +6,9 @@
  */
 
 import { useDynamicConnector } from "@/starknet-provider";
-import { getContractAddress } from "@/utils/networkConfig";
-import { Position, Moves } from "@/types/game";
-import { num } from "starknet";
+import { getContractByName } from "@/utils/networkConfig";
+import { Position, Moves, GameState } from "@/types/game";
+import { num, hash } from "starknet";
 
 /**
  * Hook for Starknet API calls
@@ -148,9 +148,125 @@ export const useStarknetApi = () => {
     }
   };
 
+  /**
+   * Get complete game state from contract view function
+   * Single RPC call to actions.get_game_state(game_id)
+   * Following death-mountain pattern for efficient state restoration
+   *
+   * @param gameId - The game ID (u32)
+   * @returns GameState object or null
+   */
+  const getGameState = async (gameId: number): Promise<GameState | null> => {
+    try {
+      // Get actions contract address from manifest
+      const actionsContract = getContractByName(
+        currentNetworkConfig.manifest,
+        currentNetworkConfig.namespace,
+        "actions"
+      );
+
+      if (!actionsContract) {
+        console.error("Actions contract not found in manifest");
+        return null;
+      }
+
+      // console.log("Fetching game state for gameId:", gameId, "from contract:", actionsContract.address);
+
+      // Calculate the correct entry point selector for get_game_state
+      const selector = hash.getSelectorFromName("get_game_state");
+      // console.log("Using selector for get_game_state:", selector);
+
+      const response = await fetch(currentNetworkConfig.rpcUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          jsonrpc: "2.0",
+          method: "starknet_call",
+          params: [
+            {
+              contract_address: actionsContract.address,
+              entry_point_selector: selector,
+              calldata: [num.toHex(gameId)],
+            },
+            "latest",
+          ],
+          id: 0,
+        }),
+      });
+
+      const data = await response.json();
+
+      // console.log("RPC response for getGameState:", data);
+
+      if (!data?.result || data.result.length < 5) {
+        console.warn("Invalid or empty response from get_game_state:", data);
+        return null;
+      }
+
+      // Parse GameState struct:
+      // GameState { game_id, player, position.x, position.y, last_direction (Option), can_move, is_active }
+      // Option<Direction> serializes as TWO felts: variant (0=Some, 1=None) + value if Some
+      let idx = 0;
+      const parsedGameId = parseInt(data.result[idx++], 16);
+      const player = data.result[idx++];
+
+      // Position (Vec2 with i32 values - need to handle signed conversion)
+      const posXRaw = parseInt(data.result[idx++], 16);
+      const posYRaw = parseInt(data.result[idx++], 16);
+
+      // Convert from unsigned to signed i32 if needed
+      const posX = posXRaw > 0x7FFFFFFF ? posXRaw - 0x100000000 : posXRaw;
+      const posY = posYRaw > 0x7FFFFFFF ? posYRaw - 0x100000000 : posYRaw;
+
+      // Option<Direction>: TWO felts - variant (0=Some, 1=None) + value if Some
+      const optionVariant = parseInt(data.result[idx++], 16);
+      let lastDirection: number | null = null;
+      if (optionVariant === 0) {
+        // 0 = Some, read the direction value
+        lastDirection = parseInt(data.result[idx++], 16);
+      }
+      // else: 1 = None, no additional value to read
+
+      const canMove = parseInt(data.result[idx++], 16) === 1;
+      const isActive = parseInt(data.result[idx++], 16) === 1;
+
+      // console.log("Parsed game state:", {
+      //   game_id: parsedGameId,
+      //   player,
+      //   position: { x: posX, y: posY },
+      //   last_direction: lastDirection,
+      //   can_move: canMove,
+      //   is_active: isActive,
+      // });
+
+      // console.log("🔍 Raw parsing details:", {
+      //   totalFields: data.result.length,
+      //   idx5_canMove: data.result[5],
+      //   idx6_isActive: data.result[6],
+      //   parsedCanMove: canMove,
+      //   parsedIsActive: isActive,
+      // });
+
+      return {
+        game_id: parsedGameId,
+        player,
+        position: { x: posX, y: posY },
+        last_direction: lastDirection,
+        can_move: canMove,
+        is_active: isActive,
+      };
+    } catch (error) {
+      console.error("Error fetching game state:", error);
+      return null;
+    }
+  };
+
   return {
     getPlayerPosition,
     getPlayerMoves,
     getPlayerState,
+    getGameState,
   };
 };

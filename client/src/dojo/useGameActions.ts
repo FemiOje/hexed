@@ -155,13 +155,13 @@ export const useGameActions = () => {
         setIsMoving(true);
         setIsTransactionPending(true);
 
-        debugLog("Moving player", { gameId, currentPos, direction });
+        // debugLog("Moving player", { gameId, currentPos, direction });
 
         // Optimistic update: calculate and show new position immediately
         const optimisticPos = createOptimisticMove(direction);
         if (optimisticPos) {
           setOptimisticPosition(optimisticPos);
-          debugLog("Optimistic position set", optimisticPos);
+          // debugLog("Optimistic position set", optimisticPos);
         }
 
         // Create move call with game_id
@@ -172,7 +172,7 @@ export const useGameActions = () => {
           [moveCall],
           () => {
             // Rollback optimistic update on failure
-            debugLog("Move failed, rolling back optimistic update");
+            // debugLog("Move failed, rolling back optimistic update");
             rollbackOptimisticPosition();
             setIsMoving(false);
             setIsTransactionPending(false);
@@ -180,19 +180,19 @@ export const useGameActions = () => {
           },
           () => {
             // Success callback
-            debugLog("Move transaction confirmed");
+            // debugLog("Move transaction confirmed");
             setIsTransactionPending(false);
           }
         );
 
-        debugLog("Move events received", events);
+        // debugLog("Move events received", events);
 
         // Process events through GameDirector
         events.forEach((event) => {
           processEvent(event);
 
           if (event.type === "moved") {
-            debugLog("Player moved", event.position);
+            // debugLog("Player moved", event.position);
 
             // Update current moves state for sync checking
             if (event.moves) {
@@ -203,9 +203,11 @@ export const useGameActions = () => {
           }
         });
 
-        // Refresh state from blockchain to ensure accuracy
-        // This will replace optimistic position with real position
-        await refreshGameState();
+        // Delay refresh to give blockchain time to index the transaction
+        // The optimistic update keeps UI responsive during this delay
+        setTimeout(async () => {
+          await refreshGameState();
+        }, 2000);
 
         setIsMoving(false);
       } catch (error) {
