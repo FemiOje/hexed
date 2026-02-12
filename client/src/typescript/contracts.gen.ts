@@ -1,6 +1,5 @@
 import { DojoProvider, DojoCall } from "@dojoengine/core";
-import { Account, AccountInterface, BigNumberish, CairoOption, CairoCustomEnum } from "starknet";
-import * as models from "./models.gen";
+import { Account, AccountInterface, BigNumberish, CairoCustomEnum } from "starknet";
 
 export function setupWorld(provider: DojoProvider) {
 
@@ -32,7 +31,7 @@ export function setupWorld(provider: DojoProvider) {
 	const actions_move = async (snAccount: Account | AccountInterface, gameId: BigNumberish, direction: CairoCustomEnum) => {
 		try {
 			return await provider.execute(
-				snAccount,
+				snAccount as any,
 				build_actions_move_calldata(gameId, direction),
 				"untitled",
 			);
@@ -53,7 +52,7 @@ export function setupWorld(provider: DojoProvider) {
 	const actions_spawn = async (snAccount: Account | AccountInterface) => {
 		try {
 			return await provider.execute(
-				snAccount,
+				snAccount as any,
 				build_actions_spawn_calldata(),
 				"untitled",
 			);

@@ -6,8 +6,7 @@
  */
 
 import { useEffect, useCallback, useRef } from "react";
-import { useDojoSDK, useEntityQuery } from "@dojoengine/sdk/react";
-import { ToriiQueryBuilder, KeysClause } from "@dojoengine/sdk";
+import { useDojoSDK } from "@dojoengine/sdk/react";
 import { useGameStore } from "@/stores/gameStore";
 import { useController } from "@/contexts/controller";
 import { Position, Moves, Direction } from "@/types/game";

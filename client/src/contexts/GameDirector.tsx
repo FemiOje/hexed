@@ -50,7 +50,7 @@ const normalizeAddress = (addr: string): string => {
  * Manages game initialization, state synchronization, and event processing
  */
 export const GameDirectorProvider = ({ children }: PropsWithChildren) => {
-  const { address, account } = useController();
+  const { address } = useController();
   const { getGameState } = useStarknetApi();
   const { refreshState } = useRefreshPlayerState();
 

@@ -246,10 +246,10 @@ function getDirectionName(direction: Direction): string {
 
 /**
  * Check if event is a fatal error
- * @param event - GameEvent object
+ * @param _event - GameEvent object
  * @returns True if fatal error
  */
-export function isFatalError(event: GameEvent): boolean {
+export function isFatalError(_event: GameEvent): boolean {
   // In the future, check for specific error event types
   return false;
 }

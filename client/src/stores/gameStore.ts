@@ -11,7 +11,6 @@ import {
   calculateNewPosition,
   isValidPosition,
   PositionHistory,
-  createDefaultPosition,
 } from "@/utils/position";
 import { isVec2Equal } from "@/types/game";
 

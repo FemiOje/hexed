@@ -240,6 +240,10 @@ export const useGameActions = () => {
     ]
   );
 
+  // Get error state from UI store
+  const lastError = useUIStore((state) => state.lastError);
+  const clearErrorAction = useUIStore((state) => state.clearError);
+
   return {
     // Actions
     handleSpawn,
@@ -249,5 +253,9 @@ export const useGameActions = () => {
     isSpawning,
     isMoving,
     isLoading: isSpawning || isMoving,
+
+    // Error handling
+    lastError,
+    clearError: clearErrorAction,
   };
 };

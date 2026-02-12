@@ -8,7 +8,7 @@ import { num } from "starknet";
 import HexGrid from "../components/HexGrid";
 import Header from "../components/Header";
 import type { HexPosition } from "../three/utils";
-import { useCurrentPosition, useIsSpawned, useCanPlayerMove, usePlayerMoves, useGameStore } from "../stores/gameStore";
+import { useCurrentPosition, useIsSpawned, useCanPlayerMove, useGameStore } from "../stores/gameStore";
 import { useGameActions } from "../dojo/useGameActions";
 import { useGameDirector } from "../contexts/GameDirector";
 import { useController } from "../contexts/controller";
@@ -47,8 +47,7 @@ export default function GamePage() {
     const blockchainPosition = useCurrentPosition();
     const isSpawned = useIsSpawned();
     const canMove = useCanPlayerMove();
-    const moves = usePlayerMoves();
-    const { handleMove: handleBlockchainMove, isLoading } = useGameActions();
+    const { handleMove: handleBlockchainMove } = useGameActions();
 
     // Manual refresh handler
     const handleRefresh = useCallback(async () => {
