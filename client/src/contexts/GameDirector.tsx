@@ -222,6 +222,16 @@ export const GameDirectorProvider = ({ children }: PropsWithChildren) => {
           }
           break;
 
+        case "combat_result":
+          if (event.position) {
+            setPosition(event.position);
+            debugLog(
+              event.combatWon ? "Won combat, moved to" : "Lost combat, stayed at",
+              event.position.vec
+            );
+          }
+          break;
+
         case "position_update":
           if (event.position) {
             setPosition(event.position);

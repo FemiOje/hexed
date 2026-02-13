@@ -8,8 +8,8 @@ mod tests {
     };
     use untitled::models::{
         Direction, PlayerState, Vec2,
-        GameSession,
-        m_PlayerState, m_GameSession,
+        GameSession, TileOccupant,
+        m_PlayerState, m_GameSession, m_TileOccupant,
     };
     use untitled::systems::actions::{IActionsDispatcher, IActionsDispatcherTrait, actions};
     use untitled::utils::hex::{get_neighbor, is_within_bounds};
@@ -21,8 +21,10 @@ mod tests {
             resources: [
                 TestResource::Model(m_PlayerState::TEST_CLASS_HASH),
                 TestResource::Model(m_GameSession::TEST_CLASS_HASH),
+                TestResource::Model(m_TileOccupant::TEST_CLASS_HASH),
                 TestResource::Event(actions::e_Spawned::TEST_CLASS_HASH),
                 TestResource::Event(actions::e_Moved::TEST_CLASS_HASH),
+                TestResource::Event(actions::e_CombatResult::TEST_CLASS_HASH),
                 TestResource::Contract(actions::TEST_CLASS_HASH),
             ]
                 .span(),
@@ -207,7 +209,7 @@ mod tests {
     #[test]
     #[available_gas(30000000)]
     fn test_move_east() {
-        let caller: ContractAddress = 0.try_into().unwrap();
+        // let caller: ContractAddress = 0.try_into().unwrap();
 
         let ndef = namespace_def();
         let mut world = spawn_test_world(world::TEST_CLASS_HASH, [ndef].span());
@@ -400,6 +402,186 @@ mod tests {
         assert(game_state.position.y == state.position.y, 'position y wrong');
         assert(game_state.can_move, 'can_move wrong');
         assert(game_state.is_active, 'is_active wrong');
+    }
+
+    #[test]
+    #[available_gas(30000000)]
+    fn test_spawn_writes_tile_occupant() {
+        let ndef = namespace_def();
+        let mut world = spawn_test_world(world::TEST_CLASS_HASH, [ndef].span());
+        world.sync_perms_and_inits(contract_defs());
+
+        let (contract_address, _) = world.dns(@"actions").unwrap();
+        let actions_system = IActionsDispatcher { contract_address };
+
+        actions_system.spawn();
+        let game_id: u32 = 1;
+
+        let state: PlayerState = world.read_model(game_id);
+        let tile: TileOccupant = world.read_model((state.position.x, state.position.y));
+        assert(tile.game_id == game_id, 'tile should have game_id');
+    }
+
+    #[test]
+    #[available_gas(30000000)]
+    fn test_move_updates_tile_occupants() {
+        let caller: ContractAddress = 0.try_into().unwrap();
+
+        let ndef = namespace_def();
+        let mut world = spawn_test_world(world::TEST_CLASS_HASH, [ndef].span());
+        world.sync_perms_and_inits(contract_defs());
+
+        let (contract_address, _) = world.dns(@"actions").unwrap();
+        let actions_system = IActionsDispatcher { contract_address };
+
+        // Set up player at (5,5) with TileOccupant
+        let test_game_id: u32 = 999;
+        let session = GameSession {
+            game_id: test_game_id,
+            player: caller,
+            is_active: true,
+        };
+        world.write_model_test(@session);
+
+        let initial_state = PlayerState {
+            game_id: test_game_id,
+            position: Vec2 { x: 5, y: 5 },
+            last_direction: Option::None,
+            can_move: true,
+        };
+        world.write_model_test(@initial_state);
+        world.write_model_test(@TileOccupant { x: 5, y: 5, game_id: test_game_id });
+
+        // Move east to (6,5) — empty tile
+        actions_system.move(test_game_id, Direction::East);
+
+        // Old tile should be cleared
+        let old_tile: TileOccupant = world.read_model((5, 5));
+        assert(old_tile.game_id == 0, 'old tile not cleared');
+
+        // New tile should be occupied
+        let new_tile: TileOccupant = world.read_model((6, 5));
+        assert(new_tile.game_id == test_game_id, 'new tile not set');
+    }
+
+    #[test]
+    #[available_gas(60000000)]
+    fn test_combat_on_occupied_tile() {
+        let attacker_addr: ContractAddress = 1.try_into().unwrap();
+        let defender_addr: ContractAddress = 2.try_into().unwrap();
+
+        let ndef = namespace_def();
+        let mut world = spawn_test_world(world::TEST_CLASS_HASH, [ndef].span());
+        world.sync_perms_and_inits(contract_defs());
+
+        let (contract_address, _) = world.dns(@"actions").unwrap();
+        let actions_system = IActionsDispatcher { contract_address };
+
+        // Set up attacker at (5,5)
+        let attacker_id: u32 = 10;
+        world.write_model_test(@GameSession {
+            game_id: attacker_id,
+            player: attacker_addr,
+            is_active: true,
+        });
+        world.write_model_test(@PlayerState {
+            game_id: attacker_id,
+            position: Vec2 { x: 5, y: 5 },
+            last_direction: Option::None,
+            can_move: true,
+        });
+        world.write_model_test(@TileOccupant { x: 5, y: 5, game_id: attacker_id });
+
+        // Set up defender at (6,5) — east of attacker
+        let defender_id: u32 = 20;
+        world.write_model_test(@GameSession {
+            game_id: defender_id,
+            player: defender_addr,
+            is_active: true,
+        });
+        world.write_model_test(@PlayerState {
+            game_id: defender_id,
+            position: Vec2 { x: 6, y: 5 },
+            last_direction: Option::None,
+            can_move: true,
+        });
+        world.write_model_test(@TileOccupant { x: 6, y: 5, game_id: defender_id });
+
+        // Attacker moves east into defender's tile
+        starknet::testing::set_contract_address(attacker_addr);
+        actions_system.move(attacker_id, Direction::East);
+
+        // Read final states
+        let attacker_state: PlayerState = world.read_model(attacker_id);
+        let defender_state: PlayerState = world.read_model(defender_id);
+        let tile_5_5: TileOccupant = world.read_model((5, 5));
+        let tile_6_5: TileOccupant = world.read_model((6, 5));
+
+        // Combat happened — either swap (attacker won) or no change (attacker lost)
+        let attacker_at_dest = attacker_state.position.x == 6 && attacker_state.position.y == 5;
+        let attacker_stayed = attacker_state.position.x == 5 && attacker_state.position.y == 5;
+
+        if attacker_at_dest {
+            // Attacker won: positions swapped
+            assert(defender_state.position.x == 5 && defender_state.position.y == 5, 'defender not swapped');
+            assert(tile_6_5.game_id == attacker_id, 'tile(6,5) wrong after win');
+            assert(tile_5_5.game_id == defender_id, 'tile(5,5) wrong after win');
+        } else {
+            // Attacker lost: no changes
+            assert(attacker_stayed, 'attacker should stay');
+            assert(defender_state.position.x == 6 && defender_state.position.y == 5, 'defender should stay');
+            assert(tile_5_5.game_id == attacker_id, 'tile(5,5) wrong after loss');
+            assert(tile_6_5.game_id == defender_id, 'tile(6,5) wrong after loss');
+        }
+    }
+
+    #[test]
+    #[available_gas(30000000)]
+    fn test_move_to_inactive_defender_tile() {
+        let caller: ContractAddress = 0.try_into().unwrap();
+
+        let ndef = namespace_def();
+        let mut world = spawn_test_world(world::TEST_CLASS_HASH, [ndef].span());
+        world.sync_perms_and_inits(contract_defs());
+
+        let (contract_address, _) = world.dns(@"actions").unwrap();
+        let actions_system = IActionsDispatcher { contract_address };
+
+        // Set up active player at (5,5)
+        let player_id: u32 = 10;
+        world.write_model_test(@GameSession {
+            game_id: player_id,
+            player: caller,
+            is_active: true,
+        });
+        world.write_model_test(@PlayerState {
+            game_id: player_id,
+            position: Vec2 { x: 5, y: 5 },
+            last_direction: Option::None,
+            can_move: true,
+        });
+        world.write_model_test(@TileOccupant { x: 5, y: 5, game_id: player_id });
+
+        // Stale TileOccupant from an inactive game at (6,5)
+        let stale_id: u32 = 99;
+        world.write_model_test(@GameSession {
+            game_id: stale_id,
+            player: 0xdead.try_into().unwrap(),
+            is_active: false,
+        });
+        world.write_model_test(@TileOccupant { x: 6, y: 5, game_id: stale_id });
+
+        // Should move normally (no combat) since defender is inactive
+        actions_system.move(player_id, Direction::East);
+
+        let state: PlayerState = world.read_model(player_id);
+        assert(state.position.x == 6 && state.position.y == 5, 'should move to dest');
+
+        let old_tile: TileOccupant = world.read_model((5, 5));
+        assert(old_tile.game_id == 0, 'old tile not cleared');
+
+        let new_tile: TileOccupant = world.read_model((6, 5));
+        assert(new_tile.game_id == player_id, 'new tile not claimed');
     }
 
 }

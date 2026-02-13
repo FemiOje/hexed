@@ -17,10 +17,26 @@ export interface PlayerState {
 	can_move: boolean;
 }
 
+// Type definition for `untitled::models::TileOccupant` struct
+export interface TileOccupant {
+	x: BigNumberish;
+	y: BigNumberish;
+	game_id: BigNumberish;
+}
+
 // Type definition for `untitled::models::Vec2` struct
 export interface Vec2 {
 	x: BigNumberish;
 	y: BigNumberish;
+}
+
+// Type definition for `untitled::systems::actions::actions::CombatResult` struct
+export interface CombatResult {
+	attacker_game_id: BigNumberish;
+	defender_game_id: BigNumberish;
+	attacker_won: boolean;
+	attacker_position: Vec2;
+	defender_position: Vec2;
 }
 
 // Type definition for `untitled::systems::actions::actions::Moved` struct
@@ -63,7 +79,9 @@ export interface SchemaType extends ISchemaType {
 	untitled: {
 		GameSession: GameSession,
 		PlayerState: PlayerState,
+		TileOccupant: TileOccupant,
 		Vec2: Vec2,
+		CombatResult: CombatResult,
 		Moved: Moved,
 		Spawned: Spawned,
 		GameState: GameState,
@@ -82,9 +100,21 @@ export const schema: SchemaType = {
 			last_direction: new CairoOption(CairoOptionVariant.None),
 			can_move: false,
 		},
+		TileOccupant: {
+			x: 0,
+			y: 0,
+			game_id: 0,
+		},
 		Vec2: {
 			x: 0,
 			y: 0,
+		},
+		CombatResult: {
+			attacker_game_id: 0,
+			defender_game_id: 0,
+			attacker_won: false,
+		attacker_position: { x: 0, y: 0, },
+		defender_position: { x: 0, y: 0, },
 		},
 		Moved: {
 			game_id: 0,
@@ -116,7 +146,9 @@ export enum ModelsMapping {
 	Direction = 'untitled-Direction',
 	GameSession = 'untitled-GameSession',
 	PlayerState = 'untitled-PlayerState',
+	TileOccupant = 'untitled-TileOccupant',
 	Vec2 = 'untitled-Vec2',
+	CombatResult = 'untitled-CombatResult',
 	Moved = 'untitled-Moved',
 	Spawned = 'untitled-Spawned',
 	GameState = 'untitled-GameState',

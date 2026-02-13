@@ -21,6 +21,17 @@ pub struct PlayerState {
     pub can_move: bool,
 }
 
+// Reverse lookup: who occupies a given tile? (0 = empty)
+#[derive(Copy, Drop, Serde, Debug)]
+#[dojo::model]
+pub struct TileOccupant {
+    #[key]
+    pub x: i32,
+    #[key]
+    pub y: i32,
+    pub game_id: u32,
+}
+
 // Return struct for get_game_state view function (not a model)
 #[derive(Copy, Drop, Serde)]
 pub struct GameState {

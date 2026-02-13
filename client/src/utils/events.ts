@@ -120,6 +120,36 @@ export function processGameEvent(event: any, manifest: any): GameEvent {
       };
     }
 
+    // Parse CombatResult event
+    // Key: attacker_game_id
+    // Values: defender_game_id, attacker_won (0/1), attacker_position.x, attacker_position.y, defender_position.x, defender_position.y
+    if (eventName === "combatresult") {
+      const defenderGameId = parseInt(data[valueOffset] || "0", 16);
+      const attackerWon = parseInt(data[valueOffset + 1] || "0", 16) !== 0;
+      const attackerPos = parseVec2(data, valueOffset + 2);
+      const defenderPos = parseVec2(data, valueOffset + 4);
+
+      debugLog("Parsed CombatResult event:", {
+        gameId,
+        defenderGameId,
+        attackerWon,
+        attackerPos,
+        defenderPos,
+      });
+
+      return {
+        type: "combat_result",
+        gameId,
+        combatWon: attackerWon,
+        defenderGameId,
+        position: {
+          player: "",
+          vec: attackerPos,
+        },
+        defenderPosition: defenderPos,
+      };
+    }
+
     return { type: "unknown" };
   } catch (error) {
     console.error("Error processing game event:", error, event);
@@ -200,6 +230,8 @@ export function getEventIcon(event: GameEvent): string {
       return "/icons/spawn.svg";
     case "moved":
       return "/icons/move.svg";
+    case "combat_result":
+      return "/icons/combat.svg";
     case "position_update":
       return "/icons/position.svg";
     default:
@@ -220,6 +252,8 @@ export function getEventTitle(event: GameEvent): string {
       return event.direction
         ? `Moved ${getDirectionName(event.direction)}`
         : "Player Moved";
+    case "combat_result":
+      return event.combatWon ? "Won Combat!" : "Lost Combat";
     case "position_update":
       return "Position Updated";
     default:

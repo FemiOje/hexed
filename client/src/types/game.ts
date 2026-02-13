@@ -78,12 +78,16 @@ export interface GameState {
  * Game Event types for event processing
  */
 export interface GameEvent {
-  type: 'spawned' | 'moved' | 'position_update' | 'unknown';
+  type: 'spawned' | 'moved' | 'combat_result' | 'position_update' | 'unknown';
   gameId?: number;  // game_id from event (u32)
   player?: string;
   position?: Position;
   direction?: Direction;
   moves?: Moves;
+  // Combat fields (only present when type === 'combat_result')
+  combatWon?: boolean;
+  defenderGameId?: number;
+  defenderPosition?: Vec2;
 }
 
 /**

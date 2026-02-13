@@ -48,6 +48,7 @@
     "postcss": "latest",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "react-hot-toast": "^2.6.0",
     "react-is": "18.3.1",
     "react-router-dom": "latest",
     "starknet": "^9.2.1",

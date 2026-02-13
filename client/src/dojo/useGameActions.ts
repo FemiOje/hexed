@@ -9,10 +9,11 @@ import { useState, useCallback } from "react";
 import { useSystemCalls } from "./useSystemCalls";
 import { useGameDirector } from "@/contexts/GameDirector";
 import { useGameStore, createOptimisticMove } from "@/stores/gameStore";
-import { useUIStore, showSuccessNotification, showErrorNotification } from "@/stores/uiStore";
-import { Direction } from "@/types/game";
+import { useUIStore } from "@/stores/uiStore";
+import { Direction, isVec2Equal } from "@/types/game";
 import { useController } from "@/contexts/controller";
 import { debugLog } from "@/utils/helpers";
+import toast from "react-hot-toast";
 
 export const useGameActions = () => {
   const { address } = useController();
@@ -43,7 +44,7 @@ export const useGameActions = () => {
    */
   const handleSpawn = useCallback(async () => {
     if (!address) {
-      showErrorNotification("No wallet connected");
+      toast.error("No wallet connected");
       return;
     }
 
@@ -64,7 +65,7 @@ export const useGameActions = () => {
           debugLog("Spawn failed, reverting state");
           setIsSpawning(false);
           setIsTransactionPending(false);
-          showErrorNotification("Spawn action failed");
+          toast.error("Spawn action failed");
         },
         () => {
           // Success callback
@@ -96,7 +97,7 @@ export const useGameActions = () => {
             }
           }
 
-          showSuccessNotification("Player spawned successfully!");
+          toast.success("Player spawned!");
         }
       });
 
@@ -108,7 +109,7 @@ export const useGameActions = () => {
       console.error("Spawn error:", error);
       const errorMessage = error instanceof Error ? error.message : "Unknown error";
       setError(errorMessage);
-      showErrorNotification(errorMessage);
+      toast.error(errorMessage);
       setIsSpawning(false);
       setIsTransactionPending(false);
     }
@@ -131,37 +132,37 @@ export const useGameActions = () => {
   const handleMove = useCallback(
     async (direction: Direction) => {
       if (!address) {
-        showErrorNotification("No wallet connected");
+        toast.error("No wallet connected");
         return;
       }
 
       if (!gameId) {
-        showErrorNotification("No active game");
+        toast.error("No active game");
         return;
       }
 
       if (!canPlayerMove()) {
-        showErrorNotification("Cannot move yet");
+        toast.error("Cannot move yet");
         return;
       }
 
       const currentPos = getCurrentPosition();
       if (!currentPos) {
-        showErrorNotification("Position not found");
+        toast.error("Position not found");
         return;
       }
+
+      // Save pre-move position for combat detection fallback
+      const preMovePos = { ...currentPos };
 
       try {
         setIsMoving(true);
         setIsTransactionPending(true);
 
-        // debugLog("Moving player", { gameId, currentPos, direction });
-
         // Optimistic update: calculate and show new position immediately
         const optimisticPos = createOptimisticMove(direction);
         if (optimisticPos) {
           setOptimisticPosition(optimisticPos);
-          // debugLog("Optimistic position set", optimisticPos);
         }
 
         // Create move call with game_id
@@ -171,42 +172,68 @@ export const useGameActions = () => {
         const events = await executeAction(
           [moveCall],
           () => {
-            // Rollback optimistic update on failure
-            // debugLog("Move failed, rolling back optimistic update");
             rollbackOptimisticPosition();
             setIsMoving(false);
             setIsTransactionPending(false);
-            showErrorNotification("Move action failed");
+            toast.error("Move action failed");
           },
           () => {
-            // Success callback
-            // debugLog("Move transaction confirmed");
             setIsTransactionPending(false);
           }
         );
 
-        // debugLog("Move events received", events);
+        // Detect move outcome from events
+        // Using string type since TS can't track reassignment inside forEach
+        let moveOutcome = "unknown";
 
-        // Process events through GameDirector
         events.forEach((event) => {
           processEvent(event);
 
           if (event.type === "moved") {
-            // debugLog("Player moved", event.position);
-
-            // Update current moves state for sync checking
+            moveOutcome = "moved";
             if (event.moves) {
               setCurrentMoves(event.moves);
             }
+          }
 
-            showSuccessNotification("Moved successfully!");
+          if (event.type === "combat_result") {
+            moveOutcome = event.combatWon ? "combat_won" : "combat_lost";
           }
         });
 
-        // Delay refresh to give blockchain time to index the transaction
-        // The optimistic update keeps UI responsive during this delay
+        // Show immediate toast if event was parsed
+        if (moveOutcome === "moved") {
+          toast.success("Moved!");
+        } else if (moveOutcome === "combat_won") {
+          toast.success("Won combat! Swapped positions.");
+        } else if (moveOutcome === "combat_lost") {
+          toast.error("Lost combat! Move failed.");
+          rollbackOptimisticPosition();
+        }
+
+        // Delay refresh to give blockchain time to index
         setTimeout(async () => {
           await refreshGameState();
+
+          // Fallback combat detection: if events weren't parsed (stale manifest),
+          // compare position after refresh to detect combat outcome
+          if (moveOutcome === "unknown" && optimisticPos) {
+            const refreshedPos = useGameStore.getState().position?.vec;
+            if (refreshedPos) {
+              if (isVec2Equal(refreshedPos, preMovePos)) {
+                // Position didn't change — combat loss
+                toast.error("Lost combat! Move failed.");
+              } else if (isVec2Equal(refreshedPos, optimisticPos)) {
+                toast.success("Moved!");
+              } else {
+                // Position changed but not to expected destination — combat win (swap)
+                toast.success("Won combat! Swapped positions.");
+              }
+            }
+          }
+
+          // Always clear optimistic after refresh to prevent stale display
+          rollbackOptimisticPosition();
         }, 2000);
 
         setIsMoving(false);
@@ -214,11 +241,10 @@ export const useGameActions = () => {
         console.error("Move error:", error);
         const errorMessage = error instanceof Error ? error.message : "Unknown error";
 
-        // Rollback optimistic update on error
         rollbackOptimisticPosition();
 
         setError(errorMessage);
-        showErrorNotification(errorMessage);
+        toast.error(errorMessage);
         setIsMoving(false);
         setIsTransactionPending(false);
       }

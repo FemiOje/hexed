@@ -11,7 +11,7 @@ pub trait IActions<T> {
 pub mod actions {
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
-    use untitled::models::{Vec2, GameSession, PlayerState};
+    use untitled::models::{Vec2, GameSession, PlayerState, TileOccupant};
     use untitled::utils::hex::{get_neighbor, is_within_bounds};
     use starknet::{ContractAddress, get_caller_address, get_tx_info, get_block_timestamp};
     use super::{Direction, GameState, IActions};
@@ -33,6 +33,17 @@ pub mod actions {
         pub game_id: u32,
         pub direction: Direction,
         pub position: Vec2,
+    }
+
+    #[derive(Copy, Drop, Serde)]
+    #[dojo::event]
+    pub struct CombatResult {
+        #[key]
+        pub attacker_game_id: u32,
+        pub defender_game_id: u32,
+        pub attacker_won: bool,
+        pub attacker_position: Vec2,
+        pub defender_position: Vec2,
     }
 
     #[abi(embed_v0)]
@@ -59,16 +70,20 @@ pub mod actions {
             let y: i32 = y_u32.try_into().unwrap();
 
             // Initialize player state
+            let position = Vec2 { x, y };
             let player_state = PlayerState {
                 game_id,
-                position: Vec2 { x, y },
+                position,
                 last_direction: Option::None,
                 can_move: true,
             };
             world.write_model(@player_state);
 
+            // Mark tile as occupied
+            world.write_model(@TileOccupant { x, y, game_id });
+
             // Emit spawn event with game_id
-            world.emit_event(@Spawned { game_id, player, position: player_state.position });
+            world.emit_event(@Spawned { game_id, player, position });
         }
 
         fn move(ref self: ContractState, game_id: u32, direction: Direction) {
@@ -90,13 +105,94 @@ pub mod actions {
             // Validate bounds
             assert(is_within_bounds(next_vec), 'Move is out of bounds');
 
-            // Update state
-            state.position = next_vec;
-            state.last_direction = Option::Some(direction);
-            world.write_model(@state);
+            // Check if destination tile is occupied
+            let tile: TileOccupant = world.read_model((next_vec.x, next_vec.y));
+            let defender_game_id = tile.game_id;
 
-            // Emit event
-            world.emit_event(@Moved { game_id, direction, position: next_vec });
+            // Check for active defender on tile
+            let tile_has_active_defender = if defender_game_id != 0 {
+                let defender_session: GameSession = world.read_model(defender_game_id);
+                defender_session.is_active
+            } else {
+                false
+            };
+
+            if tile_has_active_defender {
+                // Combat: resolve with pseudo-random outcome
+                // TODO: Replace with stat-based combat from game design doc
+                let tx_info = get_tx_info().unbox();
+                let timestamp = get_block_timestamp();
+                let combat_seed: felt252 = timestamp.into()
+                    + tx_info.transaction_hash
+                    + player.into()
+                    + game_id.into();
+                let seed_u256: u256 = combat_seed.into();
+                let attacker_won = (seed_u256 % 2) == 0;
+
+                let old_position = state.position;
+
+                if attacker_won {
+                    // Swap positions: attacker takes destination, defender goes to attacker's old tile
+                    let mut defender_state: PlayerState = world.read_model(defender_game_id);
+
+                    // Update positions
+                    state.position = next_vec;
+                    state.last_direction = Option::Some(direction);
+                    defender_state.position = old_position;
+
+                    // Update tile occupants
+                    world.write_model(@TileOccupant { x: next_vec.x, y: next_vec.y, game_id });
+                    world
+                        .write_model(
+                            @TileOccupant {
+                                x: old_position.x, y: old_position.y, game_id: defender_game_id,
+                            },
+                        );
+
+                    // Write both player states
+                    world.write_model(@state);
+                    world.write_model(@defender_state);
+                } else {
+                    // Attacker loses: move fails, record attempted direction
+                    state.last_direction = Option::Some(direction);
+                    world.write_model(@state);
+                }
+
+                world
+                    .emit_event(
+                        @CombatResult {
+                            attacker_game_id: game_id,
+                            defender_game_id,
+                            attacker_won,
+                            attacker_position: state.position,
+                            defender_position: if attacker_won {
+                                old_position
+                            } else {
+                                next_vec
+                            },
+                        },
+                    );
+            } else {
+                // Empty tile (or inactive defender): normal move
+                let old_position = state.position;
+
+                // Clear old tile
+                world
+                    .write_model(
+                        @TileOccupant { x: old_position.x, y: old_position.y, game_id: 0 },
+                    );
+
+                // Claim new tile
+                world.write_model(@TileOccupant { x: next_vec.x, y: next_vec.y, game_id });
+
+                // Update player state
+                state.position = next_vec;
+                state.last_direction = Option::Some(direction);
+                world.write_model(@state);
+
+                // Emit move event
+                world.emit_event(@Moved { game_id, direction, position: next_vec });
+            }
         }
 
         fn get_game_state(self: @ContractState, game_id: u32) -> GameState {

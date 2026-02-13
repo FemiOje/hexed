@@ -1,8 +1,8 @@
 {
   "world": {
     "class_hash": "0x381899226c066a0262f45d6ab815f89818e0874ec3e66cdf72b5e92d8db4680",
-    "address": "0x2c144c5d97d538a9e5f531a7b79f362e7bf8161d0612ae10267bb359d7301d8",
-    "seed": "dojo_starter_2",
+    "address": "0x6d22efbeabffade78c62af20900bd10d3fcf903512c7ea4fd8cbf31f45802cf",
+    "seed": "dojo_starter_3",
     "name": "Untitled",
     "entrypoints": [
       "uuid",
@@ -33,8 +33,8 @@
   },
   "contracts": [
     {
-      "address": "0x6bc5a68c0f51a4fb6454352611962bd3dd02fb5c4b0fe24d5a991d0f18f58f5",
-      "class_hash": "0x7b30d9456a16046fb6617bdbff317a2af966ec3d58c8fe59da6ae4dff5dfc99",
+      "address": "0x262ee62d23cf70b1921fa355328f8113fa7483f3fa8d03fb78b64853c8837c1",
+      "class_hash": "0x432035437ca572edf8f8887e84809d677e37196233f549cc76f89694abf26b4",
       "init_calldata": [],
       "tag": "untitled-actions",
       "selector": "0x5afa061741b9774c0d1c33cd425394821df428c96ad37229a18717fb8512277",
@@ -95,9 +95,63 @@
       "class_hash": "0x68aaf4ff6445cd3bb700b7aaface04b47408cc8f3c595917358eb4bec8bc29a",
       "tag": "untitled-PlayerState",
       "selector": "0x46ebe51322811725309a85d5f947e522a8c025a7b33c634c0b222f728e8b033"
+    },
+    {
+      "members": [
+        {
+          "name": "x",
+          "type": "core::integer::i32",
+          "key": true
+        },
+        {
+          "name": "y",
+          "type": "core::integer::i32",
+          "key": true
+        },
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "key": false
+        }
+      ],
+      "class_hash": "0x696a33ac504071e613c0ee4bf8c844d3a13a7d34e0163b797b577dc4e7e3c1b",
+      "tag": "untitled-TileOccupant",
+      "selector": "0x5d0afec0385802703996519ba6b5aaa37387ae43bc214d6352f14a4a48d4c30"
     }
   ],
   "events": [
+    {
+      "members": [
+        {
+          "name": "attacker_game_id",
+          "type": "core::integer::u32",
+          "key": true
+        },
+        {
+          "name": "defender_game_id",
+          "type": "core::integer::u32",
+          "key": false
+        },
+        {
+          "name": "attacker_won",
+          "type": "core::bool",
+          "key": false
+        },
+        {
+          "name": "attacker_position",
+          "type": "untitled::models::Vec2",
+          "key": false
+        },
+        {
+          "name": "defender_position",
+          "type": "untitled::models::Vec2",
+          "key": false
+        }
+      ],
+      "class_hash": "0x73340fc98e2f939aacca2a06c6660541da6147e8534da71bb7fbc3ad9b998e2",
+      "tag": "untitled-CombatResult",
+      "selector": "0x63b0a0d3d1e3c91574e4f5e03480f649fbe3fdef17316bb1f5a2c707c317cd8"
+    },
     {
       "members": [
         {
@@ -2139,6 +2193,34 @@
     },
     {
       "type": "struct",
+      "name": "untitled::models::TileOccupant",
+      "members": [
+        {
+          "name": "x",
+          "type": "core::integer::i32"
+        },
+        {
+          "name": "y",
+          "type": "core::integer::i32"
+        },
+        {
+          "name": "game_id",
+          "type": "core::integer::u32"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "untitled::models::TileOccupantValue",
+      "members": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32"
+        }
+      ]
+    },
+    {
+      "type": "struct",
       "name": "untitled::models::Vec2",
       "members": [
         {
@@ -2160,6 +2242,12 @@
     {
       "type": "event",
       "name": "untitled::models::m_PlayerState::Event",
+      "kind": "enum",
+      "variants": []
+    },
+    {
+      "type": "event",
+      "name": "untitled::models::m_TileOccupant::Event",
       "kind": "enum",
       "variants": []
     },
@@ -2205,6 +2293,54 @@
             }
           ],
           "state_mutability": "view"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "untitled::systems::actions::actions::CombatResult",
+      "members": [
+        {
+          "name": "attacker_game_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "defender_game_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "attacker_won",
+          "type": "core::bool"
+        },
+        {
+          "name": "attacker_position",
+          "type": "untitled::models::Vec2"
+        },
+        {
+          "name": "defender_position",
+          "type": "untitled::models::Vec2"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "untitled::systems::actions::actions::CombatResultValue",
+      "members": [
+        {
+          "name": "defender_game_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "attacker_won",
+          "type": "core::bool"
+        },
+        {
+          "name": "attacker_position",
+          "type": "untitled::models::Vec2"
+        },
+        {
+          "name": "defender_position",
+          "type": "untitled::models::Vec2"
         }
       ]
     },
@@ -2288,6 +2424,12 @@
           "type": "untitled::models::Vec2"
         }
       ]
+    },
+    {
+      "type": "event",
+      "name": "untitled::systems::actions::actions::e_CombatResult::Event",
+      "kind": "enum",
+      "variants": []
     },
     {
       "type": "event",
