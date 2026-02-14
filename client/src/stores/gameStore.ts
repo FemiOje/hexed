@@ -28,6 +28,11 @@ interface GameState {
   // Moves state
   moves: Moves | null;
 
+  // Player stats
+  hp: number;
+  maxHp: number;
+  xp: number;
+
   // Game events log
   eventLog: GameEvent[];
 
@@ -50,6 +55,9 @@ interface GameState {
   setMoves: (moves: Moves | null) => void;
   updateCanMove: (canMove: boolean) => void;
   updateLastDirection: (direction: Direction | null) => void;
+
+  // Actions - Stats Management
+  setStats: (hp: number, maxHp: number, xp: number) => void;
 
   // Actions - Event Management
   addEvent: (event: GameEvent) => void;
@@ -75,6 +83,9 @@ export const useGameStore = create<GameState>((set, get) => ({
   positionHistory: new PositionHistory(50),
   optimisticPosition: null,
   moves: null,
+  hp: 0,
+  maxHp: 0,
+  xp: 0,
   eventLog: [],
   isInitializing: false,
   isSyncing: false,
@@ -156,6 +167,10 @@ export const useGameStore = create<GameState>((set, get) => ({
       };
     }),
 
+  // Stats Management Actions
+  setStats: (hp: number, maxHp: number, xp: number) =>
+    set({ hp, maxHp, xp }),
+
   // Event Management Actions
   addEvent: (event: GameEvent) =>
     set((state) => ({
@@ -178,6 +193,9 @@ export const useGameStore = create<GameState>((set, get) => ({
       positionHistory: new PositionHistory(50),
       optimisticPosition: null,
       moves: null,
+      hp: 0,
+      maxHp: 0,
+      xp: 0,
       eventLog: [],
       isInitializing: false,
       isSyncing: false,
@@ -224,6 +242,10 @@ export const usePlayerMoves = () => useGameStore((state) => state.moves);
 
 export const useCanPlayerMove = () =>
   useGameStore((state) => state.canPlayerMove());
+
+export const usePlayerHp = () => useGameStore((state) => state.hp);
+export const usePlayerMaxHp = () => useGameStore((state) => state.maxHp);
+export const usePlayerXp = () => useGameStore((state) => state.xp);
 
 export const useEventLog = () => useGameStore((state) => state.eventLog);
 

@@ -7,9 +7,9 @@ mod tests {
         spawn_test_world,
     };
     use untitled::models::{
-        Direction, PlayerState, Vec2,
-        GameSession, TileOccupant,
-        m_PlayerState, m_GameSession, m_TileOccupant,
+        Direction, PlayerState, PlayerStats, Vec2,
+        GameSession, TileOccupant, STARTING_HP, MAX_HP, COMBAT_DAMAGE, COMBAT_XP_REWARD,
+        m_PlayerState, m_PlayerStats, m_GameSession, m_TileOccupant,
     };
     use untitled::systems::actions::{IActionsDispatcher, IActionsDispatcherTrait, actions};
     use untitled::utils::hex::{get_neighbor, is_within_bounds};
@@ -20,11 +20,13 @@ mod tests {
             namespace: "untitled",
             resources: [
                 TestResource::Model(m_PlayerState::TEST_CLASS_HASH),
+                TestResource::Model(m_PlayerStats::TEST_CLASS_HASH),
                 TestResource::Model(m_GameSession::TEST_CLASS_HASH),
                 TestResource::Model(m_TileOccupant::TEST_CLASS_HASH),
                 TestResource::Event(actions::e_Spawned::TEST_CLASS_HASH),
                 TestResource::Event(actions::e_Moved::TEST_CLASS_HASH),
                 TestResource::Event(actions::e_CombatResult::TEST_CLASS_HASH),
+                TestResource::Event(actions::e_PlayerDied::TEST_CLASS_HASH),
                 TestResource::Contract(actions::TEST_CLASS_HASH),
             ]
                 .span(),
@@ -491,6 +493,12 @@ mod tests {
             can_move: true,
         });
         world.write_model_test(@TileOccupant { x: 5, y: 5, game_id: attacker_id });
+        world
+            .write_model_test(
+                @PlayerStats {
+                    game_id: attacker_id, hp: STARTING_HP, max_hp: MAX_HP, xp: 0,
+                },
+            );
 
         // Set up defender at (6,5) — east of attacker
         let defender_id: u32 = 20;
@@ -506,6 +514,12 @@ mod tests {
             can_move: true,
         });
         world.write_model_test(@TileOccupant { x: 6, y: 5, game_id: defender_id });
+        world
+            .write_model_test(
+                @PlayerStats {
+                    game_id: defender_id, hp: STARTING_HP, max_hp: MAX_HP, xp: 0,
+                },
+            );
 
         // Attacker moves east into defender's tile
         starknet::testing::set_contract_address(attacker_addr);
@@ -517,18 +531,35 @@ mod tests {
         let tile_5_5: TileOccupant = world.read_model((5, 5));
         let tile_6_5: TileOccupant = world.read_model((6, 5));
 
-        // Combat happened — either swap (attacker won) or no change (attacker lost)
+        // Check stats to understand what happened
+        let atk_stats: PlayerStats = world.read_model(attacker_id);
+        let def_stats: PlayerStats = world.read_model(defender_id);
+        let atk_session: GameSession = world.read_model(attacker_id);
+        let def_session: GameSession = world.read_model(defender_id);
+
+        // Combat happened — determine outcome
         let attacker_at_dest = attacker_state.position.x == 6 && attacker_state.position.y == 5;
-        let attacker_stayed = attacker_state.position.x == 5 && attacker_state.position.y == 5;
 
         if attacker_at_dest {
-            // Attacker won: positions swapped
-            assert(defender_state.position.x == 5 && defender_state.position.y == 5, 'defender not swapped');
-            assert(tile_6_5.game_id == attacker_id, 'tile(6,5) wrong after win');
-            assert(tile_5_5.game_id == defender_id, 'tile(5,5) wrong after win');
+            if !def_session.is_active {
+                // Attacker won, defender died
+                assert(def_stats.hp == 0, 'dead def hp should be 0');
+                assert(tile_6_5.game_id == attacker_id, 'tile(6,5) wrong after kill');
+                assert(tile_5_5.game_id == 0, 'old tile should be clear');
+            } else {
+                // Attacker won, defender survived: positions swapped
+                assert(defender_state.position.x == 5 && defender_state.position.y == 5, 'defender not swapped');
+                assert(tile_6_5.game_id == attacker_id, 'tile(6,5) wrong after win');
+                assert(tile_5_5.game_id == defender_id, 'tile(5,5) wrong after win');
+            }
+        } else if !atk_session.is_active {
+            // Attacker lost and died
+            assert(atk_stats.hp == 0, 'dead atk hp should be 0');
+            assert(tile_5_5.game_id == 0, 'dead atk tile should clear');
+            assert(tile_6_5.game_id == defender_id, 'def keeps tile after kill');
         } else {
-            // Attacker lost: no changes
-            assert(attacker_stayed, 'attacker should stay');
+            // Attacker lost, survived: no position change
+            assert(attacker_state.position.x == 5 && attacker_state.position.y == 5, 'attacker should stay');
             assert(defender_state.position.x == 6 && defender_state.position.y == 5, 'defender should stay');
             assert(tile_5_5.game_id == attacker_id, 'tile(5,5) wrong after loss');
             assert(tile_6_5.game_id == defender_id, 'tile(6,5) wrong after loss');
@@ -582,6 +613,391 @@ mod tests {
 
         let new_tile: TileOccupant = world.read_model((6, 5));
         assert(new_tile.game_id == player_id, 'new tile not claimed');
+    }
+
+    // ==================== COMBAT SYSTEM TESTS ====================
+
+    #[test]
+    fn test_hp_constants_valid() {
+        // HP overflow guard: starting HP must never exceed the cap
+        assert(STARTING_HP <= MAX_HP, 'STARTING_HP exceeds MAX_HP');
+        assert(MAX_HP > 0, 'MAX_HP must be positive');
+        assert(COMBAT_DAMAGE > 0, 'COMBAT_DAMAGE must be positive');
+    }
+
+    #[test]
+    #[available_gas(30000000)]
+    fn test_spawn_initializes_stats() {
+        let ndef = namespace_def();
+        let mut world = spawn_test_world(world::TEST_CLASS_HASH, [ndef].span());
+        world.sync_perms_and_inits(contract_defs());
+
+        let (contract_address, _) = world.dns(@"actions").unwrap();
+        let actions_system = IActionsDispatcher { contract_address };
+
+        actions_system.spawn();
+        let game_id: u32 = 1;
+
+        let stats: PlayerStats = world.read_model(game_id);
+        assert(stats.hp == STARTING_HP, 'hp should be STARTING_HP');
+        assert(stats.max_hp == MAX_HP, 'max_hp should be MAX_HP');
+        assert(stats.xp == 0, 'xp should be 0');
+        assert(stats.hp <= stats.max_hp, 'hp exceeds max_hp on spawn');
+    }
+
+    #[test]
+    #[available_gas(60000000)]
+    fn test_combat_stats_update() {
+        // Verify winner gets +XP and loser gets -HP after combat
+        let attacker_addr: ContractAddress = 1.try_into().unwrap();
+        let defender_addr: ContractAddress = 2.try_into().unwrap();
+
+        let ndef = namespace_def();
+        let mut world = spawn_test_world(world::TEST_CLASS_HASH, [ndef].span());
+        world.sync_perms_and_inits(contract_defs());
+
+        let (contract_address, _) = world.dns(@"actions").unwrap();
+        let actions_system = IActionsDispatcher { contract_address };
+
+        // Set up attacker at (5,5)
+        let attacker_id: u32 = 10;
+        world.write_model_test(@GameSession {
+            game_id: attacker_id, player: attacker_addr, is_active: true,
+        });
+        world.write_model_test(@PlayerState {
+            game_id: attacker_id,
+            position: Vec2 { x: 5, y: 5 },
+            last_direction: Option::None,
+            can_move: true,
+        });
+        world.write_model_test(@PlayerStats {
+            game_id: attacker_id, hp: STARTING_HP, max_hp: MAX_HP, xp: 0,
+        });
+        world.write_model_test(@TileOccupant { x: 5, y: 5, game_id: attacker_id });
+
+        // Set up defender at (6,5)
+        let defender_id: u32 = 20;
+        world.write_model_test(@GameSession {
+            game_id: defender_id, player: defender_addr, is_active: true,
+        });
+        world.write_model_test(@PlayerState {
+            game_id: defender_id,
+            position: Vec2 { x: 6, y: 5 },
+            last_direction: Option::None,
+            can_move: true,
+        });
+        world.write_model_test(@PlayerStats {
+            game_id: defender_id, hp: STARTING_HP, max_hp: MAX_HP, xp: 0,
+        });
+        world.write_model_test(@TileOccupant { x: 6, y: 5, game_id: defender_id });
+
+        // Trigger combat
+        starknet::testing::set_contract_address(attacker_addr);
+        actions_system.move(attacker_id, Direction::East);
+
+        let atk_stats: PlayerStats = world.read_model(attacker_id);
+        let def_stats: PlayerStats = world.read_model(defender_id);
+
+        let attacker_state: PlayerState = world.read_model(attacker_id);
+        let attacker_won = attacker_state.position.x == 6 && attacker_state.position.y == 5;
+
+        if attacker_won {
+            // Attacker won: +XP, full HP; Defender lost: -HP, 0 XP
+            assert(atk_stats.xp == COMBAT_XP_REWARD, 'winner xp wrong');
+            assert(atk_stats.hp == STARTING_HP, 'winner hp should be full');
+            assert(def_stats.xp == 0, 'loser xp should be 0');
+            assert(def_stats.hp == STARTING_HP - COMBAT_DAMAGE, 'loser hp wrong');
+        } else {
+            // Defender won: +XP, full HP; Attacker lost: -HP, 0 XP
+            assert(def_stats.xp == COMBAT_XP_REWARD, 'winner xp wrong');
+            assert(def_stats.hp == STARTING_HP, 'winner hp should be full');
+            assert(atk_stats.xp == 0, 'loser xp should be 0');
+            assert(atk_stats.hp == STARTING_HP - COMBAT_DAMAGE, 'loser hp wrong');
+        }
+
+        // HP overflow check: winner HP must not exceed max
+        assert(atk_stats.hp <= atk_stats.max_hp, 'atk hp exceeds max');
+        assert(def_stats.hp <= def_stats.max_hp, 'def hp exceeds max');
+    }
+
+    #[test]
+    #[available_gas(60000000)]
+    fn test_combat_causes_death() {
+        // Set both players to low HP so whoever loses will die
+        let attacker_addr: ContractAddress = 1.try_into().unwrap();
+        let defender_addr: ContractAddress = 2.try_into().unwrap();
+
+        let ndef = namespace_def();
+        let mut world = spawn_test_world(world::TEST_CLASS_HASH, [ndef].span());
+        world.sync_perms_and_inits(contract_defs());
+
+        let (contract_address, _) = world.dns(@"actions").unwrap();
+        let actions_system = IActionsDispatcher { contract_address };
+
+        let low_hp: u32 = 5; // Below COMBAT_DAMAGE, guarantees death on loss
+
+        // Set up attacker at (5,5) with low HP
+        let attacker_id: u32 = 10;
+        world.write_model_test(@GameSession {
+            game_id: attacker_id, player: attacker_addr, is_active: true,
+        });
+        world.write_model_test(@PlayerState {
+            game_id: attacker_id,
+            position: Vec2 { x: 5, y: 5 },
+            last_direction: Option::None,
+            can_move: true,
+        });
+        world.write_model_test(@PlayerStats {
+            game_id: attacker_id, hp: low_hp, max_hp: MAX_HP, xp: 0,
+        });
+        world.write_model_test(@TileOccupant { x: 5, y: 5, game_id: attacker_id });
+
+        // Set up defender at (6,5) with low HP
+        let defender_id: u32 = 20;
+        world.write_model_test(@GameSession {
+            game_id: defender_id, player: defender_addr, is_active: true,
+        });
+        world.write_model_test(@PlayerState {
+            game_id: defender_id,
+            position: Vec2 { x: 6, y: 5 },
+            last_direction: Option::None,
+            can_move: true,
+        });
+        world.write_model_test(@PlayerStats {
+            game_id: defender_id, hp: low_hp, max_hp: MAX_HP, xp: 0,
+        });
+        world.write_model_test(@TileOccupant { x: 6, y: 5, game_id: defender_id });
+
+        // Trigger combat
+        starknet::testing::set_contract_address(attacker_addr);
+        actions_system.move(attacker_id, Direction::East);
+
+        // Determine outcome
+        let atk_state: PlayerState = world.read_model(attacker_id);
+        let attacker_won = atk_state.position.x == 6 && atk_state.position.y == 5;
+
+        if attacker_won {
+            // Defender died
+            let def_session: GameSession = world.read_model(defender_id);
+            assert(!def_session.is_active, 'dead session should deactivate');
+
+            let def_stats: PlayerStats = world.read_model(defender_id);
+            assert(def_stats.hp == 0, 'dead player hp should be 0');
+
+            let def_state: PlayerState = world.read_model(defender_id);
+            assert(!def_state.can_move, 'dead player cannot move');
+
+            // Attacker claimed destination
+            let dest_tile: TileOccupant = world.read_model((6, 5));
+            assert(dest_tile.game_id == attacker_id, 'attacker should claim tile');
+
+            // Old tile cleared
+            let old_tile: TileOccupant = world.read_model((5, 5));
+            assert(old_tile.game_id == 0, 'old tile should be clear');
+        } else {
+            // Attacker died
+            let atk_session: GameSession = world.read_model(attacker_id);
+            assert(!atk_session.is_active, 'dead session should deactivate');
+
+            let atk_stats: PlayerStats = world.read_model(attacker_id);
+            assert(atk_stats.hp == 0, 'dead player hp should be 0');
+
+            assert(!atk_state.can_move, 'dead player cannot move');
+
+            // Attacker's old tile cleared
+            let old_tile: TileOccupant = world.read_model((5, 5));
+            assert(old_tile.game_id == 0, 'dead tile should be clear');
+
+            // Defender stays at destination
+            let dest_tile: TileOccupant = world.read_model((6, 5));
+            assert(dest_tile.game_id == defender_id, 'defender should keep tile');
+        }
+    }
+
+    #[test]
+    #[available_gas(60000000)]
+    fn test_combat_exact_hp_death() {
+        // Player with HP exactly equal to COMBAT_DAMAGE should die (hp=10, damage=10 → 0)
+        let attacker_addr: ContractAddress = 1.try_into().unwrap();
+        let defender_addr: ContractAddress = 2.try_into().unwrap();
+
+        let ndef = namespace_def();
+        let mut world = spawn_test_world(world::TEST_CLASS_HASH, [ndef].span());
+        world.sync_perms_and_inits(contract_defs());
+
+        let (contract_address, _) = world.dns(@"actions").unwrap();
+        let actions_system = IActionsDispatcher { contract_address };
+
+        // Both at exactly COMBAT_DAMAGE HP
+        let attacker_id: u32 = 10;
+        world.write_model_test(@GameSession {
+            game_id: attacker_id, player: attacker_addr, is_active: true,
+        });
+        world.write_model_test(@PlayerState {
+            game_id: attacker_id,
+            position: Vec2 { x: 5, y: 5 },
+            last_direction: Option::None,
+            can_move: true,
+        });
+        world.write_model_test(@PlayerStats {
+            game_id: attacker_id, hp: COMBAT_DAMAGE, max_hp: MAX_HP, xp: 0,
+        });
+        world.write_model_test(@TileOccupant { x: 5, y: 5, game_id: attacker_id });
+
+        let defender_id: u32 = 20;
+        world.write_model_test(@GameSession {
+            game_id: defender_id, player: defender_addr, is_active: true,
+        });
+        world.write_model_test(@PlayerState {
+            game_id: defender_id,
+            position: Vec2 { x: 6, y: 5 },
+            last_direction: Option::None,
+            can_move: true,
+        });
+        world.write_model_test(@PlayerStats {
+            game_id: defender_id, hp: COMBAT_DAMAGE, max_hp: MAX_HP, xp: 0,
+        });
+        world.write_model_test(@TileOccupant { x: 6, y: 5, game_id: defender_id });
+
+        starknet::testing::set_contract_address(attacker_addr);
+        actions_system.move(attacker_id, Direction::East);
+
+        // Whoever lost should be dead (hp was exactly COMBAT_DAMAGE, so hp <= COMBAT_DAMAGE → dies)
+        let atk_state: PlayerState = world.read_model(attacker_id);
+        let attacker_won = atk_state.position.x == 6 && atk_state.position.y == 5;
+
+        if attacker_won {
+            let def_stats: PlayerStats = world.read_model(defender_id);
+            assert(def_stats.hp == 0, 'exact hp should cause death');
+            let def_session: GameSession = world.read_model(defender_id);
+            assert(!def_session.is_active, 'should be inactive');
+        } else {
+            let atk_stats: PlayerStats = world.read_model(attacker_id);
+            assert(atk_stats.hp == 0, 'exact hp should cause death');
+            let atk_session: GameSession = world.read_model(attacker_id);
+            assert(!atk_session.is_active, 'should be inactive');
+        }
+    }
+
+    #[test]
+    #[available_gas(30000000)]
+    #[should_panic(expected: ('game not active', 'ENTRYPOINT_FAILED'))]
+    fn test_dead_player_cannot_move() {
+        let caller: ContractAddress = 0.try_into().unwrap();
+
+        let ndef = namespace_def();
+        let mut world = spawn_test_world(world::TEST_CLASS_HASH, [ndef].span());
+        world.sync_perms_and_inits(contract_defs());
+
+        let (contract_address, _) = world.dns(@"actions").unwrap();
+        let actions_system = IActionsDispatcher { contract_address };
+
+        // Set up a dead player (is_active = false)
+        let dead_id: u32 = 42;
+        world.write_model_test(@GameSession {
+            game_id: dead_id, player: caller, is_active: false,
+        });
+        world.write_model_test(@PlayerState {
+            game_id: dead_id,
+            position: Vec2 { x: 5, y: 5 },
+            last_direction: Option::None,
+            can_move: false,
+        });
+        world.write_model_test(@PlayerStats {
+            game_id: dead_id, hp: 0, max_hp: MAX_HP, xp: 0,
+        });
+
+        // Should panic: dead player can't move
+        actions_system.move(dead_id, Direction::East);
+    }
+
+    #[test]
+    #[available_gas(30000000)]
+    fn test_game_state_includes_stats() {
+        let caller: ContractAddress = 1.try_into().unwrap();
+
+        let ndef = namespace_def();
+        let mut world = spawn_test_world(world::TEST_CLASS_HASH, [ndef].span());
+        world.sync_perms_and_inits(contract_defs());
+
+        let (contract_address, _) = world.dns(@"actions").unwrap();
+        let actions_system = IActionsDispatcher { contract_address };
+
+        starknet::testing::set_contract_address(caller);
+        actions_system.spawn();
+        let game_id: u32 = 1;
+
+        let game_state = actions_system.get_game_state(game_id);
+
+        assert(game_state.hp == STARTING_HP, 'gs hp wrong');
+        assert(game_state.max_hp == MAX_HP, 'gs max_hp wrong');
+        assert(game_state.xp == 0, 'gs xp wrong');
+        assert(game_state.hp <= game_state.max_hp, 'gs hp exceeds max');
+    }
+
+    #[test]
+    #[available_gas(60000000)]
+    fn test_winner_hp_not_inflated() {
+        // Verify combat winner's HP stays unchanged (no accidental HP increase / overflow)
+        let attacker_addr: ContractAddress = 1.try_into().unwrap();
+        let defender_addr: ContractAddress = 2.try_into().unwrap();
+
+        let ndef = namespace_def();
+        let mut world = spawn_test_world(world::TEST_CLASS_HASH, [ndef].span());
+        world.sync_perms_and_inits(contract_defs());
+
+        let (contract_address, _) = world.dns(@"actions").unwrap();
+        let actions_system = IActionsDispatcher { contract_address };
+
+        let attacker_id: u32 = 10;
+        world.write_model_test(@GameSession {
+            game_id: attacker_id, player: attacker_addr, is_active: true,
+        });
+        world.write_model_test(@PlayerState {
+            game_id: attacker_id,
+            position: Vec2 { x: 5, y: 5 },
+            last_direction: Option::None,
+            can_move: true,
+        });
+        world.write_model_test(@PlayerStats {
+            game_id: attacker_id, hp: MAX_HP, max_hp: MAX_HP, xp: 0,
+        });
+        world.write_model_test(@TileOccupant { x: 5, y: 5, game_id: attacker_id });
+
+        let defender_id: u32 = 20;
+        world.write_model_test(@GameSession {
+            game_id: defender_id, player: defender_addr, is_active: true,
+        });
+        world.write_model_test(@PlayerState {
+            game_id: defender_id,
+            position: Vec2 { x: 6, y: 5 },
+            last_direction: Option::None,
+            can_move: true,
+        });
+        world.write_model_test(@PlayerStats {
+            game_id: defender_id, hp: MAX_HP, max_hp: MAX_HP, xp: 0,
+        });
+        world.write_model_test(@TileOccupant { x: 6, y: 5, game_id: defender_id });
+
+        starknet::testing::set_contract_address(attacker_addr);
+        actions_system.move(attacker_id, Direction::East);
+
+        // Both players' HP must be <= max_hp (no overflow)
+        let atk_stats: PlayerStats = world.read_model(attacker_id);
+        let def_stats: PlayerStats = world.read_model(defender_id);
+
+        assert(atk_stats.hp <= MAX_HP, 'atk hp overflow');
+        assert(def_stats.hp <= MAX_HP, 'def hp overflow');
+
+        // Winner's HP should be exactly MAX_HP (unchanged)
+        let atk_state: PlayerState = world.read_model(attacker_id);
+        let attacker_won = atk_state.position.x == 6 && atk_state.position.y == 5;
+
+        if attacker_won {
+            assert(atk_stats.hp == MAX_HP, 'winner hp changed');
+        } else {
+            assert(def_stats.hp == MAX_HP, 'winner hp changed');
+        }
     }
 
 }

@@ -72,6 +72,9 @@ export interface GameState {
   last_direction: Direction | null;
   can_move: boolean;
   is_active: boolean;
+  hp: number;            // Current health points
+  max_hp: number;        // Maximum health points cap
+  xp: number;            // Experience points
 }
 
 /**

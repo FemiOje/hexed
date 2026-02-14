@@ -8,7 +8,7 @@ import { num } from "starknet";
 import HexGrid from "../components/HexGrid";
 import Header from "../components/Header";
 import type { HexPosition } from "../three/utils";
-import { useCurrentPosition, useIsSpawned, useCanPlayerMove, useGameStore } from "../stores/gameStore";
+import { useCurrentPosition, useIsSpawned, useCanPlayerMove, usePlayerHp, usePlayerMaxHp, usePlayerXp, useGameStore } from "../stores/gameStore";
 import { useGameActions } from "../dojo/useGameActions";
 import { useGameDirector } from "../contexts/GameDirector";
 import { useController } from "../contexts/controller";
@@ -23,7 +23,7 @@ export default function GamePage() {
     const { getGameState } = useStarknetApi();
 
     // Get store actions for populating game state
-    const { setPosition, setMoves, setIsSpawned, setGameId } = useGameStore();
+    const { setPosition, setMoves, setIsSpawned, setGameId, setStats } = useGameStore();
 
     // Get game_id from URL
     const gameIdFromUrl = searchParams.get("id");
@@ -47,6 +47,9 @@ export default function GamePage() {
     const blockchainPosition = useCurrentPosition();
     const isSpawned = useIsSpawned();
     const canMove = useCanPlayerMove();
+    const hp = usePlayerHp();
+    const maxHp = usePlayerMaxHp();
+    const xp = usePlayerXp();
     const { handleMove: handleBlockchainMove } = useGameActions();
 
     // Manual refresh handler
@@ -124,6 +127,7 @@ export default function GamePage() {
                         last_direction: gameState.last_direction,
                         can_move: gameState.can_move,
                     });
+                    setStats(gameState.hp, gameState.max_hp, gameState.xp);
                     setIsSpawned(gameState.is_active);
 
                     setOwnershipValid(true);
@@ -219,6 +223,32 @@ export default function GamePage() {
                 }}>
                     <div style={{ marginBottom: 4, fontWeight: 600, color: "#f5a623" }}>
                         Position: ({playerPosition.col}, {playerPosition.row})
+                    </div>
+                    {/* HP Bar */}
+                    <div style={{ marginBottom: 6 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, marginBottom: 2 }}>
+                            <span style={{ color: "#ff6b6b" }}>HP</span>
+                            <span style={{ color: "#aaa" }}>{hp}/{maxHp}</span>
+                        </div>
+                        <div style={{
+                            width: "100%",
+                            height: 6,
+                            background: "rgba(255,255,255,0.1)",
+                            borderRadius: 3,
+                            overflow: "hidden",
+                        }}>
+                            <div style={{
+                                width: maxHp > 0 ? `${(hp / maxHp) * 100}%` : "0%",
+                                height: "100%",
+                                background: hp / maxHp > 0.5 ? "#4caf50" : hp / maxHp > 0.25 ? "#ff9800" : "#f44336",
+                                borderRadius: 3,
+                                transition: "width 0.3s ease, background 0.3s ease",
+                            }} />
+                        </div>
+                    </div>
+                    {/* XP */}
+                    <div style={{ fontSize: 11, color: "#aaa", marginBottom: 6 }}>
+                        <span style={{ color: "#9c27b0" }}>XP</span>: {xp}
                     </div>
                     <div style={{ fontSize: 11, color: "#aaa", marginBottom: 8 }}>
                         Can Move: {canMove ? "Yes" : "Wait..."}

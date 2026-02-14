@@ -34,7 +34,7 @@
   "contracts": [
     {
       "address": "0x262ee62d23cf70b1921fa355328f8113fa7483f3fa8d03fb78b64853c8837c1",
-      "class_hash": "0x432035437ca572edf8f8887e84809d677e37196233f549cc76f89694abf26b4",
+      "class_hash": "0x1c980f5cf781013570b7eae4db990d2faa2d697efc17cb9046d599c19a9dc5f",
       "init_calldata": [],
       "tag": "untitled-actions",
       "selector": "0x5afa061741b9774c0d1c33cd425394821df428c96ad37229a18717fb8512277",
@@ -99,6 +99,33 @@
     {
       "members": [
         {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "key": true
+        },
+        {
+          "name": "hp",
+          "type": "core::integer::u32",
+          "key": false
+        },
+        {
+          "name": "max_hp",
+          "type": "core::integer::u32",
+          "key": false
+        },
+        {
+          "name": "xp",
+          "type": "core::integer::u32",
+          "key": false
+        }
+      ],
+      "class_hash": "0x672a8115fb340d66d8341250a40c05d61e9060b8b379b305897baa386c576d5",
+      "tag": "untitled-PlayerStats",
+      "selector": "0x2adec7b8d996a70a0b36e745f13b5fb6e50c2137bbb6622deec156ecea22295"
+    },
+    {
+      "members": [
+        {
           "name": "x",
           "type": "core::integer::i32",
           "key": true
@@ -146,9 +173,24 @@
           "name": "defender_position",
           "type": "untitled::models::Vec2",
           "key": false
+        },
+        {
+          "name": "damage_dealt",
+          "type": "core::integer::u32",
+          "key": false
+        },
+        {
+          "name": "xp_awarded",
+          "type": "core::integer::u32",
+          "key": false
+        },
+        {
+          "name": "loser_died",
+          "type": "core::bool",
+          "key": false
         }
       ],
-      "class_hash": "0x73340fc98e2f939aacca2a06c6660541da6147e8534da71bb7fbc3ad9b998e2",
+      "class_hash": "0x36f44fd7d768ca275a93de74134aea381155b0679b6a63379d99d7a6c9142bd",
       "tag": "untitled-CombatResult",
       "selector": "0x63b0a0d3d1e3c91574e4f5e03480f649fbe3fdef17316bb1f5a2c707c317cd8"
     },
@@ -173,6 +215,28 @@
       "class_hash": "0x35268b879477fb78f58e887f629f86d70b313efbe704646bcd72089cefb1da1",
       "tag": "untitled-Moved",
       "selector": "0x62a794a096ae2445ca892f72cfd1569e60909c3a57f937a7a87b1689e9f5794"
+    },
+    {
+      "members": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "key": true
+        },
+        {
+          "name": "killed_by",
+          "type": "core::integer::u32",
+          "key": false
+        },
+        {
+          "name": "position",
+          "type": "untitled::models::Vec2",
+          "key": false
+        }
+      ],
+      "class_hash": "0x1a4c622ca6a6808a215ed159ca7fd287a77d30adb7f9607527d03d5a46a9f4",
+      "tag": "untitled-PlayerDied",
+      "selector": "0x694468cf2cc83d89cea890cc17586d55455e76318132a8d9c5c718451e6e6a5"
     },
     {
       "members": [
@@ -2148,6 +2212,18 @@
         {
           "name": "is_active",
           "type": "core::bool"
+        },
+        {
+          "name": "hp",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "max_hp",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "xp",
+          "type": "core::integer::u32"
         }
       ]
     },
@@ -2188,6 +2264,46 @@
         {
           "name": "can_move",
           "type": "core::bool"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "untitled::models::PlayerStats",
+      "members": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "hp",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "max_hp",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "xp",
+          "type": "core::integer::u32"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "untitled::models::PlayerStatsValue",
+      "members": [
+        {
+          "name": "hp",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "max_hp",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "xp",
+          "type": "core::integer::u32"
         }
       ]
     },
@@ -2242,6 +2358,12 @@
     {
       "type": "event",
       "name": "untitled::models::m_PlayerState::Event",
+      "kind": "enum",
+      "variants": []
+    },
+    {
+      "type": "event",
+      "name": "untitled::models::m_PlayerStats::Event",
       "kind": "enum",
       "variants": []
     },
@@ -2319,6 +2441,18 @@
         {
           "name": "defender_position",
           "type": "untitled::models::Vec2"
+        },
+        {
+          "name": "damage_dealt",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "xp_awarded",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "loser_died",
+          "type": "core::bool"
         }
       ]
     },
@@ -2341,6 +2475,18 @@
         {
           "name": "defender_position",
           "type": "untitled::models::Vec2"
+        },
+        {
+          "name": "damage_dealt",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "xp_awarded",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "loser_died",
+          "type": "core::bool"
         }
       ]
     },
@@ -2395,6 +2541,38 @@
     },
     {
       "type": "struct",
+      "name": "untitled::systems::actions::actions::PlayerDied",
+      "members": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "killed_by",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "position",
+          "type": "untitled::models::Vec2"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "untitled::systems::actions::actions::PlayerDiedValue",
+      "members": [
+        {
+          "name": "killed_by",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "position",
+          "type": "untitled::models::Vec2"
+        }
+      ]
+    },
+    {
+      "type": "struct",
       "name": "untitled::systems::actions::actions::Spawned",
       "members": [
         {
@@ -2434,6 +2612,12 @@
     {
       "type": "event",
       "name": "untitled::systems::actions::actions::e_Moved::Event",
+      "kind": "enum",
+      "variants": []
+    },
+    {
+      "type": "event",
+      "name": "untitled::systems::actions::actions::e_PlayerDied::Event",
       "kind": "enum",
       "variants": []
     },

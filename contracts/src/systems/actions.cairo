@@ -11,7 +11,10 @@ pub trait IActions<T> {
 pub mod actions {
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
-    use untitled::models::{Vec2, GameSession, PlayerState, TileOccupant};
+    use untitled::models::{
+        Vec2, GameSession, PlayerState, PlayerStats, TileOccupant, STARTING_HP, MAX_HP,
+        COMBAT_DAMAGE, COMBAT_XP_REWARD,
+    };
     use untitled::utils::hex::{get_neighbor, is_within_bounds};
     use starknet::{ContractAddress, get_caller_address, get_tx_info, get_block_timestamp};
     use super::{Direction, GameState, IActions};
@@ -44,6 +47,18 @@ pub mod actions {
         pub attacker_won: bool,
         pub attacker_position: Vec2,
         pub defender_position: Vec2,
+        pub damage_dealt: u32,
+        pub xp_awarded: u32,
+        pub loser_died: bool,
+    }
+
+    #[derive(Copy, Drop, Serde)]
+    #[dojo::event]
+    pub struct PlayerDied {
+        #[key]
+        pub game_id: u32,
+        pub killed_by: u32,
+        pub position: Vec2,
     }
 
     #[abi(embed_v0)]
@@ -78,6 +93,12 @@ pub mod actions {
                 can_move: true,
             };
             world.write_model(@player_state);
+
+            // Initialize player stats
+            world
+                .write_model(
+                    @PlayerStats { game_id, hp: STARTING_HP, max_hp: MAX_HP, xp: 0 },
+                );
 
             // Mark tile as occupied
             world.write_model(@TileOccupant { x, y, game_id });
@@ -131,31 +152,99 @@ pub mod actions {
 
                 let old_position = state.position;
 
+                // Read both players' stats
+                let mut attacker_stats: PlayerStats = world.read_model(game_id);
+                let mut defender_stats: PlayerStats = world.read_model(defender_game_id);
+                let mut loser_died = false;
+
                 if attacker_won {
-                    // Swap positions: attacker takes destination, defender goes to attacker's old tile
-                    let mut defender_state: PlayerState = world.read_model(defender_game_id);
+                    // Winner (attacker): +XP, 0 damage
+                    attacker_stats.xp += COMBAT_XP_REWARD;
 
-                    // Update positions
-                    state.position = next_vec;
-                    state.last_direction = Option::Some(direction);
-                    defender_state.position = old_position;
+                    // Loser (defender): -HP, 0 XP
+                    if defender_stats.hp <= COMBAT_DAMAGE {
+                        defender_stats.hp = 0;
+                        loser_died = true;
+                    } else {
+                        defender_stats.hp -= COMBAT_DAMAGE;
+                    }
 
-                    // Update tile occupants
-                    world.write_model(@TileOccupant { x: next_vec.x, y: next_vec.y, game_id });
-                    world
-                        .write_model(
-                            @TileOccupant {
-                                x: old_position.x, y: old_position.y, game_id: defender_game_id,
-                            },
+                    world.write_model(@attacker_stats);
+                    world.write_model(@defender_stats);
+
+                    if loser_died {
+                        // Defender dies: clean up defender, attacker claims destination
+                        InternalImpl::handle_player_death(
+                            ref world, defender_game_id, next_vec, game_id,
                         );
 
-                    // Write both player states
-                    world.write_model(@state);
-                    world.write_model(@defender_state);
+                        state.position = next_vec;
+                        state.last_direction = Option::Some(direction);
+                        world
+                            .write_model(
+                                @TileOccupant {
+                                    x: next_vec.x, y: next_vec.y, game_id,
+                                },
+                            );
+                        world
+                            .write_model(
+                                @TileOccupant {
+                                    x: old_position.x, y: old_position.y, game_id: 0,
+                                },
+                            );
+                        world.write_model(@state);
+                    } else {
+                        // Defender survives: swap positions
+                        let mut defender_state: PlayerState = world
+                            .read_model(defender_game_id);
+
+                        state.position = next_vec;
+                        state.last_direction = Option::Some(direction);
+                        defender_state.position = old_position;
+
+                        world
+                            .write_model(
+                                @TileOccupant {
+                                    x: next_vec.x, y: next_vec.y, game_id,
+                                },
+                            );
+                        world
+                            .write_model(
+                                @TileOccupant {
+                                    x: old_position.x,
+                                    y: old_position.y,
+                                    game_id: defender_game_id,
+                                },
+                            );
+
+                        world.write_model(@state);
+                        world.write_model(@defender_state);
+                    }
                 } else {
-                    // Attacker loses: move fails, record attempted direction
-                    state.last_direction = Option::Some(direction);
-                    world.write_model(@state);
+                    // Winner (defender): +XP, 0 damage
+                    defender_stats.xp += COMBAT_XP_REWARD;
+
+                    // Loser (attacker): -HP, 0 XP
+                    if attacker_stats.hp <= COMBAT_DAMAGE {
+                        attacker_stats.hp = 0;
+                        loser_died = true;
+                    } else {
+                        attacker_stats.hp -= COMBAT_DAMAGE;
+                    }
+
+                    world.write_model(@attacker_stats);
+                    world.write_model(@defender_stats);
+
+                    if loser_died {
+                        // Attacker dies: clean up attacker, defender stays
+                        InternalImpl::handle_player_death(
+                            ref world, game_id, old_position, defender_game_id,
+                        );
+                    } else {
+                        // Attacker survives: move fails, record attempted direction
+                        state.last_direction = Option::Some(direction);
+                        world.write_model(@state);
+                    }
                 }
 
                 world
@@ -164,12 +253,19 @@ pub mod actions {
                             attacker_game_id: game_id,
                             defender_game_id,
                             attacker_won,
-                            attacker_position: state.position,
+                            attacker_position: if attacker_won {
+                                next_vec
+                            } else {
+                                old_position
+                            },
                             defender_position: if attacker_won {
                                 old_position
                             } else {
                                 next_vec
                             },
+                            damage_dealt: COMBAT_DAMAGE,
+                            xp_awarded: COMBAT_XP_REWARD,
+                            loser_died,
                         },
                     );
             } else {
@@ -199,6 +295,7 @@ pub mod actions {
             let world = self.world_default();
             let session: GameSession = world.read_model(game_id);
             let state: PlayerState = world.read_model(game_id);
+            let stats: PlayerStats = world.read_model(game_id);
 
             GameState {
                 game_id,
@@ -207,14 +304,46 @@ pub mod actions {
                 last_direction: state.last_direction,
                 can_move: state.can_move,
                 is_active: session.is_active,
+                hp: stats.hp,
+                max_hp: stats.max_hp,
+                xp: stats.xp,
             }
         }
     }
+
 
     #[generate_trait]
     impl InternalImpl of InternalTrait {
         fn world_default(self: @ContractState) -> dojo::world::WorldStorage {
             self.world(@"untitled")
+        }
+
+        fn handle_player_death(
+            ref world: dojo::world::WorldStorage,
+            game_id: u32,
+            position: Vec2,
+            killed_by: u32,
+        ) {
+            // Clear tile occupancy
+            world.write_model(@TileOccupant { x: position.x, y: position.y, game_id: 0 });
+    
+            // Deactivate session
+            let session: GameSession = world.read_model(game_id);
+            world.write_model(@GameSession { game_id, player: session.player, is_active: false });
+    
+            // Disable movement and zero out position
+            world
+                .write_model(
+                    @PlayerState {
+                        game_id,
+                        position: Vec2 { x: 0, y: 0 },
+                        last_direction: Option::None,
+                        can_move: false,
+                    },
+                );
+    
+            // Emit death event
+            world.emit_event(@PlayerDied { game_id, killed_by, position });
         }
     }
 }

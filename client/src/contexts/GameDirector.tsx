@@ -63,6 +63,7 @@ export const GameDirectorProvider = ({ children }: PropsWithChildren) => {
     setIsSpawned,
     setGameId,
     setIsInitializing,
+    setStats,
     addEvent,
     resetGameState,
   } = useGameStore();
@@ -139,6 +140,7 @@ export const GameDirectorProvider = ({ children }: PropsWithChildren) => {
                 last_direction: gameState.last_direction,
                 can_move: gameState.can_move,
               });
+              setStats(gameState.hp, gameState.max_hp, gameState.xp);
               setIsSpawned(gameState.is_active);
 
               // Trigger entity sync refresh
@@ -178,6 +180,7 @@ export const GameDirectorProvider = ({ children }: PropsWithChildren) => {
     setMoves,
     setIsSpawned,
     setIsInitializing,
+    setStats,
     refreshState,
     clearError,
     setError,
@@ -283,6 +286,7 @@ export const GameDirectorProvider = ({ children }: PropsWithChildren) => {
             last_direction: gameState.last_direction,
             can_move: gameState.can_move,
           });
+          setStats(gameState.hp, gameState.max_hp, gameState.xp);
           setIsSpawned(gameState.is_active);
 
           // Trigger entity sync
@@ -310,6 +314,7 @@ export const GameDirectorProvider = ({ children }: PropsWithChildren) => {
     setPosition,
     setMoves,
     setIsSpawned,
+    setStats,
     refreshState,
     setError,
   ]);
