@@ -35,6 +35,7 @@ interface HexGridProps {
   height?: number;
   playerPosition: HexPosition;
   onMove: (pos: HexPosition) => void;
+  disabled?: boolean;
 }
 
 function hexKey(pos: HexPosition): string {
@@ -65,6 +66,7 @@ export default function HexGrid({
   height = 10,
   playerPosition,
   onMove,
+  disabled = false,
 }: HexGridProps) {
   const mountRef = useRef<HTMLDivElement>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
@@ -328,10 +330,16 @@ export default function HexGrid({
     };
   }, [width, height]);
 
-  // Re-color when player moves
+  // Re-color when player moves or disabled changes
   useEffect(() => {
+    if (disabled) {
+      // Clear hover and tooltip when grid is disabled
+      hoveredRef.current = -1;
+      tooltipRef.current = null;
+      setTooltip(null);
+    }
     updateColors(hoveredRef.current);
-  }, [playerPosition, updateColors]);
+  }, [playerPosition, disabled, updateColors]);
 
   // Mouse interaction
   useEffect(() => {
@@ -351,7 +359,7 @@ export default function HexGrid({
       const intersects = raycaster.current.intersectObject(mesh);
 
       let newHover = -1;
-      if (intersects.length > 0 && intersects[0].instanceId !== undefined) {
+      if (!disabled && intersects.length > 0 && intersects[0].instanceId !== undefined) {
         const idx = intersects[0].instanceId;
         const hex = hexesRef.current[idx];
         if (hex && isNeighbor(hex, playerPosition)) {
@@ -388,16 +396,17 @@ export default function HexGrid({
     return () => {
       container.removeEventListener("pointermove", onPointerMove);
     };
-  }, [playerPosition, updateColors, projectToScreen]);
+  }, [playerPosition, disabled, updateColors, projectToScreen]);
 
   const handleConfirm = useCallback(() => {
+    if (disabled) return;
     if (tooltip) {
       onMove(tooltip.hex);
       tooltipRef.current = null;
       setTooltip(null);
       hoveredRef.current = -1;
     }
-  }, [tooltip, onMove]);
+  }, [tooltip, disabled, onMove]);
 
   const handleCancel = useCallback(() => {
     tooltipRef.current = null;
@@ -417,7 +426,40 @@ export default function HexGrid({
         left: 0,
       }}
     >
-      {tooltip && (
+      {disabled && (
+        <div
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            width: "100%",
+            height: "100%",
+            background: "rgba(10, 10, 30, 0.4)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 50,
+            pointerEvents: "none",
+          }}
+        >
+          <div
+            style={{
+              background: "rgba(10, 10, 30, 0.85)",
+              border: "1px solid rgba(245, 166, 35, 0.4)",
+              borderRadius: 8,
+              padding: "12px 24px",
+              fontFamily: "monospace",
+              fontSize: 14,
+              color: "#f5a623",
+              fontWeight: 600,
+              letterSpacing: 1,
+            }}
+          >
+            Resolving move...
+          </div>
+        </div>
+      )}
+      {!disabled && tooltip && (
         <div
           style={{
             position: "absolute",

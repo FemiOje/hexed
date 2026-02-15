@@ -15,8 +15,10 @@ import { isValidPositionObject } from "@/utils/position";
 
 /**
  * Hook to subscribe to player position updates
- * Automatically syncs position changes from blockchain to game store
+ * NOTE: These hooks are currently unused - Torii indexer is down.
+ * Game state is managed via direct RPC calls through GameDirector.
  */
+
 export const usePlayerPositionSync = () => {
   const { address } = useController();
   const { useDojoStore } = useDojoSDK();
@@ -72,7 +74,7 @@ export const usePlayerPositionSync = () => {
               },
             };
 
-            // Only update if position is valid and different from last sync
+            // Only update if position is valid and not too frequent
             if (
               isValidPositionObject(position) &&
               Date.now() - lastSyncRef.current > 100
@@ -160,8 +162,10 @@ export const usePlayerMovesSync = () => {
               can_move: movesModel.can_move === true,
             };
 
-            // Only update if different from last sync
-            if (Date.now() - lastSyncRef.current > 100) {
+            // Only update if not too frequent
+            if (
+              Date.now() - lastSyncRef.current > 100
+            ) {
               console.log("✅ Moves synced from blockchain:", moves);
               debugLog("Moves synced from blockchain", moves);
               setMoves(moves);

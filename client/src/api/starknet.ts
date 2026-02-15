@@ -190,7 +190,7 @@ export const useStarknetApi = () => {
               entry_point_selector: selector,
               calldata: [num.toHex(gameId)],
             },
-            "latest",
+            "pre_confirmed",
           ],
           id: 0,
         }),

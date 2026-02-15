@@ -1,8 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { KeysClause, ToriiQueryBuilder } from "@dojoengine/sdk";
-// import { useAccount } from "@starknet-react/core";
-import { useEntityQuery } from "@dojoengine/sdk/react";
 import { Button } from "@mui/material";
 import { num } from "starknet";
 import HexGrid from "../components/HexGrid";
@@ -34,16 +31,6 @@ export default function GamePage() {
     const [isValidatingOwnership, setIsValidatingOwnership] = useState(true);
     const [ownershipValid, setOwnershipValid] = useState(false);
 
-    // Query all entities - for debugging/overview
-    // Note: This can be expensive, use specific queries in production
-    useEntityQuery(
-        new ToriiQueryBuilder()
-            .withClause(
-                KeysClause([], [], "VariableLen").build()
-            )
-            .includeHashedKeys()
-    );
-
     // Get blockchain state
     const blockchainPosition = useCurrentPosition();
     const isSpawned = useIsSpawned();
@@ -52,7 +39,7 @@ export default function GamePage() {
     const hp = usePlayerHp();
     const maxHp = usePlayerMaxHp();
     const xp = usePlayerXp();
-    const { handleMove: handleBlockchainMove } = useGameActions();
+    const { handleMove: handleBlockchainMove, isMoving } = useGameActions();
 
     // Manual refresh handler
     const handleRefresh = useCallback(async () => {
@@ -163,6 +150,10 @@ export default function GamePage() {
     // Handle move from HexGrid
     const handleMove = useCallback((targetPos: HexPosition) => {
 
+        if (isMoving) {
+            return;
+        }
+
         if (!blockchainPosition) {
             console.warn("Cannot move: player position not available");
             return;
@@ -184,7 +175,7 @@ export default function GamePage() {
 
         // Execute blockchain move
         handleBlockchainMove(direction);
-    }, [blockchainPosition, canMove, handleBlockchainMove, isSpawned]);
+    }, [blockchainPosition, canMove, isMoving, handleBlockchainMove, isSpawned]);
 
     // Show loading state while validating ownership or waiting for blockchain sync
     if (isValidatingOwnership || !ownershipValid) {
@@ -262,7 +253,11 @@ export default function GamePage() {
                         <span style={{ color: "#9c27b0" }}>XP</span>: {xp}
                     </div>
                     <div style={{ fontSize: 11, color: "#aaa", marginBottom: 8 }}>
-                        Can Move: {canMove ? "Yes" : "Wait..."}
+                        {isMoving ? (
+                            <span style={{ color: "#f5a623" }}>Resolving move...</span>
+                        ) : (
+                            <>Can Move: {canMove ? "Yes" : "Wait..."}</>
+                        )}
                     </div>
                     <Button
                         variant="outlined"
@@ -289,6 +284,7 @@ export default function GamePage() {
                     height={20}
                     playerPosition={playerPosition}
                     onMove={handleMove}
+                    disabled={isMoving}
                 />
             </div>
         </div>
