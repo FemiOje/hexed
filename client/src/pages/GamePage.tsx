@@ -8,7 +8,8 @@ import { num } from "starknet";
 import HexGrid from "../components/HexGrid";
 import Header from "../components/Header";
 import type { HexPosition } from "../three/utils";
-import { useCurrentPosition, useIsSpawned, useCanPlayerMove, usePlayerHp, usePlayerMaxHp, usePlayerXp, useGameStore } from "../stores/gameStore";
+import { useCurrentPosition, useIsSpawned, useIsDead, useCanPlayerMove, usePlayerHp, usePlayerMaxHp, usePlayerXp, useGameStore } from "../stores/gameStore";
+import DeathPage from "../components/DeathPage";
 import { useGameActions } from "../dojo/useGameActions";
 import { useGameDirector } from "../contexts/GameDirector";
 import { useController } from "../contexts/controller";
@@ -23,7 +24,7 @@ export default function GamePage() {
     const { getGameState } = useStarknetApi();
 
     // Get store actions for populating game state
-    const { setPosition, setMoves, setIsSpawned, setGameId, setStats } = useGameStore();
+    const { setPosition, setMoves, setIsSpawned, setIsDead, setGameId, setStats } = useGameStore();
 
     // Get game_id from URL
     const gameIdFromUrl = searchParams.get("id");
@@ -46,6 +47,7 @@ export default function GamePage() {
     // Get blockchain state
     const blockchainPosition = useCurrentPosition();
     const isSpawned = useIsSpawned();
+    const isDead = useIsDead();
     const canMove = useCanPlayerMove();
     const hp = usePlayerHp();
     const maxHp = usePlayerMaxHp();
@@ -130,6 +132,11 @@ export default function GamePage() {
                     setStats(gameState.hp, gameState.max_hp, gameState.xp);
                     setIsSpawned(gameState.is_active);
 
+                    // Detect death
+                    if (!gameState.is_active && gameState.hp === 0) {
+                        setIsDead(true, gameState.xp);
+                    }
+
                     setOwnershipValid(true);
                     setIsValidatingOwnership(false);
                 } else {
@@ -189,6 +196,10 @@ export default function GamePage() {
                 </div>
             </div>
         );
+    }
+
+    if (isDead) {
+        return <DeathPage />;
     }
 
     if (!isSpawned || !blockchainPosition) {

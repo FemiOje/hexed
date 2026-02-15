@@ -64,6 +64,7 @@ export const GameDirectorProvider = ({ children }: PropsWithChildren) => {
     setGameId,
     setIsInitializing,
     setStats,
+    setIsDead,
     addEvent,
     resetGameState,
   } = useGameStore();
@@ -143,6 +144,11 @@ export const GameDirectorProvider = ({ children }: PropsWithChildren) => {
               setStats(gameState.hp, gameState.max_hp, gameState.xp);
               setIsSpawned(gameState.is_active);
 
+              // Detect death: player has a game but is no longer active with 0 HP
+              if (!gameState.is_active && gameState.hp === 0) {
+                setIsDead(true, gameState.xp);
+              }
+
               // Trigger entity sync refresh
               await refreshState();
 
@@ -179,6 +185,7 @@ export const GameDirectorProvider = ({ children }: PropsWithChildren) => {
     setPosition,
     setMoves,
     setIsSpawned,
+    setIsDead,
     setIsInitializing,
     setStats,
     refreshState,
@@ -289,6 +296,11 @@ export const GameDirectorProvider = ({ children }: PropsWithChildren) => {
           setStats(gameState.hp, gameState.max_hp, gameState.xp);
           setIsSpawned(gameState.is_active);
 
+          // Detect death
+          if (!gameState.is_active && gameState.hp === 0) {
+            setIsDead(true, gameState.xp);
+          }
+
           // Trigger entity sync
           await refreshState();
 
@@ -314,6 +326,7 @@ export const GameDirectorProvider = ({ children }: PropsWithChildren) => {
     setPosition,
     setMoves,
     setIsSpawned,
+    setIsDead,
     setStats,
     refreshState,
     setError,
