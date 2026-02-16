@@ -50,11 +50,11 @@ export function getNetworkConfig(networkKey: ChainId): NetworkConfig {
   const policies = networkKey === ChainId.SN_SEPOLIA
     ? [
         {
-          target: network.manifest.contracts.find((c: any) => c.tag === "untitled-actions")?.address || "",
+          target: network.manifest.contracts.find((c: any) => c.tag === "untitled-game_systems")?.address || "",
           method: "spawn",
         },
         {
-          target: network.manifest.contracts.find((c: any) => c.tag === "untitled-actions")?.address || "",
+          target: network.manifest.contracts.find((c: any) => c.tag === "untitled-game_systems")?.address || "",
           method: "move",
         },
       ]
