@@ -126,3 +126,19 @@ export function debugLog(message: string, data?: any) {
     console.log(`[${timestamp}] ${message}`);
   }
 }
+
+/**
+ * Convert a felt252 hex string to a signed i32 number.
+ * In Cairo, negative i32 values are serialized as STARK_PRIME - |value|.
+ * parseInt loses precision on these large hex strings, so we use BigInt.
+ */
+const STARK_PRIME = BigInt("0x800000000000011000000000000000000000000000000000000000000000001");
+const HALF_PRIME = STARK_PRIME / 2n;
+
+export function feltHexToI32(hex: string): number {
+  const value = BigInt(hex);
+  if (value > HALF_PRIME) {
+    return Number(value - STARK_PRIME);
+  }
+  return Number(value);
+}

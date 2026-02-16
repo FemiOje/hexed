@@ -47,16 +47,12 @@ export function getNetworkConfig(networkKey: ChainId): NetworkConfig {
   const network = NETWORKS[networkKey as keyof typeof NETWORKS];
   if (!network) throw new Error(`Network ${networkKey} not found`);
 
+  const gameContract = network.manifest.contracts.find((c: any) => c.tag === "untitled-game_systems")?.address || "";
   const policies = networkKey === ChainId.SN_SEPOLIA
     ? [
-        {
-          target: network.manifest.contracts.find((c: any) => c.tag === "untitled-game_systems")?.address || "",
-          method: "spawn",
-        },
-        {
-          target: network.manifest.contracts.find((c: any) => c.tag === "untitled-game_systems")?.address || "",
-          method: "move",
-        },
+        { target: gameContract, method: "spawn" },
+        { target: gameContract, method: "move" },
+        { target: gameContract, method: "get_game_state" },
       ]
     : undefined;
 

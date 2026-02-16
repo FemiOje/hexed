@@ -4,7 +4,7 @@ description = "literally untitled"
 cover_uri = "file://assets/cover.png"
 icon_uri = "file://assets/icon.png"
 website = "https://github.com/dojoengine/dojo-starter"
-seed = "dojo_starter_4"
+seed = "dojo_starter_6"
 
 [world.socials]
 x = "https://x.com/0xjinius"
@@ -17,7 +17,7 @@ default = "untitled"
 
 [env]
 rpc_url = "https://api.cartridge.gg/x/starknet/sepolia"
-world_address = "0x06eca5db05d469c0587184a08831a6bec8ace380add702cc0089f9ddda6da7ac"
+world_address = "0x03d2828c3d0800385d1463e5af693602da33c4b05b11a0a12152e0b5a778cd42"
 account_address = "0x04033264fbcf087ee31b5940908e53956aa718a16fa1e6a51df778be45502c55"
 keystore_path = "./deployments/keystore.json"
 

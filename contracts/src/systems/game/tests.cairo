@@ -57,8 +57,6 @@ mod tests {
 
         let state: PlayerState = world.read_model(game_id);
         assert(is_within_bounds(state.position), 'Spawn out of bounds');
-        assert(state.position.x < 10, 'X coord out of range');
-        assert(state.position.y < 10, 'Y coord out of range');
         assert(state.can_move, 'Cannot move');
         assert(state.last_direction.is_none(), 'Last direction should be None');
     }
@@ -155,7 +153,7 @@ mod tests {
         });
         world.write_model_test(@PlayerState {
             game_id: test_game_id,
-            position: Vec2 { x: 5, y: 5 },
+            position: Vec2 { x: 0, y: 0 },
             last_direction: Option::None,
             can_move: true,
         });
@@ -163,8 +161,8 @@ mod tests {
         game.move(test_game_id, Direction::NorthEast);
 
         let new_state: PlayerState = world.read_model(test_game_id);
-        assert(new_state.position.x == 6, 'position q is wrong');
-        assert(new_state.position.y == 4, 'position r is wrong');
+        assert(new_state.position.x == 1, 'position q is wrong');
+        assert(new_state.position.y == -1, 'position r is wrong');
     }
 
     #[test]
@@ -180,7 +178,7 @@ mod tests {
         });
         world.write_model_test(@PlayerState {
             game_id: test_game_id,
-            position: Vec2 { x: 9, y: 5 },
+            position: Vec2 { x: 10, y: 0 },
             last_direction: Option::None,
             can_move: true,
         });
@@ -191,7 +189,7 @@ mod tests {
     #[test]
     #[available_gas(30000000)]
     #[should_panic(expected: ('Move is out of bounds', 'ENTRYPOINT_FAILED'))]
-    fn test_move_west_from_origin() {
+    fn test_move_west_from_edge() {
         let caller = PLAYER_ADDR();
         let (mut world, game) = deploy_world();
 
@@ -201,7 +199,7 @@ mod tests {
         });
         world.write_model_test(@PlayerState {
             game_id: test_game_id,
-            position: Vec2 { x: 0, y: 5 },
+            position: Vec2 { x: -10, y: 0 },
             last_direction: Option::None,
             can_move: true,
         });
@@ -212,7 +210,7 @@ mod tests {
     #[test]
     #[available_gas(30000000)]
     #[should_panic(expected: ('Move is out of bounds', 'ENTRYPOINT_FAILED'))]
-    fn test_move_north_from_origin() {
+    fn test_move_north_from_edge() {
         let caller = PLAYER_ADDR();
         let (mut world, game) = deploy_world();
 
@@ -222,7 +220,7 @@ mod tests {
         });
         world.write_model_test(@PlayerState {
             game_id: test_game_id,
-            position: Vec2 { x: 5, y: 0 },
+            position: Vec2 { x: 0, y: -10 },
             last_direction: Option::None,
             can_move: true,
         });
@@ -242,18 +240,18 @@ mod tests {
         });
         world.write_model_test(@PlayerState {
             game_id: test_game_id,
-            position: Vec2 { x: 5, y: 5 },
+            position: Vec2 { x: 0, y: 0 },
             last_direction: Option::None,
             can_move: true,
         });
-        world.write_model_test(@TileOccupant { x: 5, y: 5, game_id: test_game_id });
+        world.write_model_test(@TileOccupant { x: 0, y: 0, game_id: test_game_id });
 
         game.move(test_game_id, Direction::East);
 
-        let old_tile: TileOccupant = world.read_model((5, 5));
+        let old_tile: TileOccupant = world.read_model((0, 0));
         assert(old_tile.game_id == 0, 'old tile not cleared');
 
-        let new_tile: TileOccupant = world.read_model((6, 5));
+        let new_tile: TileOccupant = world.read_model((1, 0));
         assert(new_tile.game_id == test_game_id, 'new tile not set');
     }
 
@@ -269,27 +267,27 @@ mod tests {
         });
         world.write_model_test(@PlayerState {
             game_id: player_id,
-            position: Vec2 { x: 5, y: 5 },
+            position: Vec2 { x: 0, y: 0 },
             last_direction: Option::None,
             can_move: true,
         });
-        world.write_model_test(@TileOccupant { x: 5, y: 5, game_id: player_id });
+        world.write_model_test(@TileOccupant { x: 0, y: 0, game_id: player_id });
 
         let stale_id: u32 = 99;
         world.write_model_test(@GameSession {
             game_id: stale_id, player: 0xdead.try_into().unwrap(), is_active: false,
         });
-        world.write_model_test(@TileOccupant { x: 6, y: 5, game_id: stale_id });
+        world.write_model_test(@TileOccupant { x: 1, y: 0, game_id: stale_id });
 
         game.move(player_id, Direction::East);
 
         let state: PlayerState = world.read_model(player_id);
-        assert(state.position.x == 6 && state.position.y == 5, 'should move to dest');
+        assert(state.position.x == 1 && state.position.y == 0, 'should move to dest');
 
-        let old_tile: TileOccupant = world.read_model((5, 5));
+        let old_tile: TileOccupant = world.read_model((0, 0));
         assert(old_tile.game_id == 0, 'old tile not cleared');
 
-        let new_tile: TileOccupant = world.read_model((6, 5));
+        let new_tile: TileOccupant = world.read_model((1, 0));
         assert(new_tile.game_id == player_id, 'new tile not claimed');
     }
 
@@ -352,11 +350,11 @@ mod tests {
         });
         world.write_model_test(@PlayerState {
             game_id: attacker_id,
-            position: Vec2 { x: 5, y: 5 },
+            position: Vec2 { x: 0, y: 0 },
             last_direction: Option::None,
             can_move: true,
         });
-        world.write_model_test(@TileOccupant { x: 5, y: 5, game_id: attacker_id });
+        world.write_model_test(@TileOccupant { x: 0, y: 0, game_id: attacker_id });
         world.write_model_test(@PlayerStats {
             game_id: attacker_id, hp: STARTING_HP, max_hp: MAX_HP, xp: 0,
         });
@@ -367,11 +365,11 @@ mod tests {
         });
         world.write_model_test(@PlayerState {
             game_id: defender_id,
-            position: Vec2 { x: 6, y: 5 },
+            position: Vec2 { x: 1, y: 0 },
             last_direction: Option::None,
             can_move: true,
         });
-        world.write_model_test(@TileOccupant { x: 6, y: 5, game_id: defender_id });
+        world.write_model_test(@TileOccupant { x: 1, y: 0, game_id: defender_id });
         world.write_model_test(@PlayerStats {
             game_id: defender_id, hp: STARTING_HP, max_hp: MAX_HP, xp: 0,
         });
@@ -381,44 +379,44 @@ mod tests {
 
         let attacker_state: PlayerState = world.read_model(attacker_id);
         let defender_state: PlayerState = world.read_model(defender_id);
-        let tile_5_5: TileOccupant = world.read_model((5, 5));
-        let tile_6_5: TileOccupant = world.read_model((6, 5));
+        let tile_0_0: TileOccupant = world.read_model((0, 0));
+        let tile_1_0: TileOccupant = world.read_model((1, 0));
         let atk_stats: PlayerStats = world.read_model(attacker_id);
         let def_stats: PlayerStats = world.read_model(defender_id);
         let atk_session: GameSession = world.read_model(attacker_id);
         let def_session: GameSession = world.read_model(defender_id);
 
-        let attacker_at_dest = attacker_state.position.x == 6
-            && attacker_state.position.y == 5;
+        let attacker_at_dest = attacker_state.position.x == 1
+            && attacker_state.position.y == 0;
 
         if attacker_at_dest {
             if !def_session.is_active {
                 assert(def_stats.hp == 0, 'dead def hp should be 0');
-                assert(tile_6_5.game_id == attacker_id, 'tile(6,5) wrong after kill');
-                assert(tile_5_5.game_id == 0, 'old tile should be clear');
+                assert(tile_1_0.game_id == attacker_id, 'tile(1,0) wrong after kill');
+                assert(tile_0_0.game_id == 0, 'old tile should be clear');
             } else {
                 assert(
-                    defender_state.position.x == 5 && defender_state.position.y == 5,
+                    defender_state.position.x == 0 && defender_state.position.y == 0,
                     'defender not swapped',
                 );
-                assert(tile_6_5.game_id == attacker_id, 'tile(6,5) wrong after win');
-                assert(tile_5_5.game_id == defender_id, 'tile(5,5) wrong after win');
+                assert(tile_1_0.game_id == attacker_id, 'tile(1,0) wrong after win');
+                assert(tile_0_0.game_id == defender_id, 'tile(0,0) wrong after win');
             }
         } else if !atk_session.is_active {
             assert(atk_stats.hp == 0, 'dead atk hp should be 0');
-            assert(tile_5_5.game_id == 0, 'dead atk tile should clear');
-            assert(tile_6_5.game_id == defender_id, 'def keeps tile after kill');
+            assert(tile_0_0.game_id == 0, 'dead atk tile should clear');
+            assert(tile_1_0.game_id == defender_id, 'def keeps tile after kill');
         } else {
             assert(
-                attacker_state.position.x == 5 && attacker_state.position.y == 5,
+                attacker_state.position.x == 0 && attacker_state.position.y == 0,
                 'attacker should stay',
             );
             assert(
-                defender_state.position.x == 6 && defender_state.position.y == 5,
+                defender_state.position.x == 1 && defender_state.position.y == 0,
                 'defender should stay',
             );
-            assert(tile_5_5.game_id == attacker_id, 'tile(5,5) wrong after loss');
-            assert(tile_6_5.game_id == defender_id, 'tile(6,5) wrong after loss');
+            assert(tile_0_0.game_id == attacker_id, 'tile(0,0) wrong after loss');
+            assert(tile_1_0.game_id == defender_id, 'tile(1,0) wrong after loss');
         }
     }
 
@@ -435,14 +433,14 @@ mod tests {
         });
         world.write_model_test(@PlayerState {
             game_id: attacker_id,
-            position: Vec2 { x: 5, y: 5 },
+            position: Vec2 { x: 0, y: 0 },
             last_direction: Option::None,
             can_move: true,
         });
         world.write_model_test(@PlayerStats {
             game_id: attacker_id, hp: STARTING_HP, max_hp: MAX_HP, xp: 0,
         });
-        world.write_model_test(@TileOccupant { x: 5, y: 5, game_id: attacker_id });
+        world.write_model_test(@TileOccupant { x: 0, y: 0, game_id: attacker_id });
 
         let defender_id: u32 = 20;
         world.write_model_test(@GameSession {
@@ -450,14 +448,14 @@ mod tests {
         });
         world.write_model_test(@PlayerState {
             game_id: defender_id,
-            position: Vec2 { x: 6, y: 5 },
+            position: Vec2 { x: 1, y: 0 },
             last_direction: Option::None,
             can_move: true,
         });
         world.write_model_test(@PlayerStats {
             game_id: defender_id, hp: STARTING_HP, max_hp: MAX_HP, xp: 0,
         });
-        world.write_model_test(@TileOccupant { x: 6, y: 5, game_id: defender_id });
+        world.write_model_test(@TileOccupant { x: 1, y: 0, game_id: defender_id });
 
         starknet::testing::set_contract_address(attacker_addr);
         game.move(attacker_id, Direction::East);
@@ -465,7 +463,7 @@ mod tests {
         let atk_stats: PlayerStats = world.read_model(attacker_id);
         let def_stats: PlayerStats = world.read_model(defender_id);
         let attacker_state: PlayerState = world.read_model(attacker_id);
-        let attacker_won = attacker_state.position.x == 6 && attacker_state.position.y == 5;
+        let attacker_won = attacker_state.position.x == 1 && attacker_state.position.y == 0;
 
         if attacker_won {
             assert(atk_stats.xp == COMBAT_XP_REWARD, 'winner xp wrong');
@@ -498,14 +496,14 @@ mod tests {
         });
         world.write_model_test(@PlayerState {
             game_id: attacker_id,
-            position: Vec2 { x: 5, y: 5 },
+            position: Vec2 { x: 0, y: 0 },
             last_direction: Option::None,
             can_move: true,
         });
         world.write_model_test(@PlayerStats {
             game_id: attacker_id, hp: low_hp, max_hp: MAX_HP, xp: 0,
         });
-        world.write_model_test(@TileOccupant { x: 5, y: 5, game_id: attacker_id });
+        world.write_model_test(@TileOccupant { x: 0, y: 0, game_id: attacker_id });
 
         let defender_id: u32 = 20;
         world.write_model_test(@GameSession {
@@ -513,20 +511,20 @@ mod tests {
         });
         world.write_model_test(@PlayerState {
             game_id: defender_id,
-            position: Vec2 { x: 6, y: 5 },
+            position: Vec2 { x: 1, y: 0 },
             last_direction: Option::None,
             can_move: true,
         });
         world.write_model_test(@PlayerStats {
             game_id: defender_id, hp: low_hp, max_hp: MAX_HP, xp: 0,
         });
-        world.write_model_test(@TileOccupant { x: 6, y: 5, game_id: defender_id });
+        world.write_model_test(@TileOccupant { x: 1, y: 0, game_id: defender_id });
 
         starknet::testing::set_contract_address(attacker_addr);
         game.move(attacker_id, Direction::East);
 
         let atk_state: PlayerState = world.read_model(attacker_id);
-        let attacker_won = atk_state.position.x == 6 && atk_state.position.y == 5;
+        let attacker_won = atk_state.position.x == 1 && atk_state.position.y == 0;
 
         if attacker_won {
             let def_session: GameSession = world.read_model(defender_id);
@@ -535,9 +533,9 @@ mod tests {
             assert(def_stats.hp == 0, 'dead player hp should be 0');
             let def_state: PlayerState = world.read_model(defender_id);
             assert(!def_state.can_move, 'dead player cannot move');
-            let dest_tile: TileOccupant = world.read_model((6, 5));
+            let dest_tile: TileOccupant = world.read_model((1, 0));
             assert(dest_tile.game_id == attacker_id, 'attacker should claim tile');
-            let old_tile: TileOccupant = world.read_model((5, 5));
+            let old_tile: TileOccupant = world.read_model((0, 0));
             assert(old_tile.game_id == 0, 'old tile should be clear');
         } else {
             let atk_session: GameSession = world.read_model(attacker_id);
@@ -545,9 +543,9 @@ mod tests {
             let atk_stats: PlayerStats = world.read_model(attacker_id);
             assert(atk_stats.hp == 0, 'dead player hp should be 0');
             assert(!atk_state.can_move, 'dead player cannot move');
-            let old_tile: TileOccupant = world.read_model((5, 5));
+            let old_tile: TileOccupant = world.read_model((0, 0));
             assert(old_tile.game_id == 0, 'dead tile should be clear');
-            let dest_tile: TileOccupant = world.read_model((6, 5));
+            let dest_tile: TileOccupant = world.read_model((1, 0));
             assert(dest_tile.game_id == defender_id, 'defender should keep tile');
         }
     }
@@ -565,14 +563,14 @@ mod tests {
         });
         world.write_model_test(@PlayerState {
             game_id: attacker_id,
-            position: Vec2 { x: 5, y: 5 },
+            position: Vec2 { x: 0, y: 0 },
             last_direction: Option::None,
             can_move: true,
         });
         world.write_model_test(@PlayerStats {
             game_id: attacker_id, hp: COMBAT_DAMAGE, max_hp: MAX_HP, xp: 0,
         });
-        world.write_model_test(@TileOccupant { x: 5, y: 5, game_id: attacker_id });
+        world.write_model_test(@TileOccupant { x: 0, y: 0, game_id: attacker_id });
 
         let defender_id: u32 = 20;
         world.write_model_test(@GameSession {
@@ -580,20 +578,20 @@ mod tests {
         });
         world.write_model_test(@PlayerState {
             game_id: defender_id,
-            position: Vec2 { x: 6, y: 5 },
+            position: Vec2 { x: 1, y: 0 },
             last_direction: Option::None,
             can_move: true,
         });
         world.write_model_test(@PlayerStats {
             game_id: defender_id, hp: COMBAT_DAMAGE, max_hp: MAX_HP, xp: 0,
         });
-        world.write_model_test(@TileOccupant { x: 6, y: 5, game_id: defender_id });
+        world.write_model_test(@TileOccupant { x: 1, y: 0, game_id: defender_id });
 
         starknet::testing::set_contract_address(attacker_addr);
         game.move(attacker_id, Direction::East);
 
         let atk_state: PlayerState = world.read_model(attacker_id);
-        let attacker_won = atk_state.position.x == 6 && atk_state.position.y == 5;
+        let attacker_won = atk_state.position.x == 1 && atk_state.position.y == 0;
 
         if attacker_won {
             let def_stats: PlayerStats = world.read_model(defender_id);
@@ -621,7 +619,7 @@ mod tests {
         });
         world.write_model_test(@PlayerState {
             game_id: dead_id,
-            position: Vec2 { x: 5, y: 5 },
+            position: Vec2 { x: 0, y: 0 },
             last_direction: Option::None,
             can_move: false,
         });
@@ -645,14 +643,14 @@ mod tests {
         });
         world.write_model_test(@PlayerState {
             game_id: attacker_id,
-            position: Vec2 { x: 5, y: 5 },
+            position: Vec2 { x: 0, y: 0 },
             last_direction: Option::None,
             can_move: true,
         });
         world.write_model_test(@PlayerStats {
             game_id: attacker_id, hp: MAX_HP, max_hp: MAX_HP, xp: 0,
         });
-        world.write_model_test(@TileOccupant { x: 5, y: 5, game_id: attacker_id });
+        world.write_model_test(@TileOccupant { x: 0, y: 0, game_id: attacker_id });
 
         let defender_id: u32 = 20;
         world.write_model_test(@GameSession {
@@ -660,14 +658,14 @@ mod tests {
         });
         world.write_model_test(@PlayerState {
             game_id: defender_id,
-            position: Vec2 { x: 6, y: 5 },
+            position: Vec2 { x: 1, y: 0 },
             last_direction: Option::None,
             can_move: true,
         });
         world.write_model_test(@PlayerStats {
             game_id: defender_id, hp: MAX_HP, max_hp: MAX_HP, xp: 0,
         });
-        world.write_model_test(@TileOccupant { x: 6, y: 5, game_id: defender_id });
+        world.write_model_test(@TileOccupant { x: 1, y: 0, game_id: defender_id });
 
         starknet::testing::set_contract_address(attacker_addr);
         game.move(attacker_id, Direction::East);
@@ -679,7 +677,7 @@ mod tests {
         assert(def_stats.hp <= MAX_HP, 'def hp overflow');
 
         let atk_state: PlayerState = world.read_model(attacker_id);
-        let attacker_won = atk_state.position.x == 6 && atk_state.position.y == 5;
+        let attacker_won = atk_state.position.x == 1 && atk_state.position.y == 0;
 
         if attacker_won {
             assert(atk_stats.hp == MAX_HP, 'winner hp changed');
@@ -704,14 +702,14 @@ mod tests {
         });
         world.write_model_test(@PlayerState {
             game_id: test_game_id,
-            position: Vec2 { x: 5, y: 5 },
+            position: Vec2 { x: 0, y: 0 },
             last_direction: Option::None,
             can_move: true,
         });
         world.write_model_test(@PlayerStats {
             game_id: test_game_id, hp: STARTING_HP, max_hp: MAX_HP, xp: 0,
         });
-        world.write_model_test(@TileOccupant { x: 5, y: 5, game_id: test_game_id });
+        world.write_model_test(@TileOccupant { x: 0, y: 0, game_id: test_game_id });
 
         game.move(test_game_id, Direction::East);
         let stats: PlayerStats = world.read_model(test_game_id);
@@ -735,14 +733,14 @@ mod tests {
         });
         world.write_model_test(@PlayerState {
             game_id: test_game_id,
-            position: Vec2 { x: 5, y: 5 },
+            position: Vec2 { x: 0, y: 0 },
             last_direction: Option::None,
             can_move: true,
         });
         world.write_model_test(@PlayerStats {
             game_id: test_game_id, hp: STARTING_HP, max_hp: MAX_HP, xp: max_u32 - 3,
         });
-        world.write_model_test(@TileOccupant { x: 5, y: 5, game_id: test_game_id });
+        world.write_model_test(@TileOccupant { x: 0, y: 0, game_id: test_game_id });
 
         game.move(test_game_id, Direction::East);
 

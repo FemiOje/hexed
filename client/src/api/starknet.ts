@@ -9,6 +9,7 @@ import { useDynamicConnector } from "@/starknet-provider";
 import { getContractByName } from "@/utils/networkConfig";
 import { Position, Moves, GameState } from "@/types/game";
 import { num, hash } from "starknet";
+import { feltHexToI32 } from "@/utils/helpers";
 
 /**
  * Hook for Starknet API calls
@@ -212,13 +213,10 @@ export const useStarknetApi = () => {
       const parsedGameId = parseInt(data.result[idx++], 16);
       const player = data.result[idx++];
 
-      // Position (Vec2 with i32 values - need to handle signed conversion)
-      const posXRaw = parseInt(data.result[idx++], 16);
-      const posYRaw = parseInt(data.result[idx++], 16);
-
-      // Convert from unsigned to signed i32 if needed
-      const posX = posXRaw > 0x7FFFFFFF ? posXRaw - 0x100000000 : posXRaw;
-      const posY = posYRaw > 0x7FFFFFFF ? posYRaw - 0x100000000 : posYRaw;
+      // Position (Vec2 with i32 values stored as felt252)
+      // Negative i32 values are stored as STARK_PRIME - |value|, so use BigInt
+      const posX = feltHexToI32(data.result[idx++]);
+      const posY = feltHexToI32(data.result[idx++]);
 
       // Option<Direction>: TWO felts - variant (0=Some, 1=None) + value if Some
       const optionVariant = parseInt(data.result[idx++], 16);

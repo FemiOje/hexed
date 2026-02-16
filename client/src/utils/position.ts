@@ -40,12 +40,14 @@ export function calculateNewPosition(
 
 /**
  * Validate if position is within grid bounds
+ * Grid is centered at origin: [-5, 4] for a 10x10 grid
  * @param pos - Position to validate
- * @param gridSize - Grid size (width and height)
+ * @param gridMin - Minimum coordinate (inclusive)
+ * @param gridMax - Maximum coordinate (inclusive)
  * @returns True if position is valid
  */
-export function isValidPosition(pos: Vec2, gridSize: number = 20): boolean {
-  return pos.x >= 0 && pos.x < gridSize && pos.y >= 0 && pos.y < gridSize;
+export function isValidPosition(pos: Vec2, gridMin: number = -10, gridMax: number = 10): boolean {
+  return pos.x >= gridMin && pos.x <= gridMax && pos.y >= gridMin && pos.y <= gridMax;
 }
 
 /**
@@ -77,14 +79,15 @@ export function calculateDistance(pos1: Vec2, pos2: Vec2): number {
  */
 export function getAdjacentPositions(
   pos: Vec2,
-  gridSize: number = 20
+  gridMin: number = -10,
+  gridMax: number = 10
 ): Vec2[] {
   const adjacent: Vec2[] = [];
 
   for (const direction of Object.values(Direction)) {
     if (typeof direction === "number") {
       const newPos = calculateNewPosition(pos, direction);
-      if (isValidPosition(newPos, gridSize)) {
+      if (isValidPosition(newPos, gridMin, gridMax)) {
         adjacent.push(newPos);
       }
     }

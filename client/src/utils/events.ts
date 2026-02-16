@@ -6,7 +6,7 @@
  */
 
 import { GameEvent, Direction } from "@/types/game";
-import { debugLog } from "./helpers";
+import { debugLog, feltHexToI32 } from "./helpers";
 
 /**
  * Parse Vec2 from event data
@@ -16,8 +16,8 @@ import { debugLog } from "./helpers";
  */
 function parseVec2(data: string[], offset: number): { x: number; y: number } {
   return {
-    x: parseInt(data[offset] || "0", 16),
-    y: parseInt(data[offset + 1] || "0", 16),
+    x: feltHexToI32(data[offset] || "0x0"),
+    y: feltHexToI32(data[offset + 1] || "0x0"),
   };
 }
 
