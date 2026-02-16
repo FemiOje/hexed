@@ -1,8 +1,8 @@
 {
   "world": {
     "class_hash": "0x381899226c066a0262f45d6ab815f89818e0874ec3e66cdf72b5e92d8db4680",
-    "address": "0x6d22efbeabffade78c62af20900bd10d3fcf903512c7ea4fd8cbf31f45802cf",
-    "seed": "dojo_starter_3",
+    "address": "0x6eca5db05d469c0587184a08831a6bec8ace380add702cc0089f9ddda6da7ac",
+    "seed": "dojo_starter_4",
     "name": "Untitled",
     "entrypoints": [
       "uuid",
@@ -33,11 +33,11 @@
   },
   "contracts": [
     {
-      "address": "0x262ee62d23cf70b1921fa355328f8113fa7483f3fa8d03fb78b64853c8837c1",
-      "class_hash": "0x37086c18c8758c26ee2956b60bf0a8b3fa61be39e7984510ec4555048194b02",
+      "address": "0x4f60e3fdfe0b10f69fc80980bd4bfa41c3e224a55eb087fbab696a3d9466e81",
+      "class_hash": "0x5ee425928d7caf338817d6c9daf7417e9fcb71e5f6906805975ba355bed4829",
       "init_calldata": [],
-      "tag": "untitled-actions",
-      "selector": "0x5afa061741b9774c0d1c33cd425394821df428c96ad37229a18717fb8512277",
+      "tag": "untitled-game_systems",
+      "selector": "0x4b9982c93d239b953e976f12f77152699704606d385e04b78d305470ff49ca6",
       "systems": [
         "spawn",
         "move",
@@ -190,7 +190,7 @@
           "key": false
         }
       ],
-      "class_hash": "0x36f44fd7d768ca275a93de74134aea381155b0679b6a63379d99d7a6c9142bd",
+      "class_hash": "0x5707dcefb86ad77b20002fd5a8219850980aedf24f74d7718298e8edc8bf918",
       "tag": "untitled-CombatResult",
       "selector": "0x63b0a0d3d1e3c91574e4f5e03480f649fbe3fdef17316bb1f5a2c707c317cd8"
     },
@@ -212,7 +212,7 @@
           "key": false
         }
       ],
-      "class_hash": "0x35268b879477fb78f58e887f629f86d70b313efbe704646bcd72089cefb1da1",
+      "class_hash": "0x15091781eba8ef5c4b0468b25e9d60e941d3e9693c9270fcb31563de8504afa",
       "tag": "untitled-Moved",
       "selector": "0x62a794a096ae2445ca892f72cfd1569e60909c3a57f937a7a87b1689e9f5794"
     },
@@ -234,7 +234,7 @@
           "key": false
         }
       ],
-      "class_hash": "0x1a4c622ca6a6808a215ed159ca7fd287a77d30adb7f9607527d03d5a46a9f4",
+      "class_hash": "0x37b3f891aaa878c174d8715b8c564a9e14b6fcabea41432789332b94d8ff3cf",
       "tag": "untitled-PlayerDied",
       "selector": "0x694468cf2cc83d89cea890cc17586d55455e76318132a8d9c5c718451e6e6a5"
     },
@@ -256,7 +256,7 @@
           "key": false
         }
       ],
-      "class_hash": "0x2e366d3224b9106d2d4eef5782845c3790d197c0d2ddff68668a998a340a05e",
+      "class_hash": "0x407de86e8e527a9e7a0cd97007b5cac8596eac8b153f58e572b66eb07f7dc45",
       "tag": "untitled-Spawned",
       "selector": "0x270f83119d6370b4c1e0c9d27711d3c42e220901c0b884a62005b284320cbc4"
     }
@@ -2098,7 +2098,7 @@
       "inputs": [
         {
           "name": "event",
-          "type": "untitled::systems::actions::actions::Spawned"
+          "type": "untitled::systems::game::contracts::game_systems::Spawned"
         }
       ],
       "outputs": [],
@@ -2117,7 +2117,7 @@
       "inputs": [
         {
           "name": "value",
-          "type": "untitled::systems::actions::actions::SpawnedValue"
+          "type": "untitled::systems::game::contracts::game_systems::SpawnedValue"
         }
       ],
       "outputs": [],
@@ -2375,7 +2375,7 @@
     },
     {
       "type": "interface",
-      "name": "untitled::systems::actions::IActions",
+      "name": "untitled::systems::game::contracts::IGameSystems",
       "items": [
         {
           "type": "function",
@@ -2420,7 +2420,7 @@
     },
     {
       "type": "struct",
-      "name": "untitled::systems::actions::actions::CombatResult",
+      "name": "untitled::systems::game::contracts::game_systems::CombatResult",
       "members": [
         {
           "name": "attacker_game_id",
@@ -2458,7 +2458,7 @@
     },
     {
       "type": "struct",
-      "name": "untitled::systems::actions::actions::CombatResultValue",
+      "name": "untitled::systems::game::contracts::game_systems::CombatResultValue",
       "members": [
         {
           "name": "defender_game_id",
@@ -2492,7 +2492,7 @@
     },
     {
       "type": "event",
-      "name": "untitled::systems::actions::actions::Event",
+      "name": "untitled::systems::game::contracts::game_systems::Event",
       "kind": "enum",
       "variants": [
         {
@@ -2509,7 +2509,7 @@
     },
     {
       "type": "struct",
-      "name": "untitled::systems::actions::actions::Moved",
+      "name": "untitled::systems::game::contracts::game_systems::Moved",
       "members": [
         {
           "name": "game_id",
@@ -2527,7 +2527,7 @@
     },
     {
       "type": "struct",
-      "name": "untitled::systems::actions::actions::MovedValue",
+      "name": "untitled::systems::game::contracts::game_systems::MovedValue",
       "members": [
         {
           "name": "direction",
@@ -2541,7 +2541,7 @@
     },
     {
       "type": "struct",
-      "name": "untitled::systems::actions::actions::PlayerDied",
+      "name": "untitled::systems::game::contracts::game_systems::PlayerDied",
       "members": [
         {
           "name": "game_id",
@@ -2559,7 +2559,7 @@
     },
     {
       "type": "struct",
-      "name": "untitled::systems::actions::actions::PlayerDiedValue",
+      "name": "untitled::systems::game::contracts::game_systems::PlayerDiedValue",
       "members": [
         {
           "name": "killed_by",
@@ -2573,7 +2573,7 @@
     },
     {
       "type": "struct",
-      "name": "untitled::systems::actions::actions::Spawned",
+      "name": "untitled::systems::game::contracts::game_systems::Spawned",
       "members": [
         {
           "name": "game_id",
@@ -2591,7 +2591,7 @@
     },
     {
       "type": "struct",
-      "name": "untitled::systems::actions::actions::SpawnedValue",
+      "name": "untitled::systems::game::contracts::game_systems::SpawnedValue",
       "members": [
         {
           "name": "player",
@@ -2605,25 +2605,25 @@
     },
     {
       "type": "event",
-      "name": "untitled::systems::actions::actions::e_CombatResult::Event",
+      "name": "untitled::systems::game::contracts::game_systems::e_CombatResult::Event",
       "kind": "enum",
       "variants": []
     },
     {
       "type": "event",
-      "name": "untitled::systems::actions::actions::e_Moved::Event",
+      "name": "untitled::systems::game::contracts::game_systems::e_Moved::Event",
       "kind": "enum",
       "variants": []
     },
     {
       "type": "event",
-      "name": "untitled::systems::actions::actions::e_PlayerDied::Event",
+      "name": "untitled::systems::game::contracts::game_systems::e_PlayerDied::Event",
       "kind": "enum",
       "variants": []
     },
     {
       "type": "event",
-      "name": "untitled::systems::actions::actions::e_Spawned::Event",
+      "name": "untitled::systems::game::contracts::game_systems::e_Spawned::Event",
       "kind": "enum",
       "variants": []
     }

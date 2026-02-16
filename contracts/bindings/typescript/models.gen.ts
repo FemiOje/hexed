@@ -38,7 +38,7 @@ export interface Vec2 {
 	y: BigNumberish;
 }
 
-// Type definition for `untitled::systems::actions::actions::CombatResult` struct
+// Type definition for `untitled::systems::game::contracts::game_systems::CombatResult` struct
 export interface CombatResult {
 	attacker_game_id: BigNumberish;
 	defender_game_id: BigNumberish;
@@ -50,21 +50,21 @@ export interface CombatResult {
 	loser_died: boolean;
 }
 
-// Type definition for `untitled::systems::actions::actions::Moved` struct
+// Type definition for `untitled::systems::game::contracts::game_systems::Moved` struct
 export interface Moved {
 	game_id: BigNumberish;
 	direction: DirectionEnum;
 	position: Vec2;
 }
 
-// Type definition for `untitled::systems::actions::actions::PlayerDied` struct
+// Type definition for `untitled::systems::game::contracts::game_systems::PlayerDied` struct
 export interface PlayerDied {
 	game_id: BigNumberish;
 	killed_by: BigNumberish;
 	position: Vec2;
 }
 
-// Type definition for `untitled::systems::actions::actions::Spawned` struct
+// Type definition for `untitled::systems::game::contracts::game_systems::Spawned` struct
 export interface Spawned {
 	game_id: BigNumberish;
 	player: string;

@@ -120,7 +120,7 @@ impl Vec2Impl of Vec2Trait {
 
 #[cfg(test)]
 mod tests {
-    use super::{Vec2, Vec2Trait};
+    use super::{Vec2, Vec2Trait, STARTING_HP, MAX_HP, COMBAT_DAMAGE};
 
     #[test]
     fn test_vec_is_zero() {
@@ -131,5 +131,12 @@ mod tests {
     fn test_vec_is_equal() {
         let position = Vec2 { x: 420, y: 0 };
         assert(position.is_equal(Vec2 { x: 420, y: 0 }), 'not equal');
+    }
+
+    #[test]
+    fn test_hp_constants_valid() {
+        assert(STARTING_HP <= MAX_HP, 'STARTING_HP exceeds MAX_HP');
+        assert(MAX_HP > 0, 'MAX_HP must be positive');
+        assert(COMBAT_DAMAGE > 0, 'COMBAT_DAMAGE must be positive');
     }
 }

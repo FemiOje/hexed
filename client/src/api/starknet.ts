@@ -159,18 +159,18 @@ export const useStarknetApi = () => {
   const getGameState = async (gameId: number): Promise<GameState | null> => {
     try {
       // Get actions contract address from manifest
-      const actionsContract = getContractByName(
+      const gameSystemsContract = getContractByName(
         currentNetworkConfig.manifest,
         currentNetworkConfig.namespace,
-        "actions"
+        "game_systems"
       );
 
-      if (!actionsContract) {
+      if (!gameSystemsContract) {
         console.error("Actions contract not found in manifest");
         return null;
       }
 
-      // console.log("Fetching game state for gameId:", gameId, "from contract:", actionsContract.address);
+      // console.log("Fetching game state for gameId:", gameId, "from contract:", gameSystemsContract.address);
 
       // Calculate the correct entry point selector for get_game_state
       const selector = hash.getSelectorFromName("get_game_state");
@@ -186,7 +186,7 @@ export const useStarknetApi = () => {
           method: "starknet_call",
           params: [
             {
-              contract_address: actionsContract.address,
+              contract_address: gameSystemsContract.address,
               entry_point_selector: selector,
               calldata: [num.toHex(gameId)],
             },

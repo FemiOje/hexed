@@ -1,40 +1,38 @@
-// @ts-nocheck
 import { DojoProvider, DojoCall } from "@dojoengine/core";
-import { Account, AccountInterface, BigNumberish, CairoOption, CairoCustomEnum } from "starknet";
-import * as models from "./models.gen";
+import { Account, AccountInterface, BigNumberish, CairoCustomEnum } from "starknet";
 
 export function setupWorld(provider: DojoProvider) {
 
-	const build_actions_getGameState_calldata = (gameId: BigNumberish): DojoCall => {
+	const build_game_systems_getGameState_calldata = (gameId: BigNumberish): DojoCall => {
 		return {
-			contractName: "actions",
+			contractName: "game_systems",
 			entrypoint: "get_game_state",
 			calldata: [gameId],
 		};
 	};
 
-	const actions_getGameState = async (gameId: BigNumberish) => {
+	const game_systems_getGameState = async (gameId: BigNumberish) => {
 		try {
-			return await provider.call("untitled", build_actions_getGameState_calldata(gameId));
+			return await provider.call("untitled", build_game_systems_getGameState_calldata(gameId));
 		} catch (error) {
 			console.error(error);
 			throw error;
 		}
 	};
 
-	const build_actions_move_calldata = (gameId: BigNumberish, direction: CairoCustomEnum): DojoCall => {
+	const build_game_systems_move_calldata = (gameId: BigNumberish, direction: CairoCustomEnum): DojoCall => {
 		return {
-			contractName: "actions",
+			contractName: "game_systems",
 			entrypoint: "move",
 			calldata: [gameId, direction],
 		};
 	};
 
-	const actions_move = async (snAccount: Account | AccountInterface, gameId: BigNumberish, direction: CairoCustomEnum) => {
+	const game_systems_move = async (snAccount: Account | AccountInterface, gameId: BigNumberish, direction: CairoCustomEnum) => {
 		try {
 			return await provider.execute(
-				snAccount,
-				build_actions_move_calldata(gameId, direction),
+				snAccount as any,
+				build_game_systems_move_calldata(gameId, direction),
 				"untitled",
 			);
 		} catch (error) {
@@ -43,19 +41,19 @@ export function setupWorld(provider: DojoProvider) {
 		}
 	};
 
-	const build_actions_spawn_calldata = (): DojoCall => {
+	const build_game_systems_spawn_calldata = (): DojoCall => {
 		return {
-			contractName: "actions",
+			contractName: "game_systems",
 			entrypoint: "spawn",
 			calldata: [],
 		};
 	};
 
-	const actions_spawn = async (snAccount: Account | AccountInterface) => {
+	const game_systems_spawn = async (snAccount: Account | AccountInterface) => {
 		try {
 			return await provider.execute(
-				snAccount,
-				build_actions_spawn_calldata(),
+				snAccount as any,
+				build_game_systems_spawn_calldata(),
 				"untitled",
 			);
 		} catch (error) {
@@ -67,13 +65,13 @@ export function setupWorld(provider: DojoProvider) {
 
 
 	return {
-		actions: {
-			getGameState: actions_getGameState,
-			buildGetGameStateCalldata: build_actions_getGameState_calldata,
-			move: actions_move,
-			buildMoveCalldata: build_actions_move_calldata,
-			spawn: actions_spawn,
-			buildSpawnCalldata: build_actions_spawn_calldata,
+		game_systems: {
+			getGameState: game_systems_getGameState,
+			buildGetGameStateCalldata: build_game_systems_getGameState_calldata,
+			move: game_systems_move,
+			buildMoveCalldata: build_game_systems_move_calldata,
+			spawn: game_systems_spawn,
+			buildSpawnCalldata: build_game_systems_spawn_calldata,
 		},
 	};
 }

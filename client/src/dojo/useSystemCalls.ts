@@ -32,15 +32,15 @@ export const useSystemCalls = () => {
   const namespace = currentNetworkConfig.namespace;
   const manifest = currentNetworkConfig.manifest;
 
-  // Get the actions contract address (contains spawn, move, etc.)
-  const ACTIONS_ADDRESS = getContractByName(
+  // Get the game systems contract address (contains spawn, move, etc.)
+  const GAME_SYSTEMS_ADDRESS = getContractByName(
     manifest,
     namespace,
-    "actions"
+    "game_systems"
   )?.address;
 
-  if (!ACTIONS_ADDRESS) {
-    console.warn("Actions contract address not found in manifest");
+  if (!GAME_SYSTEMS_ADDRESS) {
+    console.warn("Game systems contract address not found in manifest");
   }
 
   /**
@@ -51,7 +51,7 @@ export const useSystemCalls = () => {
    */
   const spawn = () => {
     return {
-      contractAddress: ACTIONS_ADDRESS,
+      contractAddress: GAME_SYSTEMS_ADDRESS,
       entrypoint: "spawn",
       calldata: [],
     };
@@ -67,7 +67,7 @@ export const useSystemCalls = () => {
    */
   const move = (gameId: number, direction: number) => {
     return {
-      contractAddress: ACTIONS_ADDRESS,
+      contractAddress: GAME_SYSTEMS_ADDRESS,
       entrypoint: "move",
       calldata: [gameId, direction],
     };
@@ -294,7 +294,7 @@ export const useSystemCalls = () => {
 
     // Contract addresses (useful for debugging)
     addresses: {
-      ACTIONS: ACTIONS_ADDRESS,
+      ACTIONS: GAME_SYSTEMS_ADDRESS,
     },
   };
 };
