@@ -62,6 +62,7 @@ pub struct GameState {
     pub hp: u32,
     pub max_hp: u32,
     pub xp: u32,
+    pub neighbor_occupancy: u8,
 }
 
 #[derive(Serde, Copy, Drop, Introspect, PartialEq, Debug, DojoStore, Default)]

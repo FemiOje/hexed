@@ -63,6 +63,7 @@ export const GameDirectorProvider = ({ children }: PropsWithChildren) => {
     setIsInitializing,
     setStats,
     setIsDead,
+    setOccupiedNeighbors,
     addEvent,
     resetGameState,
   } = useGameStore();
@@ -137,6 +138,7 @@ export const GameDirectorProvider = ({ children }: PropsWithChildren) => {
                 can_move: gameState.can_move,
               });
               setStats(gameState.hp, gameState.max_hp, gameState.xp);
+              setOccupiedNeighbors(gameState.neighbor_occupancy);
               setIsSpawned(gameState.is_active);
 
               // Detect death: player has a game but is no longer active with 0 HP
@@ -180,6 +182,7 @@ export const GameDirectorProvider = ({ children }: PropsWithChildren) => {
     setIsDead,
     setIsInitializing,
     setStats,
+    setOccupiedNeighbors,
     clearError,
     setError,
   ]);
@@ -240,11 +243,18 @@ export const GameDirectorProvider = ({ children }: PropsWithChildren) => {
           }
           break;
 
+        case "neighbors_revealed":
+          if (event.neighborsOccupied !== undefined) {
+            setOccupiedNeighbors(event.neighborsOccupied);
+            debugLog("Neighbors revealed, mask:", event.neighborsOccupied);
+          }
+          break;
+
         default:
           debugLog("Unhandled event type", event.type);
       }
     },
-    [addEvent, setPosition, setMoves, setIsSpawned]
+    [addEvent, setPosition, setMoves, setIsSpawned, setOccupiedNeighbors]
   );
 
   /**
@@ -285,6 +295,7 @@ export const GameDirectorProvider = ({ children }: PropsWithChildren) => {
             can_move: gameState.can_move,
           });
           setStats(gameState.hp, gameState.max_hp, gameState.xp);
+          setOccupiedNeighbors(gameState.neighbor_occupancy);
           setIsSpawned(gameState.is_active);
 
           // Detect death
@@ -316,6 +327,7 @@ export const GameDirectorProvider = ({ children }: PropsWithChildren) => {
     setIsSpawned,
     setIsDead,
     setStats,
+    setOccupiedNeighbors,
     setError,
   ]);
 

@@ -4,10 +4,12 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { createHexagonShape } from "../three/hexagon-geometry";
 import { getWorldPositionForHex, type HexPosition } from "../three/utils";
 import { HEX_SIZE } from "../three/constants";
+import { calculateDirection } from "../utils/coordinateMapping";
 
 // --- Color palette ---
 const COLOR_PLAYER = new THREE.Color(0xf5a623);
 const COLOR_HOVER_VALID = new THREE.Color(0x44cc44);
+const COLOR_OCCUPIED_NEIGHBOR = new THREE.Color(0xe05555);
 
 const BIOME_COLORS = [
   new THREE.Color(0x5a8c4a),
@@ -36,6 +38,7 @@ interface HexGridProps {
   playerPosition: HexPosition;
   onMove: (pos: HexPosition) => void;
   disabled?: boolean;
+  occupiedNeighborsMask?: number;
 }
 
 function hexKey(pos: HexPosition): string {
@@ -67,6 +70,7 @@ export default function HexGrid({
   playerPosition,
   onMove,
   disabled = false,
+  occupiedNeighborsMask = 0,
 }: HexGridProps) {
   const mountRef = useRef<HTMLDivElement>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
@@ -97,7 +101,14 @@ export default function HexGrid({
           if (i === hoverIndex) {
             mesh.setColorAt(i, COLOR_HOVER_VALID);
           } else {
-            mesh.setColorAt(i, BIOME_ADJACENT[bi]);
+            // Check if this neighbor direction is occupied
+            const dir = calculateDirection(playerPosition, hexes[i]);
+            const isOccupied = dir !== null && occupiedNeighborsMask > 0 && ((occupiedNeighborsMask >> dir) & 1) === 1;
+            if (isOccupied) {
+              mesh.setColorAt(i, COLOR_OCCUPIED_NEIGHBOR);
+            } else {
+              mesh.setColorAt(i, BIOME_ADJACENT[bi]);
+            }
           }
         } else {
           mesh.setColorAt(i, BIOME_COLORS[bi]);
@@ -105,7 +116,7 @@ export default function HexGrid({
       }
       if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
     },
-    [playerPosition]
+    [playerPosition, occupiedNeighborsMask]
   );
 
   // Project a hex's world position to screen coordinates
@@ -339,7 +350,7 @@ export default function HexGrid({
       setTooltip(null);
     }
     updateColors(hoveredRef.current);
-  }, [playerPosition, disabled, updateColors]);
+  }, [playerPosition, disabled, occupiedNeighborsMask, updateColors]);
 
   // Mouse interaction
   useEffect(() => {
@@ -488,7 +499,13 @@ export default function HexGrid({
             }}
           >
             <span style={{ color: "#44cc44", fontWeight: 600 }}>
-              Move to ({tooltip.hex.col}, {tooltip.hex.row})?
+              {(() => {
+                const dir = calculateDirection(playerPosition, tooltip.hex);
+                const isOccupied = dir !== null && occupiedNeighborsMask > 0 && ((occupiedNeighborsMask >> dir) & 1) === 1;
+                return isOccupied
+                  ? `⚔ Occupied — Move to (${tooltip.hex.col}, ${tooltip.hex.row})?`
+                  : `Move to (${tooltip.hex.col}, ${tooltip.hex.row})?`;
+              })()}
             </span>
             <div style={{ display: "flex", gap: 6 }}>
               <button

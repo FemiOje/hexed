@@ -35,6 +35,9 @@ interface GameState {
   maxHp: number;
   xp: number;
 
+  // Neighbor occupancy bitmask
+  occupiedNeighbors: number;
+
   // Game events log
   eventLog: GameEvent[];
 
@@ -61,6 +64,9 @@ interface GameState {
 
   // Actions - Stats Management
   setStats: (hp: number, maxHp: number, xp: number) => void;
+
+  // Actions - Neighbor Occupancy
+  setOccupiedNeighbors: (mask: number) => void;
 
   // Actions - Event Management
   addEvent: (event: GameEvent) => void;
@@ -91,6 +97,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   hp: 0,
   maxHp: 0,
   xp: 0,
+  occupiedNeighbors: 0,
   eventLog: [],
   isInitializing: false,
   isSyncing: false,
@@ -179,6 +186,9 @@ export const useGameStore = create<GameState>((set, get) => ({
   setStats: (hp: number, maxHp: number, xp: number) =>
     set({ hp, maxHp, xp }),
 
+  // Neighbor Occupancy Actions
+  setOccupiedNeighbors: (mask: number) => set({ occupiedNeighbors: mask }),
+
   // Event Management Actions
   addEvent: (event: GameEvent) =>
     set((state) => ({
@@ -206,6 +216,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       hp: 0,
       maxHp: 0,
       xp: 0,
+      occupiedNeighbors: 0,
       eventLog: [],
       isInitializing: false,
       isSyncing: false,

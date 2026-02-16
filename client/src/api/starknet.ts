@@ -237,6 +237,9 @@ export const useStarknetApi = () => {
       const xp = parseInt(data.result[idx++], 16) || 0;
       console.log("Parsed stats:", { hp, maxHp, xp });
 
+      // Neighbor occupancy bitmask (u8)
+      const neighborOccupancy = parseInt(data.result[idx++], 16) || 0;
+
       return {
         game_id: parsedGameId,
         player,
@@ -247,6 +250,7 @@ export const useStarknetApi = () => {
         hp,
         max_hp: maxHp,
         xp,
+        neighbor_occupancy: neighborOccupancy,
       };
     } catch (error) {
       console.error("Error fetching game state:", error);

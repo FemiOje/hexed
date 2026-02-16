@@ -1,4 +1,5 @@
-use untitled::models::{Direction, Vec2};
+use dojo::model::ModelStorage;
+use untitled::models::{Direction, Vec2, TileOccupant, GameSession};
 use untitled::constants::constants::{GRID_MIN, GRID_MAX};
 
 /// Get neighbor hex in axial coordinates (pointy-top orientation)
@@ -15,6 +16,49 @@ pub fn get_neighbor(position: Vec2, direction: Direction) -> Vec2 {
         Direction::SouthWest => Vec2 { x: q - 1, y: r + 1 },  // (-1, +1)
         Direction::SouthEast => Vec2 { x: q,     y: r + 1 },  // ( 0, +1)
     }
+}
+
+/// Get a u8 bitmask indicating which of the 6 neighbors are occupied by active players.
+/// Bit i corresponds to direction i (East=0, NE=1, NW=2, W=3, SW=4, SE=5).
+pub fn get_neighbor_occupancy(ref world: dojo::world::WorldStorage, position: Vec2) -> u8 {
+    let directions: [Direction; 6] = [
+        Direction::East,
+        Direction::NorthEast,
+        Direction::NorthWest,
+        Direction::West,
+        Direction::SouthWest,
+        Direction::SouthEast,
+    ];
+
+    let mut mask: u8 = 0;
+    let mut i: u32 = 0;
+    while i < 6 {
+        let dir = *directions.span().at(i);
+        let neighbor = get_neighbor(position, dir);
+        if is_within_bounds(neighbor) {
+            let tile: TileOccupant = world.read_model((neighbor.x, neighbor.y));
+            if tile.game_id != 0 {
+                let session: GameSession = world.read_model(tile.game_id);
+                if session.is_active {
+                    mask = mask | pow2(i);
+                }
+            }
+        }
+        i += 1;
+    };
+    mask
+}
+
+/// Returns 2^n for n in [0, 7].
+fn pow2(n: u32) -> u8 {
+    if n == 0 { 1 }
+    else if n == 1 { 2 }
+    else if n == 2 { 4 }
+    else if n == 3 { 8 }
+    else if n == 4 { 16 }
+    else if n == 5 { 32 }
+    else if n == 6 { 64 }
+    else { 128 }
 }
 
 /// Check if hex is within 10x10 grid bounds centered at origin

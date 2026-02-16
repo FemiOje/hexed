@@ -687,6 +687,200 @@ mod tests {
     }
 
     // ------------------------------------------ //
+    // -------- Neighbor Occupancy Tests ------- //
+    // ------------------------------------------ //
+
+    #[test]
+    #[available_gas(30000000)]
+    fn test_neighbor_occupancy_no_neighbors() {
+        let caller = PLAYER_ADDR();
+        let (mut world, game) = deploy_world();
+
+        let test_game_id: u32 = 999;
+        world.write_model_test(@GameSession {
+            game_id: test_game_id, player: caller, is_active: true,
+        });
+        world.write_model_test(@PlayerState {
+            game_id: test_game_id,
+            position: Vec2 { x: 0, y: 0 },
+            last_direction: Option::None,
+            can_move: true,
+        });
+        world.write_model_test(@PlayerStats {
+            game_id: test_game_id, hp: STARTING_HP, max_hp: MAX_HP, xp: 0,
+        });
+        world.write_model_test(@TileOccupant { x: 0, y: 0, game_id: test_game_id });
+
+        let game_state = game.get_game_state(test_game_id);
+        assert(game_state.neighbor_occupancy == 0, 'no neighbors should be 0');
+    }
+
+    #[test]
+    #[available_gas(30000000)]
+    fn test_neighbor_occupancy_east() {
+        let caller = PLAYER_ADDR();
+        let defender_addr = DEFENDER_ADDR();
+        let (mut world, game) = deploy_world();
+
+        // Player at (0, 0)
+        let player_id: u32 = 10;
+        world.write_model_test(@GameSession {
+            game_id: player_id, player: caller, is_active: true,
+        });
+        world.write_model_test(@PlayerState {
+            game_id: player_id,
+            position: Vec2 { x: 0, y: 0 },
+            last_direction: Option::None,
+            can_move: true,
+        });
+        world.write_model_test(@PlayerStats {
+            game_id: player_id, hp: STARTING_HP, max_hp: MAX_HP, xp: 0,
+        });
+        world.write_model_test(@TileOccupant { x: 0, y: 0, game_id: player_id });
+
+        // Active neighbor to the East at (1, 0)
+        let neighbor_id: u32 = 20;
+        world.write_model_test(@GameSession {
+            game_id: neighbor_id, player: defender_addr, is_active: true,
+        });
+        world.write_model_test(@PlayerState {
+            game_id: neighbor_id,
+            position: Vec2 { x: 1, y: 0 },
+            last_direction: Option::None,
+            can_move: true,
+        });
+        world.write_model_test(@TileOccupant { x: 1, y: 0, game_id: neighbor_id });
+
+        let game_state = game.get_game_state(player_id);
+        // East = direction 0 = bit 0 = value 1
+        assert(game_state.neighbor_occupancy == 1, 'east bit should be set');
+    }
+
+    #[test]
+    #[available_gas(30000000)]
+    fn test_neighbor_occupancy_multiple() {
+        let caller = PLAYER_ADDR();
+        let defender_addr = DEFENDER_ADDR();
+        let (mut world, game) = deploy_world();
+
+        // Player at (0, 0)
+        let player_id: u32 = 10;
+        world.write_model_test(@GameSession {
+            game_id: player_id, player: caller, is_active: true,
+        });
+        world.write_model_test(@PlayerState {
+            game_id: player_id,
+            position: Vec2 { x: 0, y: 0 },
+            last_direction: Option::None,
+            can_move: true,
+        });
+        world.write_model_test(@PlayerStats {
+            game_id: player_id, hp: STARTING_HP, max_hp: MAX_HP, xp: 0,
+        });
+        world.write_model_test(@TileOccupant { x: 0, y: 0, game_id: player_id });
+
+        // Active neighbor to the East at (1, 0)
+        let east_id: u32 = 20;
+        world.write_model_test(@GameSession {
+            game_id: east_id, player: defender_addr, is_active: true,
+        });
+        world.write_model_test(@TileOccupant { x: 1, y: 0, game_id: east_id });
+
+        // Active neighbor to the West at (-1, 0)
+        let west_id: u32 = 30;
+        world.write_model_test(@GameSession {
+            game_id: west_id, player: defender_addr, is_active: true,
+        });
+        world.write_model_test(@TileOccupant { x: -1, y: 0, game_id: west_id });
+
+        let game_state = game.get_game_state(player_id);
+        // East = bit 0 = 1, West = bit 3 = 8 => total = 9
+        assert(game_state.neighbor_occupancy == 9, 'east+west should be 9');
+    }
+
+    #[test]
+    #[available_gas(30000000)]
+    fn test_neighbor_occupancy_inactive_ignored() {
+        let caller = PLAYER_ADDR();
+        let defender_addr = DEFENDER_ADDR();
+        let (mut world, game) = deploy_world();
+
+        // Player at (0, 0)
+        let player_id: u32 = 10;
+        world.write_model_test(@GameSession {
+            game_id: player_id, player: caller, is_active: true,
+        });
+        world.write_model_test(@PlayerState {
+            game_id: player_id,
+            position: Vec2 { x: 0, y: 0 },
+            last_direction: Option::None,
+            can_move: true,
+        });
+        world.write_model_test(@PlayerStats {
+            game_id: player_id, hp: STARTING_HP, max_hp: MAX_HP, xp: 0,
+        });
+        world.write_model_test(@TileOccupant { x: 0, y: 0, game_id: player_id });
+
+        // Inactive neighbor to the East at (1, 0)
+        let stale_id: u32 = 99;
+        world.write_model_test(@GameSession {
+            game_id: stale_id, player: defender_addr, is_active: false,
+        });
+        world.write_model_test(@TileOccupant { x: 1, y: 0, game_id: stale_id });
+
+        let game_state = game.get_game_state(player_id);
+        assert(game_state.neighbor_occupancy == 0, 'inactive should not count');
+    }
+
+    #[test]
+    #[available_gas(60000000)]
+    fn test_neighbor_occupancy_after_move() {
+        let caller = PLAYER_ADDR();
+        let defender_addr = DEFENDER_ADDR();
+        let (mut world, game) = deploy_world();
+
+        // Player at (0, 0)
+        let player_id: u32 = 10;
+        world.write_model_test(@GameSession {
+            game_id: player_id, player: caller, is_active: true,
+        });
+        world.write_model_test(@PlayerState {
+            game_id: player_id,
+            position: Vec2 { x: 0, y: 0 },
+            last_direction: Option::None,
+            can_move: true,
+        });
+        world.write_model_test(@PlayerStats {
+            game_id: player_id, hp: STARTING_HP, max_hp: MAX_HP, xp: 0,
+        });
+        world.write_model_test(@TileOccupant { x: 0, y: 0, game_id: player_id });
+
+        // Place active neighbor at (2, 0) - not adjacent to (0,0) but adjacent to (1,0)
+        let neighbor_id: u32 = 20;
+        world.write_model_test(@GameSession {
+            game_id: neighbor_id, player: defender_addr, is_active: true,
+        });
+        world.write_model_test(@PlayerState {
+            game_id: neighbor_id,
+            position: Vec2 { x: 2, y: 0 },
+            last_direction: Option::None,
+            can_move: true,
+        });
+        world.write_model_test(@TileOccupant { x: 2, y: 0, game_id: neighbor_id });
+
+        // Before move: no occupied neighbors at (0,0)
+        let state_before = game.get_game_state(player_id);
+        assert(state_before.neighbor_occupancy == 0, 'no neighbors at origin');
+
+        // Move east to (1, 0) - now (2,0) should be east neighbor
+        game.move(player_id, Direction::East);
+
+        let state_after = game.get_game_state(player_id);
+        // East = bit 0 = 1
+        assert(state_after.neighbor_occupancy == 1, 'east neighbor after move');
+    }
+
+    // ------------------------------------------ //
     // ------------ XP Tests ------------------- //
     // ------------------------------------------ //
 

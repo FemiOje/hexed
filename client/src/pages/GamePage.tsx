@@ -21,7 +21,7 @@ export default function GamePage() {
     const { getGameState } = useStarknetApi();
 
     // Get store actions for populating game state
-    const { setPosition, setMoves, setIsSpawned, setIsDead, setGameId, setStats } = useGameStore();
+    const { setPosition, setMoves, setIsSpawned, setIsDead, setGameId, setStats, setOccupiedNeighbors } = useGameStore();
 
     // Get game_id from URL
     const gameIdFromUrl = searchParams.get("id");
@@ -39,6 +39,7 @@ export default function GamePage() {
     const hp = usePlayerHp();
     const maxHp = usePlayerMaxHp();
     const xp = usePlayerXp();
+    const occupiedNeighbors = useGameStore((state) => state.occupiedNeighbors);
     const { handleMove: handleBlockchainMove, isMoving } = useGameActions();
 
     // Manual refresh handler
@@ -107,6 +108,7 @@ export default function GamePage() {
                         can_move: gameState.can_move,
                     });
                     setStats(gameState.hp, gameState.max_hp, gameState.xp);
+                    setOccupiedNeighbors(gameState.neighbor_occupancy);
                     setIsSpawned(gameState.is_active);
 
                     // Detect death
@@ -275,6 +277,7 @@ export default function GamePage() {
                     playerPosition={playerPosition}
                     onMove={handleMove}
                     disabled={isMoving}
+                    occupiedNeighborsMask={occupiedNeighbors}
                 />
             </div>
         </div>
