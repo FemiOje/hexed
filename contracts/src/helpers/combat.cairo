@@ -1,5 +1,4 @@
 use dojo::model::ModelStorage;
-use starknet::{ContractAddress, get_block_timestamp, get_tx_info};
 use untitled::models::{
     COMBAT_DAMAGE, COMBAT_XP_REWARD, Direction, GameSession, PlayerState, PlayerStats, TileOccupant,
     Vec2,
@@ -38,6 +37,7 @@ pub fn add_xp(ref stats: PlayerStats, amount: u32) {
 }
 
 /// Resolves combat between attacker and defender.
+/// Winner is the player with higher XP. Equal XP penalises the defender (attacker wins).
 /// Handles all model writes (stats, tiles, positions, death cleanup).
 /// Returns outcome data for the caller to emit events.
 pub fn resolve_combat(
@@ -46,14 +46,15 @@ pub fn resolve_combat(
     defender_game_id: u32,
     ref state: PlayerState,
     direction: Direction,
-    player: ContractAddress,
 ) -> CombatOutcome {
-    let attacker_won = _generate_combat_seed(player, game_id);
     let old_position = state.position;
     let next_vec = get_neighbor(old_position, direction);
 
     let mut attacker_stats: PlayerStats = world.read_model(game_id);
     let mut defender_stats: PlayerStats = world.read_model(defender_game_id);
+
+    // Higher XP wins. Equal XP penalises defender (attacker wins).
+    let attacker_won = attacker_stats.xp >= defender_stats.xp;
     let mut loser_died = false;
 
     if attacker_won {
@@ -161,15 +162,3 @@ fn handle_player_death(
         );
 }
 
-/// Generates a pseudo-random combat outcome.
-/// TODO: Replace with stat-based combat from game design doc
-fn _generate_combat_seed(player: ContractAddress, game_id: u32) -> bool {
-    let tx_info = get_tx_info().unbox();
-    let timestamp = get_block_timestamp();
-    let combat_seed: felt252 = timestamp.into()
-        + tx_info.transaction_hash
-        + player.into()
-        + game_id.into();
-    let seed_u256: u256 = combat_seed.into();
-    (seed_u256 % 2) == 0
-}

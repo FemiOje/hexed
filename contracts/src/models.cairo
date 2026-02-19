@@ -1,7 +1,7 @@
 use starknet::ContractAddress;
 
 // Combat & stat constants
-pub const STARTING_HP: u32 = 10; //10 for testing (normal is 100 for prod)
+pub const STARTING_HP: u32 = 100;
 pub const MAX_HP: u32 = 100;
 pub const COMBAT_DAMAGE: u32 = 10;
 pub const COMBAT_XP_REWARD: u32 = 30;

@@ -143,7 +143,7 @@ pub mod game_systems {
             if combat::has_active_defender(ref world, tile.game_id) {
                 let defender_game_id = tile.game_id;
                 let outcome = combat::resolve_combat(
-                    ref world, game_id, defender_game_id, ref state, direction, player,
+                    ref world, game_id, defender_game_id, ref state, direction,
                 );
 
                 world
