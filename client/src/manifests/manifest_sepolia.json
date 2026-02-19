@@ -1,8 +1,8 @@
 {
   "world": {
     "class_hash": "0x381899226c066a0262f45d6ab815f89818e0874ec3e66cdf72b5e92d8db4680",
-    "address": "0x33df8a9ade5961d008273b8f50b18ab4b8dee551b039e666dd4dc17c4f9d3f0",
-    "seed": "dojo_starter_7",
+    "address": "0x49a3c55d530bee77d88e38826b82e0685b371e856b9791305459705db94ca13",
+    "seed": "dojo_starter_8",
     "name": "Untitled",
     "entrypoints": [
       "uuid",
@@ -33,8 +33,8 @@
   },
   "contracts": [
     {
-      "address": "0x2b6ddec3e21be5cc33ec3da41eab8a5d4b776e8c1ca2f58e282416a4a4b1d8d",
-      "class_hash": "0x2e6ceb9bd6611358d47c90f425b4810b8d6a62902bcb76675f4a3d1e8789958",
+      "address": "0x364aba833da4b99c418e62a220b69eed039fcb4338b175b59ae0f194b3544c9",
+      "class_hash": "0x18bd6f03983187fd5e8bff5feeee0a8852b202580c01efa206eb35bace16461",
       "init_calldata": [],
       "tag": "untitled-game_systems",
       "selector": "0x4b9982c93d239b953e976f12f77152699704606d385e04b78d305470ff49ca6",
