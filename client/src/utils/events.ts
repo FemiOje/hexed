@@ -120,6 +120,26 @@ export function processGameEvent(event: any, manifest: any): GameEvent {
       };
     }
 
+    // Parse NeighborsRevealed event
+    // Key: game_id
+    // Values: position.x, position.y, neighbors (u8)
+    if (eventName === "neighborsrevealed") {
+      const vec = parseVec2(data, valueOffset);
+      const neighbors = parseInt(data[valueOffset + 2] || "0", 16);
+
+      debugLog("Parsed NeighborsRevealed event:", { gameId, vec, neighbors });
+
+      return {
+        type: "neighbors_revealed",
+        gameId,
+        position: {
+          player: "",
+          vec,
+        },
+        neighborsOccupied: neighbors,
+      };
+    }
+
     // Parse CombatResult event
     // Key: attacker_game_id
     // Values: defender_game_id, attacker_won (0/1), attacker_position.x, attacker_position.y, defender_position.x, defender_position.y

@@ -57,6 +57,13 @@ export interface Moved {
 	position: Vec2;
 }
 
+// Type definition for `untitled::systems::game::contracts::game_systems::NeighborsRevealed` struct
+export interface NeighborsRevealed {
+	game_id: BigNumberish;
+	position: Vec2;
+	neighbors: BigNumberish;
+}
+
 // Type definition for `untitled::systems::game::contracts::game_systems::PlayerDied` struct
 export interface PlayerDied {
 	game_id: BigNumberish;
@@ -82,6 +89,7 @@ export interface GameState {
 	hp: BigNumberish;
 	max_hp: BigNumberish;
 	xp: BigNumberish;
+	neighbor_occupancy: BigNumberish;
 }
 
 // Type definition for `untitled::models::Direction` enum
@@ -105,6 +113,7 @@ export interface SchemaType extends ISchemaType {
 		Vec2: Vec2,
 		CombatResult: CombatResult,
 		Moved: Moved,
+		NeighborsRevealed: NeighborsRevealed,
 		PlayerDied: PlayerDied,
 		Spawned: Spawned,
 		GameState: GameState,
@@ -159,6 +168,11 @@ export const schema: SchemaType = {
 				SouthEast: undefined, }),
 		position: { x: 0, y: 0, },
 		},
+		NeighborsRevealed: {
+			game_id: 0,
+		position: { x: 0, y: 0, },
+			neighbors: 0,
+		},
 		PlayerDied: {
 			game_id: 0,
 			killed_by: 0,
@@ -179,6 +193,7 @@ export const schema: SchemaType = {
 			hp: 0,
 			max_hp: 0,
 			xp: 0,
+			neighbor_occupancy: 0,
 		},
 	},
 };
@@ -191,6 +206,7 @@ export enum ModelsMapping {
 	Vec2 = 'untitled-Vec2',
 	CombatResult = 'untitled-CombatResult',
 	Moved = 'untitled-Moved',
+	NeighborsRevealed = 'untitled-NeighborsRevealed',
 	PlayerDied = 'untitled-PlayerDied',
 	Spawned = 'untitled-Spawned',
 	GameState = 'untitled-GameState',

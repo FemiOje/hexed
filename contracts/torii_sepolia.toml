@@ -1,5 +1,5 @@
 rpc = "https://api.cartridge.gg/x/starknet/sepolia"
-world_address = "0x03d2828c3d0800385d1463e5af693602da33c4b05b11a0a12152e0b5a778cd42"
+world_address = "0x033df8a9ade5961d008273b8f50b18ab4b8dee551b039e666dd4dc17c4f9d3f0"
 
 [indexing]
 contracts = [

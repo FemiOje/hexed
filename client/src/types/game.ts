@@ -75,13 +75,14 @@ export interface GameState {
   hp: number;            // Current health points
   max_hp: number;        // Maximum health points cap
   xp: number;            // Experience points
+  neighbor_occupancy: number;  // u8 bitmask of occupied neighbor directions
 }
 
 /**
  * Game Event types for event processing
  */
 export interface GameEvent {
-  type: 'spawned' | 'moved' | 'combat_result' | 'position_update' | 'unknown';
+  type: 'spawned' | 'moved' | 'combat_result' | 'position_update' | 'neighbors_revealed' | 'unknown';
   gameId?: number;  // game_id from event (u32)
   player?: string;
   position?: Position;
@@ -91,6 +92,8 @@ export interface GameEvent {
   combatWon?: boolean;
   defenderGameId?: number;
   defenderPosition?: Vec2;
+  // Neighbor occupancy (only present when type === 'neighbors_revealed')
+  neighborsOccupied?: number;  // u8 bitmask
 }
 
 /**

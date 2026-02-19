@@ -19,7 +19,7 @@ pub mod game_systems {
         COMBAT_DAMAGE, COMBAT_XP_REWARD,
     };
     use untitled::helpers::{combat, movement, spawn};
-    use untitled::utils::hex::{get_neighbor, is_within_bounds};
+    use untitled::utils::hex::{get_neighbor, is_within_bounds, get_neighbor_occupancy};
     use untitled::constants::constants::{DEFAULT_NS};
     use super::{
         Direction,
@@ -72,6 +72,15 @@ pub mod game_systems {
         pub position: Vec2,
     }
 
+    #[derive(Copy, Drop, Serde)]
+    #[dojo::event]
+    pub struct NeighborsRevealed {
+        #[key]
+        pub game_id: u32,
+        pub position: Vec2,
+        pub neighbors: u8,
+    }
+
     // ------------------------------------------ //
     // ------------ Impl ----------------------- //
     // ------------------------------------------ //
@@ -107,6 +116,10 @@ pub mod game_systems {
 
             // Emit spawn event
             world.emit_event(@Spawned { game_id, player, position });
+
+            // Reveal occupied neighbors
+            let neighbors = get_neighbor_occupancy(ref world, position);
+            world.emit_event(@NeighborsRevealed { game_id, position, neighbors });
         }
 
         fn move(ref self: ContractState, game_id: u32, direction: Direction) {
@@ -166,18 +179,28 @@ pub mod game_systems {
                             },
                         );
                 }
+
+                // Reveal occupied neighbors from attacker's final position
+                let final_position = outcome.attacker_position;
+                let neighbors = get_neighbor_occupancy(ref world, final_position);
+                world.emit_event(@NeighborsRevealed { game_id, position: final_position, neighbors });
             } else {
                 movement::execute_move(ref world, game_id, ref state, next_vec, direction);
 
                 world.emit_event(@Moved { game_id, direction, position: next_vec });
+
+                // Reveal occupied neighbors from new position
+                let neighbors = get_neighbor_occupancy(ref world, next_vec);
+                world.emit_event(@NeighborsRevealed { game_id, position: next_vec, neighbors });
             }
         }
 
         fn get_game_state(self: @ContractState, game_id: u32) -> GameState {
-            let world = self.world_default();
+            let mut world = self.world_default();
             let session: GameSession = world.read_model(game_id);
             let state: PlayerState = world.read_model(game_id);
             let stats: PlayerStats = world.read_model(game_id);
+            let neighbor_occupancy = get_neighbor_occupancy(ref world, state.position);
 
             GameState {
                 game_id,
@@ -189,6 +212,7 @@ pub mod game_systems {
                 hp: stats.hp,
                 max_hp: stats.max_hp,
                 xp: stats.xp,
+                neighbor_occupancy,
             }
         }
     }
