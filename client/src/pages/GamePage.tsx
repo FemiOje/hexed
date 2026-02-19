@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@mui/material";
 import { num } from "starknet";
@@ -47,6 +47,30 @@ export default function GamePage() {
         console.log("🔄 Manual refresh triggered");
         await refreshGameState();
     }, [refreshGameState]);
+
+    // Track isMoving in a ref so the polling interval can read it
+    // without restarting the interval on every isMoving change
+    const isMovingRef = useRef(isMoving);
+    useEffect(() => {
+        isMovingRef.current = isMoving;
+    }, [isMoving]);
+
+    // Poll game state every 6 seconds (Torii indexer is down,
+    // so we cannot subscribe to entities/events)
+    useEffect(() => {
+        if (!ownershipValid || isDead || !isSpawned) return;
+
+        const intervalId = setInterval(async () => {
+            if (isMovingRef.current) return;
+            try {
+                await refreshGameState();
+            } catch (error) {
+                console.error("Polling refresh failed:", error);
+            }
+        }, 4000);
+
+        return () => clearInterval(intervalId);
+    }, [ownershipValid, isDead, isSpawned, refreshGameState]);
 
     // URL validation and ownership check
     useEffect(() => {
