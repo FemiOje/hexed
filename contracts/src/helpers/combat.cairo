@@ -140,7 +140,7 @@ pub fn resolve_combat(
 
 /// Cleans up a dead player: clears tile, deactivates session, disables movement.
 /// Does NOT emit PlayerDied event — the caller is responsible for that.
-fn handle_player_death(
+pub fn handle_player_death(
     ref world: dojo::world::WorldStorage, game_id: u32, position: Vec2, killed_by: u32,
 ) {
     // Clear tile occupancy

@@ -40,6 +40,7 @@ pub fn namespace_def() -> NamespaceDef {
             TestResource::Event(game_systems::e_CombatResult::TEST_CLASS_HASH),
             TestResource::Event(game_systems::e_PlayerDied::TEST_CLASS_HASH),
             TestResource::Event(game_systems::e_NeighborsRevealed::TEST_CLASS_HASH),
+            TestResource::Event(game_systems::e_EncounterOccurred::TEST_CLASS_HASH),
             TestResource::Contract(game_systems::TEST_CLASS_HASH),
         ]
             .span(),

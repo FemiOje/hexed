@@ -9,6 +9,7 @@ pub mod systems {
 
 pub mod helpers {
     pub mod combat;
+    pub mod encounter;
     pub mod movement;
     pub mod spawn;
 }

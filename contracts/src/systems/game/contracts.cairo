@@ -15,7 +15,8 @@ pub mod game_systems {
     use dojo::world::IWorldDispatcherTrait;
     use starknet::{ContractAddress, get_caller_address};
     use untitled::constants::constants::DEFAULT_NS;
-    use untitled::helpers::{combat, movement, spawn};
+    use untitled::helpers::encounter::{EncounterOutcomeIntoU8, EncounterOutcomeTrait};
+    use untitled::helpers::{combat, encounter, movement, spawn};
     use untitled::models::{
         COMBAT_DAMAGE, COMBAT_XP_REWARD, GameSession, MAX_HP, PlayerState, PlayerStats, STARTING_HP,
         TileOccupant, Vec2,
@@ -75,6 +76,19 @@ pub mod game_systems {
         pub game_id: u32,
         pub position: Vec2,
         pub neighbors: u8,
+    }
+
+    #[derive(Copy, Drop, Serde)]
+    #[dojo::event]
+    pub struct EncounterOccurred {
+        #[key]
+        pub game_id: u32,
+        pub is_gift: bool,
+        pub outcome: u8,
+        pub hp_after: u32,
+        pub max_hp_after: u32,
+        pub xp_after: u32,
+        pub player_died: bool,
     }
 
     // ------------------------------------------ //
@@ -188,9 +202,33 @@ pub mod game_systems {
 
                 world.emit_event(@Moved { game_id, direction, position: next_vec });
 
-                // Reveal occupied neighbors from new position
-                let neighbors = get_neighbor_occupancy(ref world, next_vec);
-                world.emit_event(@NeighborsRevealed { game_id, position: next_vec, neighbors });
+                // Resolve encounter on the new tile
+                let enc = encounter::resolve_encounter(ref world, game_id, next_vec);
+
+                world
+                    .emit_event(
+                        @EncounterOccurred {
+                            game_id,
+                            is_gift: enc.outcome.is_gift(),
+                            outcome: enc.outcome.into(),
+                            hp_after: enc.hp_after,
+                            max_hp_after: enc.max_hp_after,
+                            xp_after: enc.xp_after,
+                            player_died: enc.player_died,
+                        },
+                    );
+
+                if enc.player_died {
+                    world
+                        .emit_event(
+                            @PlayerDied { game_id, killed_by: 0, position: next_vec },
+                        );
+                } else {
+                    // Only reveal neighbors if player is alive
+                    let neighbors = get_neighbor_occupancy(ref world, next_vec);
+                    world
+                        .emit_event(@NeighborsRevealed { game_id, position: next_vec, neighbors });
+                }
             }
         }
 

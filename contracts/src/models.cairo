@@ -7,6 +7,27 @@ pub const COMBAT_DAMAGE: u32 = 10;
 pub const COMBAT_XP_REWARD: u32 = 30;
 pub const EXPLORE_XP_REWARD: u32 = 10;
 
+// Encounter constants
+pub const MIN_MAX_HP: u32 = 10;
+pub const GIFT_THRESHOLD: u8 = 65; // 0-64 = gift (65%), 65-99 = curse (35%)
+
+// Gift amounts
+pub const HEAL_AMOUNT: u32 = 20;
+pub const FORTIFY_HP_AMOUNT: u32 = 10;
+pub const FORTIFY_MAX_HP_AMOUNT: u32 = 10;
+pub const EMPOWER_XP_AMOUNT: u32 = 25;
+pub const BLESSING_HP_AMOUNT: u32 = 10;
+pub const BLESSING_MAX_HP_AMOUNT: u32 = 5;
+pub const BLESSING_XP_AMOUNT: u32 = 15;
+
+// Curse amounts
+pub const POISON_DAMAGE: u32 = 15;
+pub const WITHER_MAX_HP_AMOUNT: u32 = 10;
+pub const DRAIN_XP_AMOUNT: u32 = 20;
+pub const HEX_HP_AMOUNT: u32 = 10;
+pub const HEX_MAX_HP_AMOUNT: u32 = 5;
+pub const HEX_XP_AMOUNT: u32 = 10;
+
 // Maps game_id → player address and tracks active state
 #[derive(Copy, Drop, Serde, Debug)]
 #[dojo::model]
