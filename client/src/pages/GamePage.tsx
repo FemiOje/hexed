@@ -223,14 +223,12 @@ export default function GamePage() {
         handleBlockchainMove(direction);
     }, [blockchainPosition, canMove, isMoving, handleBlockchainMove, isSpawned]);
 
-    // Show loading state while validating ownership or waiting for blockchain sync
+    // Loading state
     if (isValidatingOwnership || !ownershipValid) {
         return (
-            <div style={{ width: "100%", height: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "linear-gradient(135deg, #0a0a1e 0%, #1a1a3e 50%, #0a0a1e 100%)" }}>
-                <div style={{ textAlign: "center", color: "#e0e0e0" }}>
-                    <div style={{ fontSize: "1.5rem", marginBottom: "1rem" }}>Validating game ownership...</div>
-                    <div style={{ fontSize: "0.9rem", color: "#aaa" }}>Checking blockchain</div>
-                </div>
+            <div style={{ width: "100%", height: "100dvh", display: "flex", alignItems: "center", justifyContent: "center", background: "radial-gradient(ellipse at 50% 40%, #1a1535 0%, #0a0514 100%)" }}>
+                <div style={{ width: "24px", height: "24px", border: "2px solid rgba(0, 212, 255, 0.2)", borderTop: "2px solid rgba(0, 212, 255, 0.8)", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+                <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
             </div>
         );
     }
@@ -241,11 +239,9 @@ export default function GamePage() {
 
     if (!isSpawned || !blockchainPosition) {
         return (
-            <div style={{ width: "100%", height: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "linear-gradient(135deg, #0a0a1e 0%, #1a1a3e 50%, #0a0a1e 100%)" }}>
-                <div style={{ textAlign: "center", color: "#e0e0e0" }}>
-                    <div style={{ fontSize: "1.5rem", marginBottom: "1rem" }}>Loading game state...</div>
-                    <div style={{ fontSize: "0.9rem", color: "#aaa" }}>Syncing with blockchain</div>
-                </div>
+            <div style={{ width: "100%", height: "100dvh", display: "flex", alignItems: "center", justifyContent: "center", background: "radial-gradient(ellipse at 50% 40%, #1a1535 0%, #0a0514 100%)" }}>
+                <div style={{ width: "24px", height: "24px", border: "2px solid rgba(0, 212, 255, 0.2)", borderTop: "2px solid rgba(0, 212, 255, 0.8)", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+                <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
             </div>
         );
     }

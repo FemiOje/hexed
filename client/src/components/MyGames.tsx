@@ -131,9 +131,9 @@ export default function MyGames() {
 
   // No active game - show start button
   return (
-    <Box sx={{ marginTop: 2 }}>
+    <Box sx={{ marginTop: 2, display: "flex", justifyContent: "center" }}>
       <Button
-        variant="contained"
+        variant="outlined"
         size="large"
         onClick={handleStartGame}
         disabled={isSpawning}
