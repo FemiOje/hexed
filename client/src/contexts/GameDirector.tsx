@@ -393,8 +393,6 @@ export const GameDirectorProvider = ({ children }: PropsWithChildren) => {
             await registerDeathScore(gameState.xp);
             debugLog("Death score registration completed");
           }
-
-          debugLog("Game state refreshed successfully");
         } else {
           // console.warn("Game ownership mismatch during refresh");
           // console.warn("Game player:", gameState.player, "→", gamePlayer);
