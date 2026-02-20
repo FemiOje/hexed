@@ -24,15 +24,79 @@ import { useLocation } from "react-router-dom";
  *   - "Gloomy"           — Death screen
  */
 const tracks = {
-  intro: "https://archive.org/download/darkambient_201908/Crime.wav",
+  intro: "https://archive.org/download/darkambient_201908/Crime.mp3",
   gameplay: [
-    "https://archive.org/download/darkambient_201908/Documentary%20Dark.wav",
-    "https://archive.org/download/darkambient_201908/Universal%20Pain.wav",
+    "https://archive.org/download/darkambient_201908/Documentary%20Dark.mp3",
+    "https://archive.org/download/darkambient_201908/Universal%20Pain.mp3",
   ],
-  death: "https://archive.org/download/darkambient_201908/Gloomy.wav",
+  death: "https://archive.org/download/darkambient_201908/Gloomy.mp3",
 };
 
 type GamePhase = "intro" | "gameplay" | "death";
+
+/**
+ * AudioManager — imperative audio control outside React's effect cycle.
+ * Follows death-mountain's AudioManager pattern.
+ */
+class AudioManager {
+  private audio: HTMLAudioElement;
+  private currentPhase: GamePhase | null = null;
+  private gameplayIndex = 0;
+
+  constructor() {
+    this.audio = new Audio();
+    this.audio.crossOrigin = "anonymous";
+    this.audio.loop = true;
+    this.audio.volume = 0.3;
+
+    // Rotate gameplay tracks when one ends
+    this.audio.addEventListener("ended", () => {
+      if (this.currentPhase !== "gameplay") return;
+      this.gameplayIndex =
+        (this.gameplayIndex + 1) % tracks.gameplay.length;
+      this.audio.src = tracks.gameplay[this.gameplayIndex];
+      this.audio.play().catch(() => {});
+    });
+  }
+
+  async play() {
+    await this.audio.play().catch(() => {});
+  }
+
+  pause() {
+    this.audio.pause();
+  }
+
+  switchPhase(phase: GamePhase) {
+    if (phase === this.currentPhase) return;
+    this.currentPhase = phase;
+
+    switch (phase) {
+      case "intro":
+        this.audio.src = tracks.intro;
+        this.audio.loop = true;
+        break;
+      case "gameplay":
+        this.gameplayIndex = 0;
+        this.audio.src = tracks.gameplay[0];
+        this.audio.loop = false;
+        break;
+      case "death":
+        this.audio.src = tracks.death;
+        this.audio.loop = true;
+        break;
+    }
+
+    // Eagerly attempt play — browser will block if no gesture yet,
+    // but the track is loaded and ready for when the user interacts.
+    this.audio.play().catch(() => {});
+  }
+
+  destroy() {
+    this.audio.pause();
+    this.audio.src = "";
+  }
+}
 
 interface SoundContextType {
   hasInteracted: boolean;
@@ -48,109 +112,54 @@ export const SoundProvider = ({ children }: PropsWithChildren) => {
   const location = useLocation();
 
   const [hasInteracted, setHasInteracted] = useState(false);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const currentPhaseRef = useRef<GamePhase | null>(null);
-  const gameplayIndexRef = useRef(0);
-  const wantsToPlayRef = useRef(false);
+
+  // Instantiate AudioManager during render (not in an effect) — same as death-mountain
+  const manager = useRef(new AudioManager());
 
   const phase: GamePhase =
     location.pathname === "/game" ? (isDead ? "death" : "gameplay") : "intro";
 
-  // Initialize audio element once
+  // Detect first user interaction
   useEffect(() => {
-    const audio = new Audio();
-    audio.crossOrigin = "anonymous";
-    audio.volume = 0.3;
-    audioRef.current = audio;
-
-    // When audio has buffered enough to play, start if we want to
-    const onCanPlay = () => {
-      if (wantsToPlayRef.current) {
-        audio.play().catch(() => {});
+    const handleFirstInteraction = () => {
+      setHasInteracted(true);
+      if (musicEnabled) {
+        manager.current.play();
       }
+      document.removeEventListener("click", handleFirstInteraction);
+      document.removeEventListener("touchstart", handleFirstInteraction);
+      document.removeEventListener("keydown", handleFirstInteraction);
     };
-    audio.addEventListener("canplay", onCanPlay);
-
+    document.addEventListener("click", handleFirstInteraction);
+    document.addEventListener("touchstart", handleFirstInteraction);
+    document.addEventListener("keydown", handleFirstInteraction);
     return () => {
-      audio.removeEventListener("canplay", onCanPlay);
-      audio.pause();
-      audio.src = "";
+      document.removeEventListener("click", handleFirstInteraction);
+      document.removeEventListener("touchstart", handleFirstInteraction);
+      document.removeEventListener("keydown", handleFirstInteraction);
     };
-  }, []);
+  }, [musicEnabled]);
 
-  // Detect user interaction — listen for all gesture types
+  // Play/pause when musicEnabled toggles (after interaction)
   useEffect(() => {
-    if (hasInteracted) return;
-
-    const handler = () => setHasInteracted(true);
-    const events = ["click", "touchstart", "keydown", "pointerdown"];
-    events.forEach((e) =>
-      document.addEventListener(e, handler, { once: true })
-    );
-    return () =>
-      events.forEach((e) => document.removeEventListener(e, handler));
-  }, [hasInteracted]);
-
-  // Attempt autoplay on mount (works if browser policy allows it)
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio || !musicEnabled || hasInteracted) return;
-
-    audio.play().then(() => setHasInteracted(true)).catch(() => {});
-  }, [musicEnabled, hasInteracted]);
-
-  // Handle gameplay track rotation
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-
-    const handleEnded = () => {
-      if (currentPhaseRef.current !== "gameplay") return;
-      gameplayIndexRef.current =
-        (gameplayIndexRef.current + 1) % tracks.gameplay.length;
-      audio.src = tracks.gameplay[gameplayIndexRef.current];
-      audio.play().catch(() => {});
-    };
-
-    audio.addEventListener("ended", handleEnded);
-    return () => audio.removeEventListener("ended", handleEnded);
-  }, []);
-
-  // Main effect: handle track switching and play/pause
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-
-    if (phase !== currentPhaseRef.current) {
-      currentPhaseRef.current = phase;
-
-      switch (phase) {
-        case "intro":
-          audio.src = tracks.intro;
-          audio.loop = true;
-          break;
-        case "gameplay":
-          gameplayIndexRef.current = 0;
-          audio.src = tracks.gameplay[0];
-          audio.loop = false;
-          break;
-        case "death":
-          audio.src = tracks.death;
-          audio.loop = true;
-          break;
-      }
-    }
-
-    wantsToPlayRef.current = hasInteracted && musicEnabled;
-
     if (!hasInteracted) return;
 
     if (musicEnabled) {
-      audio.play().catch(() => {});
+      manager.current.play();
     } else {
-      audio.pause();
+      manager.current.pause();
     }
-  }, [phase, musicEnabled, hasInteracted]);
+  }, [musicEnabled, hasInteracted]);
+
+  // Switch track when phase changes
+  useEffect(() => {
+    manager.current.switchPhase(phase);
+  }, [phase]);
+
+  // Cleanup
+  useEffect(() => {
+    return () => manager.current.destroy();
+  }, []);
 
   return (
     <SoundContext.Provider value={{ hasInteracted }}>
