@@ -112,9 +112,7 @@ export default function HexGrid({
 
   const [tooltip, setTooltip] = useState<TooltipState | null>(null);
   const tooltipRef = useRef<TooltipState | null>(null);
-  const tooltipTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [isMobileDevice, setIsMobileDevice] = useState(false);
-  const mobileModalLockedRef = useRef(false); // Lock modal on mobile until explicit close
 
   // Detect mobile on mount
   useEffect(() => {
@@ -451,17 +449,14 @@ export default function HexGrid({
       hoveredRef.current = -1;
       tooltipRef.current = null;
       setTooltip(null);
-      mobileModalLockedRef.current = false; // Unlock modal
     }
     updateColors(hoveredRef.current);
   }, [playerPosition, disabled, occupiedNeighborsMask, updateColors]);
 
-  // Mouse interaction
+  // Mouse/touch interaction
   useEffect(() => {
     const container = mountRef.current;
     if (!container) return;
-
-    const isMobile = container.clientWidth < 900;
 
     const onPointerMove = (e: PointerEvent) => {
       const rect = container.getBoundingClientRect();
@@ -489,95 +484,29 @@ export default function HexGrid({
         container.style.cursor = "default";
       }
 
-      // On mobile, don't show tooltip on hover - use click instead
-      if (!isMobile) {
-        if (newHover !== hoveredRef.current) {
-          hoveredRef.current = newHover;
-          updateColors(newHover);
+      if (newHover !== hoveredRef.current) {
+        hoveredRef.current = newHover;
+        updateColors(newHover);
 
-          if (newHover >= 0) {
-            const hex = hexesRef.current[newHover];
-            const screen = projectToScreen(hex);
-            if (screen) {
-              const tt = { hex, screenX: screen.x, screenY: screen.y };
-              tooltipRef.current = tt;
-              setTooltip(tt);
-            }
-          } else {
-            tooltipRef.current = null;
-            setTooltip(null);
-          }
-        }
-      } else {
-        // On mobile, just update hover color but don't clear tooltip if modal is locked
-        if (newHover !== hoveredRef.current) {
-          hoveredRef.current = newHover;
-          updateColors(newHover);
-          // Don't clear tooltip if mobile modal is locked
-          if (!mobileModalLockedRef.current && newHover < 0) {
-            tooltipRef.current = null;
-            setTooltip(null);
-          }
-        }
-      }
-    };
-
-    const onPointerDown = (e: PointerEvent) => {
-      // On mobile, show modal on click instead of hover
-      if (!isMobile || disabled) return;
-
-      const rect = container.getBoundingClientRect();
-      pointer.current.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-      pointer.current.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
-
-      const camera = cameraRef.current;
-      const mesh = meshRef.current;
-      if (!camera || !mesh) return;
-
-      raycaster.current.setFromCamera(pointer.current, camera);
-      const intersects = raycaster.current.intersectObject(mesh);
-
-      if (intersects.length > 0 && intersects[0].instanceId !== undefined) {
-        const idx = intersects[0].instanceId;
-        const hex = hexesRef.current[idx];
-        if (hex && isNeighbor(hex, playerPosition)) {
-          // Prevent OrbitControls from capturing this event
-          e.preventDefault();
-          e.stopPropagation();
-
+        if (newHover >= 0) {
+          const hex = hexesRef.current[newHover];
           const screen = projectToScreen(hex);
           if (screen) {
             const tt = { hex, screenX: screen.x, screenY: screen.y };
             tooltipRef.current = tt;
             setTooltip(tt);
-            mobileModalLockedRef.current = true; // Lock modal until confirm/cancel
-
-            // Temporarily disable OrbitControls to prevent interference
-            if (controlsRef.current) {
-              controlsRef.current.enabled = false;
-              // Re-enable after a short delay
-              setTimeout(() => {
-                if (controlsRef.current) {
-                  controlsRef.current.enabled = true;
-                }
-              }, 100);
-            }
           }
+        } else {
+          tooltipRef.current = null;
+          setTooltip(null);
         }
       }
     };
 
     container.addEventListener("pointermove", onPointerMove);
-    // Use capture phase on mobile to intercept before OrbitControls
-    container.addEventListener("pointerdown", onPointerDown, { capture: true });
 
     return () => {
       container.removeEventListener("pointermove", onPointerMove);
-      container.removeEventListener("pointerdown", onPointerDown, { capture: true });
-      if (tooltipTimeoutRef.current) {
-        clearTimeout(tooltipTimeoutRef.current);
-        tooltipTimeoutRef.current = null;
-      }
     };
   }, [playerPosition, disabled, updateColors, projectToScreen]);
 
@@ -588,7 +517,6 @@ export default function HexGrid({
       tooltipRef.current = null;
       setTooltip(null);
       hoveredRef.current = -1;
-      mobileModalLockedRef.current = false; // Unlock modal
     }
   }, [tooltip, disabled, onMove]);
 
@@ -596,7 +524,6 @@ export default function HexGrid({
     tooltipRef.current = null;
     setTooltip(null);
     hoveredRef.current = -1;
-    mobileModalLockedRef.current = false; // Unlock modal
     updateColors(-1);
   }, [updateColors]);
 
