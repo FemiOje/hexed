@@ -51,12 +51,10 @@ export default function MyGames() {
   // Handle spawn and navigate
   const handleStartGame = useCallback(async () => {
     if (!address) {
-      console.warn("No wallet connected");
       return;
     }
 
     try {
-      console.log("🎮 Starting spawn process via MyGames...");
 
       // Call spawn - this will capture game_id and save to store + localStorage
       await handleSpawn();
@@ -65,10 +63,8 @@ export default function MyGames() {
       setTimeout(() => {
         const currentGameId = useGameStore.getState().gameId;
         if (currentGameId) {
-          console.log(`✅ Spawn complete! Navigating to game #${currentGameId}`);
           navigate(`/game?id=${currentGameId}`);
         } else {
-          console.warn("⚠️ Game ID not captured, navigating without ID");
           navigate("/game");
         }
       }, 1500);
@@ -81,7 +77,6 @@ export default function MyGames() {
   // Handle resume
   const handleResume = useCallback(() => {
     if (savedGameId) {
-      console.log(`Resuming game #${savedGameId}`);
       navigate(`/game?id=${savedGameId}`);
     }
   }, [savedGameId, navigate]);

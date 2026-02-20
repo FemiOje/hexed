@@ -13,7 +13,6 @@ import { useUIStore } from "@/stores/uiStore";
 import { Direction, directionToString, EncounterOutcome, GameEvent } from "@/types/game";
 import { useController } from "@/contexts/controller";
 import { useStarknetApi } from "@/api/starknet";
-import { debugLog } from "@/utils/helpers";
 import toast from "react-hot-toast";
 
 /**
@@ -74,7 +73,6 @@ export const useGameActions = () => {
       setIsSpawning(true);
       setIsTransactionPending(true);
 
-      debugLog("Spawning player", address);
 
       // Create spawn call
       const spawnCall = spawn();
@@ -84,38 +82,32 @@ export const useGameActions = () => {
         [spawnCall],
         () => {
           // Rollback on failure
-          debugLog("Spawn failed, reverting state");
           setIsSpawning(false);
           setIsTransactionPending(false);
           toast.error("Spawn action failed");
         },
         () => {
           // Success callback
-          debugLog("Spawn transaction confirmed");
           setIsTransactionPending(false);
         }
       );
 
-      debugLog("Spawn events received", events);
 
       // Process events through GameDirector
       events.forEach((event) => {
         processEvent(event);
 
         if (event.type === "spawned") {
-          debugLog("Player spawned", event.position);
           setIsSpawned(true);
 
           // Capture and save game_id
           if (event.gameId) {
-            debugLog("Captured game_id from spawn event:", event.gameId);
             setGameId(event.gameId);
 
             // Save to localStorage for persistence
             if (address) {
               const storageKey = `hexed_game_id_${address}`;
               localStorage.setItem(storageKey, event.gameId.toString());
-              debugLog("Saved game_id to localStorage", { key: storageKey, gameId: event.gameId });
             }
           }
 
@@ -246,7 +238,6 @@ export const useGameActions = () => {
 
           // Register score on leaderboard if player died
           try {
-            debugLog("Registering score on leaderboard", { address, playerName, newXp });
             const scoreCall = registerScore(
               address!,
               playerName || address!,
@@ -257,17 +248,14 @@ export const useGameActions = () => {
             await executeAction(
               [scoreCall],
               () => {
-                debugLog("Score registration failed");
               },
               () => {
-                debugLog("Score registration submitted");
               }
             );
 
             // Fetch and update highest score in store
             const highestScore = await getHighestScore();
             if (highestScore) {
-              debugLog("Updated highest score", highestScore);
               useGameStore.getState().setHighestScore(highestScore);
             }
           } catch (scoreError) {

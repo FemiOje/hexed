@@ -115,7 +115,6 @@ export default function GamePage() {
         const validateOwnership = async () => {
             // First check: valid game_id in URL
             if (!gameId || gameId <= 0) {
-                console.log("No valid game ID in URL, redirecting to start page...");
                 navigate("/");
                 return;
             }
@@ -149,7 +148,6 @@ export default function GamePage() {
                 }
 
                 if (!gameState) {
-                    console.warn("Game not found:", gameId);
                     if (isMounted) {
                         setIsValidatingOwnership(false);
                         navigate("/");
@@ -197,9 +195,6 @@ export default function GamePage() {
                         setIsValidatingOwnership(false);
                     }
                 } else {
-                    console.warn("❌ Ownership mismatch");
-                    console.warn("Game belongs to:", gameState.player, "→", gamePlayer);
-                    console.warn("Connected wallet:", address, "→", connectedAddress);
                     if (isMounted) {
                         setIsValidatingOwnership(false);
                         navigate("/");
@@ -238,12 +233,10 @@ export default function GamePage() {
         }
 
         if (!blockchainPosition) {
-            console.warn("Cannot move: player position not available");
             return;
         }
 
         if (!canMove) {
-            console.warn("Cannot move: waiting for cooldown");
             return;
         }
 
@@ -252,7 +245,6 @@ export default function GamePage() {
         const direction = calculateDirection(currentHexPos, targetPos);
 
         if (direction === null) {
-            console.warn("Invalid move: positions are not adjacent");
             return;
         }
 
