@@ -510,7 +510,9 @@ export default function HexGrid({
     };
   }, [playerPosition, disabled, updateColors, projectToScreen]);
 
-  const handleConfirm = useCallback(() => {
+  const handleConfirm = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
     if (disabled) return;
     if (tooltip) {
       onMove(tooltip.hex);
@@ -520,7 +522,9 @@ export default function HexGrid({
     }
   }, [tooltip, disabled, onMove]);
 
-  const handleCancel = useCallback(() => {
+  const handleCancel = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
     tooltipRef.current = null;
     setTooltip(null);
     hoveredRef.current = -1;
