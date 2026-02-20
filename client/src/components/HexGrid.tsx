@@ -580,7 +580,7 @@ export default function HexGrid({
               : { left: tooltip.screenX, top: tooltip.screenY, transform: "translate(-50%, -120%)" }
             ),
             pointerEvents: "auto",
-            zIndex: 100,
+            zIndex: 9999,
           }}
         >
           <div
