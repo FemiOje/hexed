@@ -112,6 +112,7 @@ export default function HexGrid({
 
   const [tooltip, setTooltip] = useState<TooltipState | null>(null);
   const tooltipRef = useRef<TooltipState | null>(null);
+  const tooltipTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Update player position ref when it changes (without recreating scene)
   useEffect(() => {
@@ -447,6 +448,8 @@ export default function HexGrid({
     const container = mountRef.current;
     if (!container) return;
 
+    const isMobile = container.clientWidth < 900;
+
     const onPointerMove = (e: PointerEvent) => {
       const rect = container.getBoundingClientRect();
       pointer.current.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
@@ -477,13 +480,30 @@ export default function HexGrid({
         hoveredRef.current = newHover;
         updateColors(newHover);
 
+        // Clear previous tooltip timeout on mobile
+        if (tooltipTimeoutRef.current) {
+          clearTimeout(tooltipTimeoutRef.current);
+          tooltipTimeoutRef.current = null;
+        }
+
         if (newHover >= 0) {
           const hex = hexesRef.current[newHover];
           const screen = projectToScreen(hex);
           if (screen) {
             const tt = { hex, screenX: screen.x, screenY: screen.y };
-            tooltipRef.current = tt;
-            setTooltip(tt);
+
+            // On mobile, delay tooltip to prevent accidental hovers
+            if (isMobile) {
+              tooltipTimeoutRef.current = setTimeout(() => {
+                if (hoveredRef.current === newHover) {
+                  tooltipRef.current = tt;
+                  setTooltip(tt);
+                }
+              }, 300);
+            } else {
+              tooltipRef.current = tt;
+              setTooltip(tt);
+            }
           }
         } else {
           tooltipRef.current = null;
@@ -496,6 +516,10 @@ export default function HexGrid({
 
     return () => {
       container.removeEventListener("pointermove", onPointerMove);
+      if (tooltipTimeoutRef.current) {
+        clearTimeout(tooltipTimeoutRef.current);
+        tooltipTimeoutRef.current = null;
+      }
     };
   }, [playerPosition, disabled, updateColors, projectToScreen]);
 
@@ -515,6 +539,9 @@ export default function HexGrid({
     hoveredRef.current = -1;
     updateColors(-1);
   }, [updateColors]);
+
+  // Detect mobile for responsive styling
+  const isMobileView = mountRef.current ? mountRef.current.clientWidth < 900 : false;
 
   return (
     <div
@@ -576,13 +603,13 @@ export default function HexGrid({
               background: "rgba(10, 10, 30, 0.92)",
               border: "1px solid rgba(255,255,255,0.15)",
               borderRadius: 8,
-              padding: "8px 10px",
+              padding: isMobileView ? "24px 36px" : "8px 10px",
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
-              gap: 6,
+              gap: isMobileView ? 18 : 6,
               fontFamily: "monospace",
-              fontSize: 12,
+              fontSize: isMobileView ? 24 : 12,
               color: "#e0e0e0",
               boxShadow: "0 4px 16px rgba(0,0,0,0.5)",
               whiteSpace: "nowrap",
@@ -597,7 +624,7 @@ export default function HexGrid({
                   : `Move to (${tooltip.hex.col}, ${tooltip.hex.row})?`;
               })()}
             </span>
-            <div style={{ display: "flex", gap: 6 }}>
+            <div style={{ display: "flex", gap: isMobileView ? 16 : 6, flexWrap: "wrap", justifyContent: "center" }}>
               <button
                 onClick={handleConfirm}
                 style={{
@@ -605,11 +632,12 @@ export default function HexGrid({
                   color: "#0a0a1e",
                   border: "none",
                   borderRadius: 4,
-                  padding: "4px 12px",
+                  padding: isMobileView ? "20px 40px" : "4px 12px",
                   fontFamily: "monospace",
-                  fontSize: 12,
+                  fontSize: isMobileView ? 20 : 12,
                   fontWeight: 700,
                   cursor: "pointer",
+                  minWidth: isMobileView ? 160 : "auto",
                 }}
               >
                 {(() => {
@@ -625,10 +653,11 @@ export default function HexGrid({
                   color: "#aaa",
                   border: "1px solid rgba(255,255,255,0.2)",
                   borderRadius: 4,
-                  padding: "4px 12px",
+                  padding: isMobileView ? "20px 40px" : "4px 12px",
                   fontFamily: "monospace",
-                  fontSize: 12,
+                  fontSize: isMobileView ? 20 : 12,
                   cursor: "pointer",
+                  minWidth: isMobileView ? 160 : "auto",
                 }}
               >
                 Cancel

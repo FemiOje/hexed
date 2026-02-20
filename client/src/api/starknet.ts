@@ -199,8 +199,6 @@ export const useStarknetApi = () => {
 
       const data = await response.json();
 
-      console.log("RPC response for getGameState:", JSON.stringify(data.result));
-
       if (!data?.result || data.result.length < 5) {
         console.warn("Invalid or empty response from get_game_state:", data);
         return null;
@@ -231,11 +229,9 @@ export const useStarknetApi = () => {
       const isActive = parseInt(data.result[idx++], 16) === 1;
 
       // Player stats (hp, max_hp, xp) — added with combat system
-      console.log("Parsing stats at idx:", idx, "remaining fields:", data.result.slice(idx));
       const hp = parseInt(data.result[idx++], 16) || 0;
       const maxHp = parseInt(data.result[idx++], 16) || 0;
       const xp = parseInt(data.result[idx++], 16) || 0;
-      console.log("Parsed stats:", { hp, maxHp, xp });
 
       // Neighbor occupancy bitmask (u8)
       const neighborOccupancy = parseInt(data.result[idx++], 16) || 0;

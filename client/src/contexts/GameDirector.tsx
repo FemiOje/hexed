@@ -243,7 +243,6 @@ export const GameDirectorProvider = ({ children }: PropsWithChildren) => {
       // Fetch highest score for leaderboard display (always fetch, regardless of game state)
       const highestScore = await getHighestScore();
       if (highestScore) {
-        debugLog("Loaded highest score", highestScore);
         setHighestScore(highestScore);
       }
     } catch (error) {
