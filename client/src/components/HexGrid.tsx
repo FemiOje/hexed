@@ -617,7 +617,11 @@ export default function HexGrid({
                   cursor: "pointer",
                 }}
               >
-                Confirm
+                {(() => {
+                  const dir = calculateDirection(playerPosition, tooltip.hex);
+                  const isOccupied = dir !== null && occupiedNeighborsMask > 0 && ((occupiedNeighborsMask >> dir) & 1) === 1;
+                  return isOccupied ? "Attack" : "Confirm";
+                })()}
               </button>
               <button
                 onClick={handleCancel}

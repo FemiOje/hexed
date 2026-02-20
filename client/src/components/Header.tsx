@@ -9,8 +9,8 @@ function Header() {
   return (
     <Box sx={styles.header}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-        <Typography variant="h6" sx={{ color: 'white', fontWeight: 600 }}>
-          Hex'd
+        <Typography variant="h6" sx={{ color: '#44cc44', fontWeight: 600 }}>
+          HEX'D
         </Typography>
       </Box>
 
@@ -50,11 +50,11 @@ const styles = {
     gap: 2
   },
   helpButton: {
-    color: 'rgba(0, 212, 255, 0.7)',
+    color: 'rgba(68, 204, 68, 0.7)',
     transition: 'all 0.2s',
     '&:hover': {
-      color: '#00d4ff',
-      backgroundColor: 'rgba(0, 212, 255, 0.1)',
+      color: '#44cc44',
+      backgroundColor: 'rgba(68, 204, 68, 0.1)',
     }
   }
 };

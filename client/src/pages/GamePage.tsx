@@ -263,8 +263,8 @@ export default function GamePage() {
     // Loading state
     if (isValidatingOwnership || !ownershipValid) {
         return (
-            <div style={{ width: "100%", height: "100dvh", display: "flex", alignItems: "center", justifyContent: "center", background: "radial-gradient(ellipse at 50% 40%, #1a1535 0%, #0a0514 100%)" }}>
-                <div style={{ width: "24px", height: "24px", border: "2px solid rgba(0, 212, 255, 0.2)", borderTop: "2px solid rgba(0, 212, 255, 0.8)", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+            <div style={{ width: "100%", height: "100dvh", display: "flex", alignItems: "center", justifyContent: "center", background: "radial-gradient(ellipse at 50% 40%, #1a2e1a 0%, #0a140a 100%)" }}>
+                <div style={{ width: "24px", height: "24px", border: "2px solid rgba(68, 204, 68, 0.2)", borderTop: "2px solid rgba(68, 204, 68, 0.8)", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
                 <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
             </div>
         );
@@ -276,8 +276,8 @@ export default function GamePage() {
 
     if (!isSpawned || !blockchainPosition) {
         return (
-            <div style={{ width: "100%", height: "100dvh", display: "flex", alignItems: "center", justifyContent: "center", background: "radial-gradient(ellipse at 50% 40%, #1a1535 0%, #0a0514 100%)" }}>
-                <div style={{ width: "24px", height: "24px", border: "2px solid rgba(0, 212, 255, 0.2)", borderTop: "2px solid rgba(0, 212, 255, 0.8)", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+            <div style={{ width: "100%", height: "100dvh", display: "flex", alignItems: "center", justifyContent: "center", background: "radial-gradient(ellipse at 50% 40%, #1a2e1a 0%, #0a140a 100%)" }}>
+                <div style={{ width: "24px", height: "24px", border: "2px solid rgba(68, 204, 68, 0.2)", borderTop: "2px solid rgba(68, 204, 68, 0.8)", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
                 <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
             </div>
         );
@@ -293,23 +293,23 @@ export default function GamePage() {
                     top: 16,
                     left: 16,
                     zIndex: 1000,
-                    color: "#e0e0e0",
-                    background: "rgba(10,10,30,0.8)",
+                    color: "#ffffff",
+                    background: "rgba(10, 25, 15, 0.8)",
                     padding: "12px 16px",
                     borderRadius: "8px",
                     fontFamily: "monospace",
                     fontSize: "13px",
-                    border: "1px solid rgba(255,255,255,0.1)",
+                    border: "1px solid rgba(68, 204, 68, 0.2)",
                     pointerEvents: "auto",
                 }}>
-                    <div style={{ marginBottom: 4, fontWeight: 600, color: "#f5a623" }}>
+                    <div style={{ marginBottom: 4, fontWeight: 600, color: "#44cc44" }}>
                         Position: ({playerPosition.col}, {playerPosition.row})
                     </div>
                     {/* HP Bar */}
                     <div style={{ marginBottom: 6 }}>
                         <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, marginBottom: 2 }}>
-                            <span style={{ color: "#ff6b6b" }}>HP</span>
-                            <span style={{ color: "#aaa" }}>{hp}/{maxHp}</span>
+                            <span style={{ color: "#44cc44" }}>HP</span>
+                            <span style={{ color: "#ffffff" }}>{hp}/{maxHp}</span>
                         </div>
                         <div style={{
                             width: "100%",
@@ -328,14 +328,14 @@ export default function GamePage() {
                         </div>
                     </div>
                     {/* XP */}
-                    <div style={{ fontSize: 11, color: "#aaa", marginBottom: 6 }}>
-                        <span style={{ color: "#9c27b0" }}>XP</span>: {xp}
+                    <div style={{ fontSize: 11, color: "#ffffff", marginBottom: 6 }}>
+                        <span style={{ color: "#44cc44" }}>XP</span>: {xp}
                     </div>
-                    <div style={{ fontSize: 11, color: "#aaa", marginBottom: 8 }}>
+                    <div style={{ fontSize: 11, color: "#ffffff", marginBottom: 8 }}>
                         {isMoving ? (
-                            <span style={{ color: "#f5a623" }}>Resolving move...</span>
+                            <span style={{ color: "#44cc44" }}>Resolving move...</span>
                         ) : (
-                            <>Can Move: {canMove ? "Yes" : "Wait..."}</>
+                            <><span style={{ color: "#44cc44" }}>Can Move:</span> {canMove ? "Yes" : "Wait..."}</>
                         )}
                     </div>
                 </div>

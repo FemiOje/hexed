@@ -104,12 +104,12 @@ const styles = {
         position: "absolute" as const,
         top: { xs: "16px", sm: "24px" },
         right: { xs: "16px", sm: "24px" },
-        color: "rgba(0, 212, 255, 0.6)",
+        color: "rgba(68, 204, 68, 0.6)",
         padding: "8px",
         transition: "all 0.2s",
         "&:hover": {
-            color: "#00d4ff",
-            backgroundColor: "rgba(0, 212, 255, 0.1)",
+            color: "#44cc44",
+            backgroundColor: "rgba(68, 204, 68, 0.1)",
         },
     },
     backgroundGradient: {
@@ -118,7 +118,7 @@ const styles = {
         left: 0,
         width: "100%",
         height: "100%",
-        background: "radial-gradient(ellipse at 50% 40%, #1a1535 0%, #0a0514 100%)",
+        background: "radial-gradient(ellipse at 50% 40%, #1a2e1a 0%, #0a140a 100%)",
         zIndex: 0,
     },
     hexPattern: {
@@ -128,9 +128,9 @@ const styles = {
         width: "100%",
         height: "100%",
         backgroundImage: `
-            linear-gradient(30deg, transparent 48%, rgba(0, 212, 255, 0.04) 49%, rgba(0, 212, 255, 0.04) 51%, transparent 52%),
-            linear-gradient(90deg, transparent 48%, rgba(0, 212, 255, 0.04) 49%, rgba(0, 212, 255, 0.04) 51%, transparent 52%),
-            linear-gradient(150deg, transparent 48%, rgba(0, 212, 255, 0.04) 49%, rgba(0, 212, 255, 0.04) 51%, transparent 52%)
+            linear-gradient(30deg, transparent 48%, rgba(68, 204, 68, 0.04) 49%, rgba(68, 204, 68, 0.04) 51%, transparent 52%),
+            linear-gradient(90deg, transparent 48%, rgba(68, 204, 68, 0.04) 49%, rgba(68, 204, 68, 0.04) 51%, transparent 52%),
+            linear-gradient(150deg, transparent 48%, rgba(68, 204, 68, 0.04) 49%, rgba(68, 204, 68, 0.04) 51%, transparent 52%)
         `,
         backgroundSize: "100px 173.2px",
         zIndex: 1,
@@ -146,7 +146,7 @@ const styles = {
         left: 0,
         width: "100%",
         height: "100%",
-        background: "radial-gradient(circle at 50% 40%, rgba(0, 212, 255, 0.06) 0%, transparent 60%)",
+        background: "radial-gradient(circle at 50% 40%, rgba(68, 204, 68, 0.06) 0%, transparent 60%)",
         zIndex: 2,
         animation: "fogPulse 10s ease-in-out infinite",
         "@keyframes fogPulse": {
@@ -171,7 +171,7 @@ const styles = {
         width: "64px",
         height: "74px",
         clipPath: "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)",
-        background: "rgba(0, 212, 255, 0.06)",
+        background: "rgba(68, 204, 68, 0.06)",
         zIndex: 4,
         animation: "float1 12s ease-in-out infinite",
         "@keyframes float1": {
@@ -249,18 +249,18 @@ const styles = {
         fontWeight: 900,
         letterSpacing: { xs: "8px", sm: "14px", md: "18px" },
         textAlign: "center",
-        color: "#e0f7ff",
+        color: "#44cc44",
         textShadow: `
-            0 0 30px rgba(0, 212, 255, 0.5),
-            0 0 80px rgba(0, 212, 255, 0.25)
+            0 0 30px rgba(68, 204, 68, 0.5),
+            0 0 80px rgba(68, 204, 68, 0.25)
         `,
         animation: "titleGlow 4s ease-in-out infinite",
         "@keyframes titleGlow": {
             "0%, 100%": {
-                textShadow: "0 0 30px rgba(0, 212, 255, 0.5), 0 0 80px rgba(0, 212, 255, 0.25)",
+                textShadow: "0 0 30px rgba(68, 204, 68, 0.5), 0 0 80px rgba(68, 204, 68, 0.25)",
             },
             "50%": {
-                textShadow: "0 0 40px rgba(0, 212, 255, 0.7), 0 0 100px rgba(0, 212, 255, 0.35)",
+                textShadow: "0 0 40px rgba(68, 204, 68, 0.7), 0 0 100px rgba(68, 204, 68, 0.35)",
             },
         },
     },
@@ -271,7 +271,7 @@ const styles = {
         transform: "translate(-50%, -50%)",
         width: "120%",
         height: "120%",
-        background: "radial-gradient(circle, rgba(0, 212, 255, 0.15), transparent 70%)",
+        background: "radial-gradient(circle, rgba(68, 204, 68, 0.15), transparent 70%)",
         filter: "blur(40px)",
         zIndex: -1,
     },
