@@ -541,23 +541,39 @@ export default function HexGrid({
         const idx = intersects[0].instanceId;
         const hex = hexesRef.current[idx];
         if (hex && isNeighbor(hex, playerPosition)) {
+          // Prevent OrbitControls from capturing this event
+          e.preventDefault();
+          e.stopPropagation();
+
           const screen = projectToScreen(hex);
           if (screen) {
             const tt = { hex, screenX: screen.x, screenY: screen.y };
             tooltipRef.current = tt;
             setTooltip(tt);
             mobileModalLockedRef.current = true; // Lock modal until confirm/cancel
+
+            // Temporarily disable OrbitControls to prevent interference
+            if (controlsRef.current) {
+              controlsRef.current.enabled = false;
+              // Re-enable after a short delay
+              setTimeout(() => {
+                if (controlsRef.current) {
+                  controlsRef.current.enabled = true;
+                }
+              }, 100);
+            }
           }
         }
       }
     };
 
     container.addEventListener("pointermove", onPointerMove);
-    container.addEventListener("pointerdown", onPointerDown);
+    // Use capture phase on mobile to intercept before OrbitControls
+    container.addEventListener("pointerdown", onPointerDown, { capture: true });
 
     return () => {
       container.removeEventListener("pointermove", onPointerMove);
-      container.removeEventListener("pointerdown", onPointerDown);
+      container.removeEventListener("pointerdown", onPointerDown, { capture: true });
       if (tooltipTimeoutRef.current) {
         clearTimeout(tooltipTimeoutRef.current);
         tooltipTimeoutRef.current = null;
