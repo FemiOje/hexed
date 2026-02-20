@@ -5,7 +5,7 @@
  * Following death-mountain pattern for event processing
  */
 
-import { GameEvent, Direction } from "@/types/game";
+import { GameEvent, Direction, EncounterOutcome } from "@/types/game";
 import { debugLog, feltHexToI32 } from "./helpers";
 
 /**
@@ -137,6 +137,39 @@ export function processGameEvent(event: any, manifest: any): GameEvent {
           vec,
         },
         neighborsOccupied: neighbors,
+      };
+    }
+
+    // Parse EncounterOccurred event
+    // Key: game_id
+    // Values: is_gift (0/1), outcome (EncounterOutcome enum), hp_after, max_hp_after, xp_after, player_died (0/1)
+    if (eventName === "encounteroccurred") {
+      const isGift = parseInt(data[valueOffset] || "0", 16) !== 0;
+      const outcome = parseInt(data[valueOffset + 1] || "0", 16) as EncounterOutcome;
+      const hpAfter = parseInt(data[valueOffset + 2] || "0", 16);
+      const maxHpAfter = parseInt(data[valueOffset + 3] || "0", 16);
+      const xpAfter = parseInt(data[valueOffset + 4] || "0", 16);
+      const playerDied = parseInt(data[valueOffset + 5] || "0", 16) !== 0;
+
+      debugLog("Parsed EncounterOccurred event:", {
+        gameId,
+        isGift,
+        outcome,
+        hpAfter,
+        maxHpAfter,
+        xpAfter,
+        playerDied,
+      });
+
+      return {
+        type: "encounter_occurred",
+        gameId,
+        isGift,
+        encounterOutcome: outcome,
+        hpAfter,
+        maxHpAfter,
+        xpAfter,
+        encounterPlayerDied: playerDied,
       };
     }
 

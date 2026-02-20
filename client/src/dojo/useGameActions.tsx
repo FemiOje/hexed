@@ -10,10 +10,36 @@ import { useSystemCalls } from "./useSystemCalls";
 import { useGameDirector } from "@/contexts/GameDirector";
 import { useGameStore } from "@/stores/gameStore";
 import { useUIStore } from "@/stores/uiStore";
-import { Direction, directionToString } from "@/types/game";
+import { Direction, directionToString, EncounterOutcome, GameEvent } from "@/types/game";
 import { useController } from "@/contexts/controller";
 import { debugLog } from "@/utils/helpers";
 import toast from "react-hot-toast";
+
+/**
+ * Format encounter event into a display string
+ */
+function formatEncounterText(event: GameEvent): string {
+  switch (event.encounterOutcome) {
+    case EncounterOutcome.Heal:
+      return "HEAL! +20 HP";
+    case EncounterOutcome.Fortify:
+      return "FORTIFY! +10 max HP, +10 HP";
+    case EncounterOutcome.Empower:
+      return "EMPOWER! +25 XP";
+    case EncounterOutcome.Blessing:
+      return "BLESSING! +10 HP, +5 max HP, +15 XP";
+    case EncounterOutcome.Poison:
+      return "POISON!! -15 HP";
+    case EncounterOutcome.Wither:
+      return "WITHER!! -10 max HP";
+    case EncounterOutcome.Drain:
+      return "DRAIN!! you lost 20 XP";
+    case EncounterOutcome.Hex:
+      return "HEX!! -10 HP, -5 max HP, -10 XP";
+    default:
+      return "Unknown encounter";
+  }
+}
 
 export const useGameActions = () => {
   const { address } = useController();
@@ -179,8 +205,9 @@ export const useGameActions = () => {
           }
         );
 
-        // Detect move outcome from events
+        // Detect move outcome and capture encounter event
         let moveOutcome = "unknown";
+        let encounterEvent: GameEvent | null = null;
 
         events.forEach((event) => {
           processEvent(event);
@@ -195,6 +222,10 @@ export const useGameActions = () => {
           if (event.type === "combat_result") {
             moveOutcome = event.combatWon ? "combat_won" : "combat_lost";
           }
+
+          if (event.type === "encounter_occurred") {
+            encounterEvent = event;
+          }
         });
 
         // Refresh full state (HP/XP/can_move) from blockchain using pre_confirmed block tag.
@@ -205,7 +236,7 @@ export const useGameActions = () => {
         const newHp = useGameStore.getState().hp;
         const newXp = useGameStore.getState().xp;
         const playerDied = useGameStore.getState().isDead;
-        const hpDelta = newHp - prevHp; // negative = lost HP, positive = gained HP
+        const hpDelta = newHp - prevHp;
         const xpGained = newXp - prevXp;
 
         // Override death reason with specific cause from move outcome
@@ -216,67 +247,103 @@ export const useGameActions = () => {
           useGameStore.getState().setIsDead(true, newXp, reason);
         }
 
-        // Determine toast title and border color
-        let title: string;
-        let borderColor: string;
-        if (playerDied) {
-          title = "You died!";
-          borderColor = "#f44336";
-        } else if (moveOutcome === "combat_won") {
-          title = "Won combat!";
-          borderColor = "#4caf50";
-        } else if (moveOutcome === "combat_lost") {
-          title = "Lost combat!";
-          borderColor = "#f44336";
-        } else {
-          title = `Moved ${directionToString(direction)}`;
-          borderColor = "#4285f4";
-        }
-
-        // Show rich toast with stat deltas
-        toast.custom(
-          (t) => (
-            <div
-              style={{
-                opacity: t.visible ? 1 : 0,
-                transition: "opacity 0.2s ease",
-                background: "rgba(10, 10, 30, 0.95)",
-                border: `1px solid ${borderColor}`,
-                borderRadius: 8,
-                padding: "12px 16px",
-                color: "#e0e0e0",
-                fontFamily: "monospace",
-                fontSize: 13,
-                maxWidth: 280,
-              }}
-            >
-              <div style={{ fontWeight: 600, marginBottom: 6, color: borderColor }}>
-                {title}
+        // --- Toast logic ---
+        if (moveOutcome === "combat_won" || moveOutcome === "combat_lost") {
+          // Combat: single toast (keep existing style)
+          const combatTitle = moveOutcome === "combat_won" ? "Won combat!" : "Lost combat!";
+          const combatColor = moveOutcome === "combat_won" ? "#4caf50" : "#f44336";
+          toast.custom(
+            (t) => (
+              <div
+                style={{
+                  opacity: t.visible ? 1 : 0,
+                  transition: "opacity 0.2s ease",
+                  background: "rgba(10, 10, 30, 0.95)",
+                  border: `1px solid ${combatColor}`,
+                  borderRadius: 8,
+                  padding: "12px 16px",
+                  color: "#e0e0e0",
+                  fontFamily: "monospace",
+                  fontSize: 13,
+                  maxWidth: 280,
+                }}
+              >
+                <div style={{ fontWeight: 600, marginBottom: 6, color: combatColor }}>
+                  {combatTitle}
+                </div>
+                {xpGained !== 0 && (
+                  <div style={{ color: xpGained > 0 ? "#4caf50" : "#f44336" }}>
+                    {xpGained > 0 ? "+" : ""}{xpGained} XP
+                  </div>
+                )}
+                {hpDelta !== 0 && (
+                  <div style={{ color: hpDelta > 0 ? "#4caf50" : "#f44336" }}>
+                    {hpDelta > 0 ? "+" : ""}{hpDelta} HP
+                  </div>
+                )}
               </div>
-              {xpGained !== 0 && (
-                <div style={{ color: "#4caf50" }}>
-                  +{xpGained} XP
+            ),
+            { duration: 3000 }
+          );
+        } else if (moveOutcome === "moved") {
+          // Toast 1: Movement toast (always shown)
+          toast.custom(
+            (t) => (
+              <div
+                style={{
+                  opacity: t.visible ? 1 : 0,
+                  transition: "opacity 0.2s ease",
+                  background: "rgba(10, 10, 30, 0.95)",
+                  border: "1px solid #4285f4",
+                  borderRadius: 8,
+                  padding: "12px 16px",
+                  color: "#e0e0e0",
+                  fontFamily: "monospace",
+                  fontSize: 13,
+                  maxWidth: 280,
+                }}
+              >
+                <div style={{ fontWeight: 600, color: "#4285f4" }}>
+                  Moved {directionToString(direction)}, +10 XP
                 </div>
-              )}
-              {hpDelta < 0 && (
-                <div style={{ color: "#f44336" }}>
-                  {hpDelta} HP
-                </div>
-              )}
-              {hpDelta > 0 && (
-                <div style={{ color: "#4caf50" }}>
-                  +{hpDelta} HP
-                </div>
-              )}
-              {xpGained === 0 && hpDelta === 0 && (
-                <div style={{ color: "#aaa", fontSize: 11 }}>
-                  No stat changes
-                </div>
-              )}
-            </div>
-          ),
-          { duration: 3000 }
-        );
+              </div>
+            ),
+            { duration: 2500 }
+          );
+
+          // Toast 2: Encounter toast (if encounter event was received)
+          if (encounterEvent) {
+            const enc = encounterEvent as GameEvent;
+            const encounterText = formatEncounterText(enc);
+            const encounterColor = enc.isGift ? "#4caf50" : "#f44336";
+
+            setTimeout(() => {
+              toast.custom(
+                (t) => (
+                  <div
+                    style={{
+                      opacity: t.visible ? 1 : 0,
+                      transition: "opacity 0.2s ease",
+                      background: "rgba(10, 10, 30, 0.95)",
+                      border: `1px solid ${encounterColor}`,
+                      borderRadius: 8,
+                      padding: "12px 16px",
+                      color: "#e0e0e0",
+                      fontFamily: "monospace",
+                      fontSize: 13,
+                      maxWidth: 280,
+                    }}
+                  >
+                    <div style={{ fontWeight: 600, color: encounterColor }}>
+                      {encounterText}
+                    </div>
+                  </div>
+                ),
+                { duration: 3000 }
+              );
+            }, 400);
+          }
+        }
       } catch (error) {
         console.error("Move error:", error);
         const errorMessage = error instanceof Error ? error.message : "Unknown error";

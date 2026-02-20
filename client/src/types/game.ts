@@ -82,7 +82,7 @@ export interface GameState {
  * Game Event types for event processing
  */
 export interface GameEvent {
-  type: 'spawned' | 'moved' | 'combat_result' | 'position_update' | 'neighbors_revealed' | 'unknown';
+  type: 'spawned' | 'moved' | 'combat_result' | 'position_update' | 'neighbors_revealed' | 'encounter_occurred' | 'unknown';
   gameId?: number;  // game_id from event (u32)
   player?: string;
   position?: Position;
@@ -94,6 +94,13 @@ export interface GameEvent {
   defenderPosition?: Vec2;
   // Neighbor occupancy (only present when type === 'neighbors_revealed')
   neighborsOccupied?: number;  // u8 bitmask
+  // Encounter fields (only present when type === 'encounter_occurred')
+  isGift?: boolean;
+  encounterOutcome?: EncounterOutcome;
+  hpAfter?: number;
+  maxHpAfter?: number;
+  xpAfter?: number;
+  encounterPlayerDied?: boolean;
 }
 
 /**
@@ -102,6 +109,21 @@ export interface GameEvent {
 export interface GameAction {
   type: 'spawn' | 'move';
   direction?: Direction;
+}
+
+/**
+ * EncounterOutcome enum matching Cairo EncounterOutcome model
+ * Gifts (0-3) and Curses (4-7)
+ */
+export enum EncounterOutcome {
+  Heal = 0,
+  Fortify = 1,
+  Empower = 2,
+  Blessing = 3,
+  Poison = 4,
+  Wither = 5,
+  Drain = 6,
+  Hex = 7,
 }
 
 /**
