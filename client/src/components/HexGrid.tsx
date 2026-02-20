@@ -487,46 +487,69 @@ export default function HexGrid({
         container.style.cursor = "default";
       }
 
-      if (newHover !== hoveredRef.current) {
-        hoveredRef.current = newHover;
-        updateColors(newHover);
+      // On mobile, don't show tooltip on hover - use click instead
+      if (!isMobile) {
+        if (newHover !== hoveredRef.current) {
+          hoveredRef.current = newHover;
+          updateColors(newHover);
 
-        // Clear previous tooltip timeout on mobile
-        if (tooltipTimeoutRef.current) {
-          clearTimeout(tooltipTimeoutRef.current);
-          tooltipTimeoutRef.current = null;
-        }
-
-        if (newHover >= 0) {
-          const hex = hexesRef.current[newHover];
-          const screen = projectToScreen(hex);
-          if (screen) {
-            const tt = { hex, screenX: screen.x, screenY: screen.y };
-
-            // On mobile, delay tooltip to prevent accidental hovers
-            if (isMobile) {
-              tooltipTimeoutRef.current = setTimeout(() => {
-                if (hoveredRef.current === newHover) {
-                  tooltipRef.current = tt;
-                  setTooltip(tt);
-                }
-              }, 300);
-            } else {
+          if (newHover >= 0) {
+            const hex = hexesRef.current[newHover];
+            const screen = projectToScreen(hex);
+            if (screen) {
+              const tt = { hex, screenX: screen.x, screenY: screen.y };
               tooltipRef.current = tt;
               setTooltip(tt);
             }
+          } else {
+            tooltipRef.current = null;
+            setTooltip(null);
           }
-        } else {
-          tooltipRef.current = null;
-          setTooltip(null);
+        }
+      } else {
+        // On mobile, just update hover color but don't show tooltip
+        if (newHover !== hoveredRef.current) {
+          hoveredRef.current = newHover;
+          updateColors(newHover);
+        }
+      }
+    };
+
+    const onPointerDown = (e: PointerEvent) => {
+      // On mobile, show modal on click instead of hover
+      if (!isMobile || disabled) return;
+
+      const rect = container.getBoundingClientRect();
+      pointer.current.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      pointer.current.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+
+      const camera = cameraRef.current;
+      const mesh = meshRef.current;
+      if (!camera || !mesh) return;
+
+      raycaster.current.setFromCamera(pointer.current, camera);
+      const intersects = raycaster.current.intersectObject(mesh);
+
+      if (intersects.length > 0 && intersects[0].instanceId !== undefined) {
+        const idx = intersects[0].instanceId;
+        const hex = hexesRef.current[idx];
+        if (hex && isNeighbor(hex, playerPosition)) {
+          const screen = projectToScreen(hex);
+          if (screen) {
+            const tt = { hex, screenX: screen.x, screenY: screen.y };
+            tooltipRef.current = tt;
+            setTooltip(tt);
+          }
         }
       }
     };
 
     container.addEventListener("pointermove", onPointerMove);
+    container.addEventListener("pointerdown", onPointerDown);
 
     return () => {
       container.removeEventListener("pointermove", onPointerMove);
+      container.removeEventListener("pointerdown", onPointerDown);
       if (tooltipTimeoutRef.current) {
         clearTimeout(tooltipTimeoutRef.current);
         tooltipTimeoutRef.current = null;
