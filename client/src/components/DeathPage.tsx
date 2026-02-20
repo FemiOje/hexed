@@ -2,30 +2,12 @@ import { useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Box, Button, Typography } from "@mui/material";
 import { useDeathXp, useDeathReason, useGameStore } from "../stores/gameStore";
-import { useGameActions } from "../dojo/useGameActions";
 
 export default function DeathPage() {
   const navigate = useNavigate();
   const deathXp = useDeathXp();
   const deathReason = useDeathReason();
-  const { handleSpawn, isSpawning } = useGameActions();
   const { setIsDead, resetGameState } = useGameStore();
-
-  const handlePlayAgain = useCallback(async () => {
-    // Reset death state and game state before spawning
-    resetGameState();
-    await handleSpawn();
-
-    // Navigate to game after spawn completes
-    setTimeout(() => {
-      const currentGameId = useGameStore.getState().gameId;
-      if (currentGameId) {
-        navigate(`/game?id=${currentGameId}`);
-      } else {
-        navigate("/");
-      }
-    }, 1500);
-  }, [handleSpawn, resetGameState, navigate]);
 
   const handleBackToLobby = useCallback(() => {
     setIsDead(false);
@@ -35,45 +17,55 @@ export default function DeathPage() {
 
   return (
     <Box sx={styles.container}>
-      <Box sx={styles.overlay} />
+      {/* Background */}
+      <Box sx={styles.backgroundGradient} />
+      <Box sx={styles.vignette} />
 
+      {/* Subtle embers */}
+      <Box sx={styles.ember1} />
+      <Box sx={styles.ember2} />
+      <Box sx={styles.ember3} />
+
+      {/* Content */}
       <Box sx={styles.content}>
         <Typography sx={styles.prefixTitle}>You Died</Typography>
 
-        <Typography sx={styles.title}>GAME OVER</Typography>
+        <Box sx={styles.titleContainer}>
+          <Typography sx={styles.title}>GAME OVER</Typography>
+          <Box sx={styles.titleGlow} />
+        </Box>
+
+        <Box sx={styles.divider} />
 
         {deathReason && (
-          <Box sx={styles.encounterCard}>
-            <Typography sx={styles.encounterLabel}>Final Encounter</Typography>
-            <Typography sx={styles.encounterMessage}>{deathReason}</Typography>
+          <Box sx={styles.encounterSection}>
+            <Typography sx={styles.sectionLabel}>CAUSE OF DEATH</Typography>
+            <Typography sx={styles.encounterMessage}>
+              {deathReason}
+            </Typography>
           </Box>
         )}
 
-        <Box sx={styles.statsCard}>
-          <Typography sx={styles.statsLabel}>Final Score</Typography>
-          <Typography sx={styles.statsValue}>{deathXp} XP</Typography>
+        <Box sx={styles.divider} />
+
+        <Box sx={styles.statsSection}>
+          <Typography sx={styles.sectionLabel}>FINAL SCORE</Typography>
+          <Box sx={styles.xpRow}>
+            <Typography sx={styles.xpValue}>{deathXp}</Typography>
+            <Typography sx={styles.xpUnit}>XP</Typography>
+          </Box>
         </Box>
 
-        <Box sx={styles.actions}>
-          <Button
-            variant="contained"
-            size="large"
-            onClick={handlePlayAgain}
-            disabled={isSpawning}
-            sx={styles.playAgainButton}
-          >
-            {isSpawning ? "Spawning..." : "Play Again"}
-          </Button>
+        <Box sx={styles.divider} />
 
-          <Button
-            variant="outlined"
-            size="large"
-            onClick={handleBackToLobby}
-            sx={styles.lobbyButton}
-          >
-            Back to Lobby
-          </Button>
-        </Box>
+        <Button
+          variant="outlined"
+          size="large"
+          onClick={handleBackToLobby}
+          sx={styles.lobbyButton}
+        >
+          Return to Lobby
+        </Button>
       </Box>
     </Box>
   );
@@ -85,134 +77,201 @@ const styles = {
     top: 0,
     left: 0,
     width: "100vw",
-    height: "100vh",
+    height: "100dvh",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
     zIndex: 9999,
+    overflow: "hidden",
   },
-  overlay: {
+  backgroundGradient: {
     position: "absolute" as const,
     top: 0,
     left: 0,
     width: "100%",
     height: "100%",
-    background: "linear-gradient(135deg, #1a0000 0%, #0a0a1e 50%, #1a0000 100%)",
+    background: "radial-gradient(ellipse at 50% 40%, #1a0505 0%, #050000 100%)",
+    zIndex: 0,
+  },
+  vignette: {
+    position: "absolute" as const,
+    top: 0,
+    left: 0,
+    width: "100%",
+    height: "100%",
+    background: "radial-gradient(circle at 50% 50%, transparent 20%, rgba(0, 0, 0, 0.8) 100%)",
+    zIndex: 1,
+  },
+  // 3 subtle embers — small, quiet
+  ember1: {
+    position: "absolute" as const,
+    width: "3px",
+    height: "3px",
+    background: "#dc2626",
+    borderRadius: "50%",
+    boxShadow: "0 0 6px #dc2626",
+    top: "25%",
+    left: "18%",
+    zIndex: 2,
+    animation: "ember1 10s ease-in-out infinite",
+    "@keyframes ember1": {
+      "0%, 100%": { transform: "translateY(0)", opacity: 0.2 },
+      "50%": { transform: "translateY(-60px)", opacity: 0.6 },
+    },
+  },
+  ember2: {
+    position: "absolute" as const,
+    width: "2px",
+    height: "2px",
+    background: "#ef4444",
+    borderRadius: "50%",
+    boxShadow: "0 0 4px #ef4444",
+    bottom: "35%",
+    right: "22%",
+    zIndex: 2,
+    animation: "ember2 14s ease-in-out infinite",
+    "@keyframes ember2": {
+      "0%, 100%": { transform: "translateY(0)", opacity: 0.15 },
+      "50%": { transform: "translateY(-80px)", opacity: 0.5 },
+    },
+  },
+  ember3: {
+    position: "absolute" as const,
+    width: "2px",
+    height: "2px",
+    background: "#dc2626",
+    borderRadius: "50%",
+    boxShadow: "0 0 5px #dc2626",
+    top: "55%",
+    left: "30%",
+    zIndex: 2,
+    animation: "ember3 12s ease-in-out infinite",
+    "@keyframes ember3": {
+      "0%, 100%": { transform: "translateY(0)", opacity: 0.1 },
+      "50%": { transform: "translateY(-70px)", opacity: 0.4 },
+    },
   },
   content: {
     position: "relative" as const,
-    zIndex: 1,
+    zIndex: 10,
     display: "flex",
     flexDirection: "column" as const,
     alignItems: "center",
     gap: "24px",
-    padding: "48px",
-    backgroundColor: "rgba(10, 10, 30, 0.9)",
-    borderRadius: "16px",
-    border: "2px solid rgba(244, 67, 54, 0.4)",
-    backdropFilter: "blur(10px)",
-    boxShadow: "0 8px 32px rgba(244, 67, 54, 0.3)",
-    minWidth: "400px",
+    padding: { xs: "40px 28px", sm: "56px 56px" },
+    maxWidth: "480px",
+    width: "90%",
+    animation: "contentIn 0.5s ease-out",
+    "@keyframes contentIn": {
+      "0%": { opacity: 0, transform: "translateY(12px)" },
+      "100%": { opacity: 1, transform: "translateY(0)" },
+    },
   },
   prefixTitle: {
-    fontSize: "1.2rem",
-    fontWeight: 400,
-    color: "#f44336",
-    letterSpacing: 2,
+    fontSize: "0.8rem",
+    fontWeight: 600,
+    color: "rgba(220, 38, 38, 0.7)",
+    letterSpacing: "4px",
     textTransform: "uppercase" as const,
+  },
+  titleContainer: {
+    position: "relative" as const,
   },
   title: {
-    fontSize: "3.5rem",
-    fontWeight: 700,
-    letterSpacing: 6,
+    fontSize: { xs: "3.5rem", sm: "5rem" },
+    fontWeight: 900,
+    letterSpacing: { xs: "8px", sm: "14px" },
     textAlign: "center" as const,
-    color: "#f44336",
-    textShadow: "0 0 30px rgba(244, 67, 54, 0.5), 0 0 60px rgba(244, 67, 54, 0.2)",
+    color: "#dc2626",
+    textTransform: "uppercase" as const,
+    textShadow: `
+      0 0 30px rgba(220, 38, 38, 0.6),
+      0 0 80px rgba(220, 38, 38, 0.3)
+    `,
+    animation: "titlePulse 3s ease-in-out infinite",
+    "@keyframes titlePulse": {
+      "0%, 100%": {
+        textShadow: "0 0 30px rgba(220, 38, 38, 0.6), 0 0 80px rgba(220, 38, 38, 0.3)",
+      },
+      "50%": {
+        textShadow: "0 0 40px rgba(220, 38, 38, 0.8), 0 0 100px rgba(220, 38, 38, 0.4)",
+      },
+    },
   },
-  encounterCard: {
+  titleGlow: {
+    position: "absolute" as const,
+    top: "50%",
+    left: "50%",
+    transform: "translate(-50%, -50%)",
+    width: "120%",
+    height: "120%",
+    background: "radial-gradient(circle, rgba(220, 38, 38, 0.15), transparent 70%)",
+    filter: "blur(40px)",
+    zIndex: -1,
+  },
+  divider: {
+    width: "60px",
+    height: "1px",
+    background: "rgba(220, 38, 38, 0.25)",
+  },
+  encounterSection: {
     display: "flex",
     flexDirection: "column" as const,
     alignItems: "center",
-    gap: "8px",
-    padding: "16px 32px",
-    backgroundColor: "rgba(244, 67, 54, 0.08)",
-    borderRadius: "12px",
-    border: "1px solid rgba(244, 67, 54, 0.25)",
-    width: "100%",
+    gap: "10px",
   },
-  encounterLabel: {
-    fontSize: "0.75rem",
-    color: "#f44336",
-    letterSpacing: 2,
+  sectionLabel: {
+    fontSize: "0.7rem",
+    color: "rgba(220, 38, 38, 0.6)",
+    letterSpacing: "3px",
     textTransform: "uppercase" as const,
-    fontWeight: 600,
+    fontWeight: 700,
   },
   encounterMessage: {
-    fontSize: "1rem",
-    color: "#e0e0e0",
+    fontSize: { xs: "0.9rem", sm: "1rem" },
+    color: "rgba(255, 255, 255, 0.7)",
     textAlign: "center" as const,
-    lineHeight: 1.5,
+    lineHeight: 1.6,
   },
-  statsCard: {
+  statsSection: {
     display: "flex",
     flexDirection: "column" as const,
     alignItems: "center",
+    gap: "10px",
+  },
+  xpRow: {
+    display: "flex",
+    alignItems: "baseline",
     gap: "8px",
-    padding: "20px 40px",
-    backgroundColor: "rgba(255, 255, 255, 0.05)",
-    borderRadius: "12px",
-    border: "1px solid rgba(255, 255, 255, 0.1)",
-    marginTop: "8px",
   },
-  statsLabel: {
-    fontSize: "0.9rem",
-    color: "#aaa",
-    letterSpacing: 1,
-    textTransform: "uppercase" as const,
-  },
-  statsValue: {
-    fontSize: "2rem",
+  xpValue: {
+    fontSize: { xs: "2.5rem", sm: "3rem" },
     fontWeight: 700,
-    color: "#9c27b0",
+    color: "rgba(255, 255, 255, 0.9)",
     fontFamily: "monospace",
   },
-  actions: {
-    display: "flex",
-    flexDirection: "column" as const,
-    gap: "12px",
-    width: "100%",
-    marginTop: "16px",
-  },
-  playAgainButton: {
-    padding: "14px",
+  xpUnit: {
     fontSize: "1rem",
     fontWeight: 600,
-    letterSpacing: 1,
-    background: "linear-gradient(135deg, #4285f4 0%, #34a853 100%)",
-    color: "#fff",
-    borderRadius: "8px",
-    textTransform: "uppercase" as const,
-    "&:hover": {
-      background: "linear-gradient(135deg, #5295ff 0%, #45b963 100%)",
-    },
-    "&:disabled": {
-      background: "rgba(66, 133, 244, 0.3)",
-      color: "rgba(255, 255, 255, 0.5)",
-    },
+    color: "rgba(255, 255, 255, 0.4)",
+    letterSpacing: "2px",
   },
   lobbyButton: {
-    padding: "12px",
-    fontSize: "0.9rem",
-    fontWeight: 500,
-    letterSpacing: 1,
-    borderColor: "rgba(255, 255, 255, 0.2)",
-    color: "#aaa",
-    borderRadius: "8px",
+    marginTop: "8px",
+    padding: "14px 40px",
+    fontSize: "0.85rem",
+    fontWeight: 600,
+    letterSpacing: "3px",
+    color: "rgba(220, 38, 38, 0.8)",
+    borderColor: "rgba(220, 38, 38, 0.3)",
+    borderWidth: "1px",
+    borderRadius: "0",
     textTransform: "uppercase" as const,
+    transition: "color 0.2s, border-color 0.2s",
     "&:hover": {
-      borderColor: "rgba(255, 255, 255, 0.4)",
-      color: "#fff",
-      backgroundColor: "rgba(255, 255, 255, 0.05)",
+      borderColor: "rgba(220, 38, 38, 0.7)",
+      color: "#dc2626",
+      backgroundColor: "rgba(220, 38, 38, 0.05)",
     },
   },
 };
