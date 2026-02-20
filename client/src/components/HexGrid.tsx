@@ -114,6 +114,7 @@ export default function HexGrid({
   const tooltipRef = useRef<TooltipState | null>(null);
   const tooltipTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [isMobileDevice, setIsMobileDevice] = useState(false);
+  const mobileModalLockedRef = useRef(false); // Lock modal on mobile until explicit close
 
   // Detect mobile on mount
   useEffect(() => {
@@ -450,6 +451,7 @@ export default function HexGrid({
       hoveredRef.current = -1;
       tooltipRef.current = null;
       setTooltip(null);
+      mobileModalLockedRef.current = false; // Unlock modal
     }
     updateColors(hoveredRef.current);
   }, [playerPosition, disabled, occupiedNeighborsMask, updateColors]);
@@ -507,10 +509,15 @@ export default function HexGrid({
           }
         }
       } else {
-        // On mobile, just update hover color but don't show tooltip
+        // On mobile, just update hover color but don't clear tooltip if modal is locked
         if (newHover !== hoveredRef.current) {
           hoveredRef.current = newHover;
           updateColors(newHover);
+          // Don't clear tooltip if mobile modal is locked
+          if (!mobileModalLockedRef.current && newHover < 0) {
+            tooltipRef.current = null;
+            setTooltip(null);
+          }
         }
       }
     };
@@ -539,6 +546,7 @@ export default function HexGrid({
             const tt = { hex, screenX: screen.x, screenY: screen.y };
             tooltipRef.current = tt;
             setTooltip(tt);
+            mobileModalLockedRef.current = true; // Lock modal until confirm/cancel
           }
         }
       }
@@ -564,6 +572,7 @@ export default function HexGrid({
       tooltipRef.current = null;
       setTooltip(null);
       hoveredRef.current = -1;
+      mobileModalLockedRef.current = false; // Unlock modal
     }
   }, [tooltip, disabled, onMove]);
 
@@ -571,6 +580,7 @@ export default function HexGrid({
     tooltipRef.current = null;
     setTooltip(null);
     hoveredRef.current = -1;
+    mobileModalLockedRef.current = false; // Unlock modal
     updateColors(-1);
   }, [updateColors]);
 
