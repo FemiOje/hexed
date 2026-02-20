@@ -19,8 +19,8 @@ pub mod game_systems {
     use hexed::helpers::encounter::{EncounterOutcomeIntoU8, EncounterOutcomeTrait};
     use hexed::helpers::{combat, encounter, movement, spawn};
     use hexed::models::{
-        COMBAT_DAMAGE, COMBAT_XP_REWARD, GameSession, HighestScore, MAX_HP, PlayerState,
-        PlayerStats, STARTING_HP, TileOccupant, Vec2,
+        COMBAT_DAMAGE, COMBAT_XP_REWARD, GameCounter, GameSession, HighestScore, MAX_CONCURRENT_GAMES,
+        MAX_HP, PlayerState, PlayerStats, STARTING_HP, TileOccupant, Vec2,
     };
     use hexed::utils::hex::{get_neighbor, get_neighbor_occupancy, is_within_bounds};
     use starknet::{ContractAddress, get_caller_address};
@@ -111,6 +111,12 @@ pub mod game_systems {
         fn spawn(ref self: ContractState) {
             let mut world = self.world_default();
             let player = get_caller_address();
+
+            // Check entry limit
+            let mut counter: GameCounter = world.read_model(0_u32);
+            assert(counter.active_games < MAX_CONCURRENT_GAMES, 'game limit reached');
+            counter.active_games += 1;
+            world.write_model(@counter);
 
             // Generate unique game_id (offset by 1 so 0 = "no game")
             let game_id: u32 = world.dispatcher.uuid() + 1;

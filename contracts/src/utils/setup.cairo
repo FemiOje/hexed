@@ -3,7 +3,7 @@ use dojo_cairo_test::{
     ContractDef, ContractDefTrait, NamespaceDef, TestResource, WorldStorageTestTrait,
     spawn_test_world,
 };
-use hexed::models::{m_GameSession, m_PlayerState, m_PlayerStats, m_TileOccupant};
+use hexed::models::{m_GameCounter, m_GameSession, m_HighestScore, m_PlayerState, m_PlayerStats, m_TileOccupant};
 use hexed::systems::game::contracts::{IGameSystemsDispatcher, game_systems};
 use starknet::ContractAddress;
 
@@ -35,6 +35,8 @@ pub fn namespace_def() -> NamespaceDef {
             TestResource::Model(m_PlayerStats::TEST_CLASS_HASH),
             TestResource::Model(m_GameSession::TEST_CLASS_HASH),
             TestResource::Model(m_TileOccupant::TEST_CLASS_HASH),
+            TestResource::Model(m_GameCounter::TEST_CLASS_HASH),
+            TestResource::Model(m_HighestScore::TEST_CLASS_HASH),
             TestResource::Event(game_systems::e_Spawned::TEST_CLASS_HASH),
             TestResource::Event(game_systems::e_Moved::TEST_CLASS_HASH),
             TestResource::Event(game_systems::e_CombatResult::TEST_CLASS_HASH),

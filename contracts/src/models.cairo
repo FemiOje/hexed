@@ -11,6 +11,9 @@ pub const EXPLORE_XP_REWARD: u32 = 10;
 pub const MIN_MAX_HP: u32 = 10;
 pub const GIFT_THRESHOLD: u8 = 65; // 0-64 = gift (65%), 65-99 = curse (35%)
 
+// Entry limit: ~80% of grid capacity (441 hexes, one player per hex)
+pub const MAX_CONCURRENT_GAMES: u32 = 350;
+
 // Gift amounts
 pub const HEAL_AMOUNT: u32 = 20;
 pub const FORTIFY_HP_AMOUNT: u32 = 10;
@@ -80,6 +83,15 @@ pub struct HighestScore {
     pub player: ContractAddress,
     pub username: felt252, // Cartridge username as felt252
     pub xp: u32,
+}
+
+// Tracks the count of active concurrent games (singleton with game_id = 0)
+#[derive(Copy, Drop, Serde, Debug)]
+#[dojo::model]
+pub struct GameCounter {
+    #[key]
+    pub game_id: u32, // Always 0 for singleton
+    pub active_games: u32,
 }
 
 // Return struct for get_game_state view function (not a model)

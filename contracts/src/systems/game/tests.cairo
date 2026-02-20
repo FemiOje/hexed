@@ -3,8 +3,8 @@ mod tests {
     use dojo::model::{ModelStorage, ModelStorageTest};
     // use dojo::world::WorldStorageTrait;
     use hexed::models::{
-        COMBAT_DAMAGE, COMBAT_XP_REWARD, DRAIN_XP_AMOUNT, Direction, GameSession, MAX_HP,
-        MIN_MAX_HP, PlayerState, PlayerStats, STARTING_HP, TileOccupant, Vec2,
+        COMBAT_DAMAGE, COMBAT_XP_REWARD, DRAIN_XP_AMOUNT, Direction, GameCounter, GameSession,
+        MAX_HP, MIN_MAX_HP, PlayerState, PlayerStats, STARTING_HP, TileOccupant, Vec2,
     };
     use hexed::systems::game::contracts::{ // IGameSystemsDispatcher,
     IGameSystemsDispatcherTrait};
@@ -1410,5 +1410,70 @@ mod tests {
         let max_hp_diff = s1.max_hp != s2.max_hp;
         let xp_diff = s1.xp != s2.xp;
         assert(hp_diff || max_hp_diff || xp_diff, 'different seeds differ');
+    }
+
+    // ------------------------------------------ //
+    // ------------ Entry Limit Tests ----------- //
+    // ------------------------------------------ //
+
+    #[test]
+    #[available_gas(50000000)]
+    fn test_entry_limit_counter_increments_on_spawn() {
+        let (mut world, game) = deploy_world();
+
+        // Initially counter should be 0
+        let counter: GameCounter = world.read_model(0_u32);
+        assert(counter.active_games == 0, 'limit: start at 0');
+
+        // Spawn a player
+        game.spawn();
+
+        // Counter should increment to 1
+        let counter: GameCounter = world.read_model(0_u32);
+        assert(counter.active_games == 1, 'limit: increment to 1');
+    }
+
+    #[test]
+    #[available_gas(50000000)]
+    fn test_entry_limit_multiple_spawns() {
+        let (mut world, game) = deploy_world();
+
+        // Initially counter should be 0
+        let counter: GameCounter = world.read_model(0_u32);
+        assert(counter.active_games == 0, 'limit: start 0');
+
+        // Spawn first player
+        game.spawn();
+        let counter: GameCounter = world.read_model(0_u32);
+        assert(counter.active_games == 1, 'limit: 1st spawn');
+
+        // Spawn second player
+        game.spawn();
+        let counter: GameCounter = world.read_model(0_u32);
+        assert(counter.active_games == 2, 'limit: 2nd spawn');
+    }
+
+    #[test]
+    #[available_gas(50000000)]
+    fn test_entry_limit_counter_state() {
+        let (mut world, _game) = deploy_world();
+
+        // Verify we can read and write the counter model
+        let mut counter: GameCounter = world.read_model(0_u32);
+        assert(counter.active_games == 0, 'limit: initial 0');
+
+        // Manually set counter to verify model works
+        counter.active_games = 100;
+        world.write_model_test(@counter);
+
+        let updated: GameCounter = world.read_model(0_u32);
+        assert(updated.active_games == 100, 'limit: manual set');
+
+        // Decrement to test the behavior
+        counter.active_games = 99;
+        world.write_model_test(@counter);
+
+        let decremented: GameCounter = world.read_model(0_u32);
+        assert(decremented.active_games == 99, 'limit: decrement');
     }
 }

@@ -1,7 +1,7 @@
 use dojo::model::ModelStorage;
 use hexed::models::{
-    COMBAT_DAMAGE, COMBAT_XP_REWARD, Direction, GameSession, PlayerState, PlayerStats, TileOccupant,
-    Vec2,
+    COMBAT_DAMAGE, COMBAT_XP_REWARD, Direction, GameCounter, GameSession, PlayerState, PlayerStats,
+    TileOccupant, Vec2,
 };
 use hexed::utils::hex::get_neighbor;
 
@@ -138,7 +138,7 @@ pub fn resolve_combat(
     }
 }
 
-/// Cleans up a dead player: clears tile, deactivates session, disables movement.
+/// Cleans up a dead player: clears tile, deactivates session, disables movement, decrements game counter.
 /// Does NOT emit PlayerDied event — the caller is responsible for that.
 pub fn handle_player_death(
     ref world: dojo::world::WorldStorage, game_id: u32, position: Vec2, killed_by: u32,
@@ -160,5 +160,12 @@ pub fn handle_player_death(
                 can_move: false,
             },
         );
+
+    // Decrement active game counter
+    let mut counter: GameCounter = world.read_model(0_u32);
+    if counter.active_games > 0 {
+        counter.active_games -= 1;
+        world.write_model(@counter);
+    }
 }
 

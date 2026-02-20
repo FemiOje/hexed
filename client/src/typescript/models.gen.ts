@@ -2,6 +2,12 @@ import type { SchemaType as ISchemaType } from "@dojoengine/sdk";
 
 import { CairoCustomEnum, CairoOption, CairoOptionVariant, BigNumberish } from 'starknet';
 
+// Type definition for `hexed::models::GameCounter` struct
+export interface GameCounter {
+	game_id: BigNumberish;
+	active_games: BigNumberish;
+}
+
 // Type definition for `hexed::models::GameSession` struct
 export interface GameSession {
 	game_id: BigNumberish;
@@ -132,6 +138,7 @@ export type DirectionEnum = CairoCustomEnum;
 
 export interface SchemaType extends ISchemaType {
 	hexed: {
+		GameCounter: GameCounter,
 		GameSession: GameSession,
 		HighestScore: HighestScore,
 		PlayerState: PlayerState,
@@ -150,6 +157,10 @@ export interface SchemaType extends ISchemaType {
 }
 export const schema: SchemaType = {
 	hexed: {
+		GameCounter: {
+			game_id: 0,
+			active_games: 0,
+		},
 		GameSession: {
 			game_id: 0,
 			player: "",
@@ -248,6 +259,7 @@ export const schema: SchemaType = {
 };
 export enum ModelsMapping {
 	Direction = 'hexed-Direction',
+	GameCounter = 'hexed-GameCounter',
 	GameSession = 'hexed-GameSession',
 	HighestScore = 'hexed-HighestScore',
 	PlayerState = 'hexed-PlayerState',

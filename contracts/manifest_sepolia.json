@@ -34,7 +34,7 @@
   "contracts": [
     {
       "address": "0x203ac293399249b51f83bdbc2d1ef78c390a91ab29d8938babb3354d961fe58",
-      "class_hash": "0x22afa27dd76a75b6912d9e7d5a42d4069e69481a91dfe9ac19b2cdc9ffbdc62",
+      "class_hash": "0x46beef42c9a3c6d5cdd3fbcd7f2463664ace3c7363bd2d1ab4d6ba1fee601aa",
       "init_calldata": [],
       "tag": "hexed-game_systems",
       "selector": "0x3bb99aa127029bddf81f8e76230bdfdb13e05a56168222e21cd145b9f69f128",
@@ -48,6 +48,23 @@
   ],
   "libraries": [],
   "models": [
+    {
+      "members": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "key": true
+        },
+        {
+          "name": "active_games",
+          "type": "core::integer::u32",
+          "key": false
+        }
+      ],
+      "class_hash": "0x1a82c0ac0c8a419711858ed7867f849a095f72fad5a76f3b25757b1dfd05ffe",
+      "tag": "hexed-GameCounter",
+      "selector": "0x66923d944c5969de958f09f7fe5160b187b060eaf051190ea307e620ab9379b"
+    },
     {
       "members": [
         {
@@ -2269,6 +2286,30 @@
     },
     {
       "type": "struct",
+      "name": "hexed::models::GameCounter",
+      "members": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "active_games",
+          "type": "core::integer::u32"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "hexed::models::GameCounterValue",
+      "members": [
+        {
+          "name": "active_games",
+          "type": "core::integer::u32"
+        }
+      ]
+    },
+    {
+      "type": "struct",
       "name": "hexed::models::GameSession",
       "members": [
         {
@@ -2506,6 +2547,12 @@
           "type": "core::integer::i32"
         }
       ]
+    },
+    {
+      "type": "event",
+      "name": "hexed::models::m_GameCounter::Event",
+      "kind": "enum",
+      "variants": []
     },
     {
       "type": "event",
