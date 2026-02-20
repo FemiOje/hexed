@@ -1,6 +1,6 @@
 use starknet::{ContractAddress, get_block_timestamp, get_tx_info};
-use untitled::constants::constants::GRID_MIN;
-use untitled::models::Vec2;
+use hexed::constants::constants::GRID_MIN;
+use hexed::models::Vec2;
 
 /// Generates a pseudo-random spawn position on the hex grid.
 /// Produces positions in range [GRID_MIN, GRID_MAX] i.e. [-10, 10].

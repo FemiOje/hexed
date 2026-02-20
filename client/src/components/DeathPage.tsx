@@ -2,6 +2,7 @@ import { useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Box, Button, Typography } from "@mui/material";
 import { useDeathXp, useDeathReason, useGameStore } from "../stores/gameStore";
+import { HighestScoreDisplay } from "./HighestScoreDisplay";
 
 export default function DeathPage() {
   const navigate = useNavigate();
@@ -57,6 +58,10 @@ export default function DeathPage() {
         </Box>
 
         <Box sx={styles.divider} />
+
+        <Box sx={styles.leaderboardSection}>
+          <HighestScoreDisplay />
+        </Box>
 
         <Button
           variant="outlined"
@@ -255,6 +260,10 @@ const styles = {
     fontWeight: 600,
     color: "rgba(255, 255, 255, 0.4)",
     letterSpacing: "2px",
+  },
+  leaderboardSection: {
+    width: "100%",
+    maxWidth: "350px",
   },
   lobbyButton: {
     marginTop: "8px",

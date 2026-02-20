@@ -2,14 +2,22 @@ import type { SchemaType as ISchemaType } from "@dojoengine/sdk";
 
 import { CairoCustomEnum, CairoOption, CairoOptionVariant, BigNumberish } from 'starknet';
 
-// Type definition for `untitled::models::GameSession` struct
+// Type definition for `hexed::models::GameSession` struct
 export interface GameSession {
 	game_id: BigNumberish;
 	player: string;
 	is_active: boolean;
 }
 
-// Type definition for `untitled::models::PlayerState` struct
+// Type definition for `hexed::models::HighestScore` struct
+export interface HighestScore {
+	game_id: BigNumberish;
+	player: string;
+	username: BigNumberish;
+	xp: BigNumberish;
+}
+
+// Type definition for `hexed::models::PlayerState` struct
 export interface PlayerState {
 	game_id: BigNumberish;
 	position: Vec2;
@@ -17,7 +25,7 @@ export interface PlayerState {
 	can_move: boolean;
 }
 
-// Type definition for `untitled::models::PlayerStats` struct
+// Type definition for `hexed::models::PlayerStats` struct
 export interface PlayerStats {
 	game_id: BigNumberish;
 	hp: BigNumberish;
@@ -25,20 +33,20 @@ export interface PlayerStats {
 	xp: BigNumberish;
 }
 
-// Type definition for `untitled::models::TileOccupant` struct
+// Type definition for `hexed::models::TileOccupant` struct
 export interface TileOccupant {
 	x: BigNumberish;
 	y: BigNumberish;
 	game_id: BigNumberish;
 }
 
-// Type definition for `untitled::models::Vec2` struct
+// Type definition for `hexed::models::Vec2` struct
 export interface Vec2 {
 	x: BigNumberish;
 	y: BigNumberish;
 }
 
-// Type definition for `untitled::systems::game::contracts::game_systems::CombatResult` struct
+// Type definition for `hexed::systems::game::contracts::game_systems::CombatResult` struct
 export interface CombatResult {
 	attacker_game_id: BigNumberish;
 	defender_game_id: BigNumberish;
@@ -50,7 +58,7 @@ export interface CombatResult {
 	loser_died: boolean;
 }
 
-// Type definition for `untitled::systems::game::contracts::game_systems::EncounterOccurred` struct
+// Type definition for `hexed::systems::game::contracts::game_systems::EncounterOccurred` struct
 export interface EncounterOccurred {
 	game_id: BigNumberish;
 	is_gift: boolean;
@@ -61,35 +69,42 @@ export interface EncounterOccurred {
 	player_died: boolean;
 }
 
-// Type definition for `untitled::systems::game::contracts::game_systems::Moved` struct
+// Type definition for `hexed::systems::game::contracts::game_systems::HighestScoreUpdated` struct
+export interface HighestScoreUpdated {
+	player: string;
+	username: BigNumberish;
+	xp: BigNumberish;
+}
+
+// Type definition for `hexed::systems::game::contracts::game_systems::Moved` struct
 export interface Moved {
 	game_id: BigNumberish;
 	direction: DirectionEnum;
 	position: Vec2;
 }
 
-// Type definition for `untitled::systems::game::contracts::game_systems::NeighborsRevealed` struct
+// Type definition for `hexed::systems::game::contracts::game_systems::NeighborsRevealed` struct
 export interface NeighborsRevealed {
 	game_id: BigNumberish;
 	position: Vec2;
 	neighbors: BigNumberish;
 }
 
-// Type definition for `untitled::systems::game::contracts::game_systems::PlayerDied` struct
+// Type definition for `hexed::systems::game::contracts::game_systems::PlayerDied` struct
 export interface PlayerDied {
 	game_id: BigNumberish;
 	killed_by: BigNumberish;
 	position: Vec2;
 }
 
-// Type definition for `untitled::systems::game::contracts::game_systems::Spawned` struct
+// Type definition for `hexed::systems::game::contracts::game_systems::Spawned` struct
 export interface Spawned {
 	game_id: BigNumberish;
 	player: string;
 	position: Vec2;
 }
 
-// Type definition for `untitled::models::GameState` struct
+// Type definition for `hexed::models::GameState` struct
 export interface GameState {
 	game_id: BigNumberish;
 	player: string;
@@ -103,7 +118,7 @@ export interface GameState {
 	neighbor_occupancy: BigNumberish;
 }
 
-// Type definition for `untitled::models::Direction` enum
+// Type definition for `hexed::models::Direction` enum
 export const direction = [
 	'East',
 	'NorthEast',
@@ -116,14 +131,16 @@ export type Direction = { [key in typeof direction[number]]: string };
 export type DirectionEnum = CairoCustomEnum;
 
 export interface SchemaType extends ISchemaType {
-	untitled: {
+	hexed: {
 		GameSession: GameSession,
+		HighestScore: HighestScore,
 		PlayerState: PlayerState,
 		PlayerStats: PlayerStats,
 		TileOccupant: TileOccupant,
 		Vec2: Vec2,
 		CombatResult: CombatResult,
 		EncounterOccurred: EncounterOccurred,
+		HighestScoreUpdated: HighestScoreUpdated,
 		Moved: Moved,
 		NeighborsRevealed: NeighborsRevealed,
 		PlayerDied: PlayerDied,
@@ -132,11 +149,17 @@ export interface SchemaType extends ISchemaType {
 	},
 }
 export const schema: SchemaType = {
-	untitled: {
+	hexed: {
 		GameSession: {
 			game_id: 0,
 			player: "",
 			is_active: false,
+		},
+		HighestScore: {
+			game_id: 0,
+			player: "",
+			username: 0,
+			xp: 0,
 		},
 		PlayerState: {
 			game_id: 0,
@@ -177,6 +200,11 @@ export const schema: SchemaType = {
 			max_hp_after: 0,
 			xp_after: 0,
 			player_died: false,
+		},
+		HighestScoreUpdated: {
+			player: "",
+			username: 0,
+			xp: 0,
 		},
 		Moved: {
 			game_id: 0,
@@ -219,17 +247,19 @@ export const schema: SchemaType = {
 	},
 };
 export enum ModelsMapping {
-	Direction = 'untitled-Direction',
-	GameSession = 'untitled-GameSession',
-	PlayerState = 'untitled-PlayerState',
-	PlayerStats = 'untitled-PlayerStats',
-	TileOccupant = 'untitled-TileOccupant',
-	Vec2 = 'untitled-Vec2',
-	CombatResult = 'untitled-CombatResult',
-	EncounterOccurred = 'untitled-EncounterOccurred',
-	Moved = 'untitled-Moved',
-	NeighborsRevealed = 'untitled-NeighborsRevealed',
-	PlayerDied = 'untitled-PlayerDied',
-	Spawned = 'untitled-Spawned',
-	GameState = 'untitled-GameState',
+	Direction = 'hexed-Direction',
+	GameSession = 'hexed-GameSession',
+	HighestScore = 'hexed-HighestScore',
+	PlayerState = 'hexed-PlayerState',
+	PlayerStats = 'hexed-PlayerStats',
+	TileOccupant = 'hexed-TileOccupant',
+	Vec2 = 'hexed-Vec2',
+	CombatResult = 'hexed-CombatResult',
+	EncounterOccurred = 'hexed-EncounterOccurred',
+	HighestScoreUpdated = 'hexed-HighestScoreUpdated',
+	Moved = 'hexed-Moved',
+	NeighborsRevealed = 'hexed-NeighborsRevealed',
+	PlayerDied = 'hexed-PlayerDied',
+	Spawned = 'hexed-Spawned',
+	GameState = 'hexed-GameState',
 }

@@ -12,6 +12,7 @@ import { useGameStore } from "@/stores/gameStore";
 import { useUIStore } from "@/stores/uiStore";
 import { Direction, directionToString, EncounterOutcome, GameEvent } from "@/types/game";
 import { useController } from "@/contexts/controller";
+import { useStarknetApi } from "@/api/starknet";
 import { debugLog } from "@/utils/helpers";
 import toast from "react-hot-toast";
 
@@ -38,9 +39,10 @@ function formatEncounterText(event: GameEvent): string {
 }
 
 export const useGameActions = () => {
-  const { address } = useController();
-  const { spawn, move, executeAction, setCurrentMoves } = useSystemCalls();
+  const { address, playerName } = useController();
+  const { spawn, move, registerScore, executeAction, setCurrentMoves } = useSystemCalls();
   const { processEvent, refreshGameState } = useGameDirector();
+  const { getHighestScore } = useStarknetApi();
 
   // Get store state and actions
   const {
@@ -241,6 +243,37 @@ export const useGameActions = () => {
             ? "Defeated in combat with another player"
             : "Killed by a deadly encounter";
           useGameStore.getState().setIsDead(true, newXp, reason);
+
+          // Register score on leaderboard if player died
+          try {
+            debugLog("Registering score on leaderboard", { address, playerName, newXp });
+            const scoreCall = registerScore(
+              address!,
+              playerName || address!,
+              newXp
+            );
+
+            // Execute register_score without waiting for full confirmation
+            await executeAction(
+              [scoreCall],
+              () => {
+                debugLog("Score registration failed");
+              },
+              () => {
+                debugLog("Score registration submitted");
+              }
+            );
+
+            // Fetch and update highest score in store
+            const highestScore = await getHighestScore();
+            if (highestScore) {
+              debugLog("Updated highest score", highestScore);
+              useGameStore.getState().setHighestScore(highestScore);
+            }
+          } catch (scoreError) {
+            console.error("Error registering score:", scoreError);
+            // Don't fail the entire move if score registration fails
+          }
         }
 
         // --- Toast logic ---
@@ -352,15 +385,18 @@ export const useGameActions = () => {
     },
     [
       address,
+      playerName,
       gameId,
       isMoving,
       move,
+      registerScore,
       executeAction,
       processEvent,
       refreshGameState,
       getCurrentPosition,
       canPlayerMove,
       setCurrentMoves,
+      getHighestScore,
       setIsTransactionPending,
       setError,
     ]

@@ -1,5 +1,5 @@
 [package]
-name = "untitled"
+name = "hexed"
 version = "1.8.0"
 edition = "2024_07"
 
@@ -16,10 +16,10 @@ inspect-dev = "PROFILE=dev && sozo -P $PROFILE inspect"
 # build + copy bindings + deploy + inspect
 migrate = "PROFILE=sepolia && sozo -P $PROFILE clean && sozo -P $PROFILE build --typescript && sozo -P $PROFILE test && scarb run copy-bindings && scarb run deploy-sepolia && scarb run inspect"
 migrate-dev = "PROFILE=dev && sozo -P $PROFILE clean && sozo -P $PROFILE build --typescript && sozo -P $PROFILE test && scarb run copy-bindings && scarb run deploy-dev && scarb run inspect"
-spawn-sepolia = "PROFILE=sepolia && sozo -P $PROFILE execute untitled-game_systems spawn --wait"
-move-sepolia = "PROFILE=sepolia && sozo -P $PROFILE execute untitled-game_systems move 1 --wait"
-spawn-dev = "PROFILE=dev && sozo -P $PROFILE execute untitled-game_systems spawn --wait"
-move-dev = "PROFILE=dev && sozo -P $PROFILE execute untitled-game_systems move 1 --wait"
+spawn-sepolia = "PROFILE=sepolia && sozo -P $PROFILE execute hexed-game_systems spawn --wait"
+move-sepolia = "PROFILE=sepolia && sozo -P $PROFILE execute hexed-game_systems move 1 --wait"
+spawn-dev = "PROFILE=dev && sozo -P $PROFILE execute hexed-game_systems spawn --wait"
+move-dev = "PROFILE=dev && sozo -P $PROFILE execute hexed-game_systems move 1 --wait"
 
 [dependencies]
 dojo = "1.8.0"

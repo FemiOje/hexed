@@ -18,6 +18,7 @@ import { useController } from "./controller";
 import { useGameStore, initializePlayerState } from "@/stores/gameStore";
 import { useUIStore } from "@/stores/uiStore";
 import { useStarknetApi } from "@/api/starknet";
+import { useSystemCalls } from "@/dojo/useSystemCalls";
 import { GameEvent } from "@/types/game";
 import { debugLog } from "@/utils/helpers";
 
@@ -49,8 +50,9 @@ const normalizeAddress = (addr: string): string => {
  * Manages game initialization, state synchronization, and event processing
  */
 export const GameDirectorProvider = ({ children }: PropsWithChildren) => {
-  const { address } = useController();
-  const { getGameState } = useStarknetApi();
+  const { address, playerName } = useController();
+  const { getGameState, getHighestScore } = useStarknetApi();
+  const { registerScore, executeAction } = useSystemCalls();
 
   const {
     playerAddress,
@@ -64,6 +66,7 @@ export const GameDirectorProvider = ({ children }: PropsWithChildren) => {
     setStats,
     setIsDead,
     setOccupiedNeighbors,
+    setHighestScore,
     addEvent,
     resetGameState,
   } = useGameStore();
@@ -71,6 +74,67 @@ export const GameDirectorProvider = ({ children }: PropsWithChildren) => {
   const { setError, clearError } = useUIStore();
 
   const [isInitialized, setIsInitialized] = useState(false);
+
+  /**
+   * Register player's final score when they die
+   * Called when death is detected from blockchain state
+   */
+  const registerDeathScore = useCallback(
+    async (finalXp: number) => {
+      if (!address) return;
+
+      try {
+        debugLog("Registering death score on leaderboard", {
+          address,
+          playerName,
+          finalXp,
+        });
+
+        console.log("[LEADERBOARD] Registering score:", {
+          player: address,
+          username: playerName || address,
+          xp: finalXp,
+          timestamp: new Date().toISOString(),
+        });
+
+        const scoreCall = registerScore(
+          address,
+          playerName || address,
+          finalXp
+        );
+
+        console.log("[LEADERBOARD] Score call created:", scoreCall);
+
+        // Execute register_score without waiting for confirmation
+        await executeAction(
+          [scoreCall],
+          () => {
+            console.error("[LEADERBOARD] Death score registration failed");
+            debugLog("Death score registration failed");
+          },
+          () => {
+            console.log("[LEADERBOARD] Death score registration submitted");
+            debugLog("Death score registration submitted");
+          }
+        );
+
+        // Fetch and update highest score
+        console.log("[LEADERBOARD] Fetching highest score...");
+        const highestScore = await getHighestScore();
+        if (highestScore) {
+          console.log("[LEADERBOARD] Updated highest score:", highestScore);
+          debugLog("Updated highest score after death", highestScore);
+          setHighestScore(highestScore);
+        } else {
+          console.log("[LEADERBOARD] No highest score returned from RPC");
+        }
+      } catch (error) {
+        console.error("Error registering death score:", error);
+        // Don't fail death detection if score registration fails
+      }
+    },
+    [address, playerName, registerScore, executeAction, getHighestScore, setHighestScore]
+  );
 
   /**
    * Initialize game state when wallet connects
@@ -144,28 +208,44 @@ export const GameDirectorProvider = ({ children }: PropsWithChildren) => {
               // Detect death: player has a game but is no longer active with 0 HP
               if (!gameState.is_active && gameState.hp === 0) {
                 setIsDead(true, gameState.xp, "Fell in a previous battle");
+                // Register death score on leaderboard
+                await registerDeathScore(gameState.xp);
               }
 
               setIsInitialized(true);
               // debugLog("Game initialization complete");
-              return;
             } else {
               console.warn("Game ownership mismatch, clearing localStorage");
               console.warn("Game player:", gameState.player, "→", gamePlayer);
               console.warn("Connected:", address, "→", connectedAddr);
               localStorage.removeItem(storageKey);
               setGameId(null);
+              setIsSpawned(false);
+              setIsInitialized(true);
             }
           } else {
             debugLog("Game state not found, player may need to spawn");
+            setIsSpawned(false);
+            setIsInitialized(true);
           }
+        } else {
+          // Invalid game ID from storage
+          setIsSpawned(false);
+          setIsInitialized(true);
         }
+      } else {
+        // No saved game - player needs to spawn
+        debugLog("No active game found, player needs to spawn");
+        setIsSpawned(false);
+        setIsInitialized(true);
       }
 
-      // No saved game or validation failed - player needs to spawn
-      debugLog("No active game found, player needs to spawn");
-      setIsSpawned(false);
-      setIsInitialized(true);
+      // Fetch highest score for leaderboard display (always fetch, regardless of game state)
+      const highestScore = await getHighestScore();
+      if (highestScore) {
+        debugLog("Loaded highest score", highestScore);
+        setHighestScore(highestScore);
+      }
     } catch (error) {
       console.error("Error initializing game:", error);
       setError("Failed to initialize game state");
@@ -176,6 +256,8 @@ export const GameDirectorProvider = ({ children }: PropsWithChildren) => {
     address,
     setGameId,
     getGameState,
+    getHighestScore,
+    registerDeathScore,
     setPosition,
     setMoves,
     setIsSpawned,
@@ -183,6 +265,7 @@ export const GameDirectorProvider = ({ children }: PropsWithChildren) => {
     setIsInitializing,
     setStats,
     setOccupiedNeighbors,
+    setHighestScore,
     clearError,
     setError,
   ]);
@@ -300,7 +383,16 @@ export const GameDirectorProvider = ({ children }: PropsWithChildren) => {
 
           // Detect death
           if (!gameState.is_active && gameState.hp === 0) {
+            debugLog("Player death detected from blockchain", {
+              hp: gameState.hp,
+              xp: gameState.xp,
+              isActive: gameState.is_active,
+            });
             setIsDead(true, gameState.xp, "Slain by another player");
+            // Register death score on leaderboard
+            debugLog("About to register death score with XP:", gameState.xp);
+            await registerDeathScore(gameState.xp);
+            debugLog("Death score registration completed");
           }
 
           debugLog("Game state refreshed successfully");
@@ -322,6 +414,7 @@ export const GameDirectorProvider = ({ children }: PropsWithChildren) => {
     address,
     gameId,
     getGameState,
+    registerDeathScore,
     setPosition,
     setMoves,
     setIsSpawned,

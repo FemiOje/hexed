@@ -2,6 +2,7 @@ import { Box, Typography } from "@mui/material";
 import { useController } from "../contexts/controller";
 import WalletConnect from "../components/WalletConnect";
 import MyGames from "../components/MyGames";
+import { HighestScoreDisplay } from "../components/HighestScoreDisplay";
 
 export default function StartPage() {
     const { address } = useController();
@@ -50,6 +51,10 @@ export default function StartPage() {
                         Log in to enter the arena
                     </Typography>
                 )}
+
+                <Box sx={styles.leaderboardSection}>
+                    <HighestScoreDisplay />
+                </Box>
 
                 <Typography sx={styles.footer}>
                     Powered by Dojo Engine · Built on Starknet
@@ -263,6 +268,11 @@ const styles = {
     gamesSection: {
         marginTop: "8px",
         width: "100%",
+    },
+    leaderboardSection: {
+        marginTop: "24px",
+        width: "100%",
+        maxWidth: "400px",
     },
     connectPrompt: {
         fontSize: "0.85rem",

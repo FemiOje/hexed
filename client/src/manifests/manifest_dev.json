@@ -1,13 +1,10 @@
 {
   "world": {
-    "class_hash": "0x6cf47e5866509a7c903e51ba052601b3a47ebc059ad1b1689c6572aa0ef2374",
-    "address": "0x6b8a6ee2f5d8df0f1949b1c7521070a91be6f096fe9488f6e1b546feb133452",
-    "seed": "dojo_starter",
-    "name": "Dojo starter",
+    "class_hash": "0x381899226c066a0262f45d6ab815f89818e0874ec3e66cdf72b5e92d8db4680",
+    "address": "0x6d1b48e127071958aae55efce2eeb6652f005825df733d28129f2afe4cc53b6",
+    "seed": "untitled_seed_1",
+    "name": "Untitled",
     "entrypoints": [
-      "set_entity_test",
-      "delete_entity_test",
-      "emit_event_test",
       "uuid",
       "set_metadata",
       "register_namespace",
@@ -36,11 +33,11 @@
   },
   "contracts": [
     {
-      "address": "0x58e3a214eeae12337a5c11700df13f0d95fcf5ecd17a9731aa72fa9d5f94f26",
+      "address": "0x305699afcd703eec3163a096ca7d21e134d00b103b318666bdbcda0a28a0e9a",
       "class_hash": "0x7b776b9f4c8991ceb283862b6372f1d2b62fb9ebf25e3a3db0e4ab4e6237b2f",
       "init_calldata": [],
-      "tag": "dojo_starter-actions",
-      "selector": "0x7a1c71029f2d0b38e3ac89b09931d08b6e48417e079c289ff19a8698d0cba33",
+      "tag": "hexed-game_systems",
+      "selector": "0x5afa061741b9774c0d1c33cd425394821df428c96ad37229a18717fb8512277",
       "systems": [
         "spawn",
         "move",
@@ -59,13 +56,13 @@
         },
         {
           "name": "directions",
-          "type": "core::array::Array::<untitled::models::Direction>",
+          "type": "core::array::Array::<hexed::models::Direction>",
           "key": false
         }
       ],
       "class_hash": "0x420e4abde85c26494543722488a1ec29e24dc3a6a6b3265a4b2e03f1250c569",
-      "tag": "dojo_starter-DirectionsAvailable",
-      "selector": "0x77844f1facb51e60e546a9832d56c6bd04fa23be4fd5b57290caae5e9a3c1e4"
+      "tag": "untitled-DirectionsAvailable",
+      "selector": "0x604401da1f9aa3d555a1388b26a30cf8a3fb70169b14a439dffe6ac074023e"
     },
     {
       "members": [
@@ -76,7 +73,7 @@
         },
         {
           "name": "last_direction",
-          "type": "core::option::Option::<untitled::models::Direction>",
+          "type": "core::option::Option::<hexed::models::Direction>",
           "key": false
         },
         {
@@ -86,8 +83,8 @@
         }
       ],
       "class_hash": "0x3f8d2bc6bd812687001c0fbe1b6a824047a7d0326b02292503111cc52df7b62",
-      "tag": "dojo_starter-Moves",
-      "selector": "0x2a29373f1af8348bd366a990eb3a342ef2cbe5e85160539eaca3441a673f468"
+      "tag": "untitled-Moves",
+      "selector": "0x287657ebebd7a56803436085571af895f8d4b048bfe1661210830a8a3bec803"
     },
     {
       "members": [
@@ -98,13 +95,13 @@
         },
         {
           "name": "vec",
-          "type": "untitled::models::Vec2",
+          "type": "hexed::models::Vec2",
           "key": false
         }
       ],
       "class_hash": "0x1e4d162f65fc17efc8ca900a8d65f465e80a8cd0e1291e46ff8a76b9c6cac56",
-      "tag": "dojo_starter-Position",
-      "selector": "0x2ac8b4c190f7031b9fc44312e6b047a1dce0b3f2957c33a935ca7846a46dd5b"
+      "tag": "untitled-Position",
+      "selector": "0x605c289def37e955438c94eed7dbf8a31675e098ae1bd2a9ee000630e22df7b"
     },
     {
       "members": [
@@ -120,8 +117,8 @@
         }
       ],
       "class_hash": "0x31d733394a87db05f333b1a2afefc620dac46da0212be4b614d5da88da87edb",
-      "tag": "dojo_starter-PositionCount",
-      "selector": "0x44e8e8c3aea54e97e01563cacc08abb4a8ce8c468cd4d3a332bca12bfc2290d"
+      "tag": "untitled-PositionCount",
+      "selector": "0x7f6b55fcd842c6f025a9e47b087e9dc1b1759c9e9e29a1d433bd142f5b014ab"
     }
   ],
   "events": [
@@ -134,18 +131,18 @@
         },
         {
           "name": "direction",
-          "type": "untitled::models::Direction",
+          "type": "hexed::models::Direction",
           "key": false
         },
         {
           "name": "position",
-          "type": "untitled::models::Vec2",
+          "type": "hexed::models::Vec2",
           "key": false
         }
       ],
       "class_hash": "0x74296afe2eb02fafda2e74572051934a32c64002575e0aeee848093a06d6946",
-      "tag": "dojo_starter-Moved",
-      "selector": "0x504403e5c02b6442527721fc464d9ea5fc8f1ee600ab5ccd5c0845d36fd45f1"
+      "tag": "untitled-Moved",
+      "selector": "0x62a794a096ae2445ca892f72cfd1569e60909c3a57f937a7a87b1689e9f5794"
     },
     {
       "members": [
@@ -156,13 +153,13 @@
         },
         {
           "name": "position",
-          "type": "untitled::models::Vec2",
+          "type": "hexed::models::Vec2",
           "key": false
         }
       ],
       "class_hash": "0x37f235f96aa024bb3e39d978ef38f53c34f23cfa32a15802a96547f7b89a551",
-      "tag": "dojo_starter-Spawned",
-      "selector": "0x7e95a6f6cb96dfd403798bd2833613b555edf6274bc95e7b75a1a0538e6986c"
+      "tag": "untitled-Spawned",
+      "selector": "0x270f83119d6370b4c1e0c9d27711d3c42e220901c0b884a62005b284320cbc4"
     }
   ],
   "external_contracts": [],
@@ -320,11 +317,11 @@
     },
     {
       "type": "enum",
-      "name": "core::option::Option::<untitled::models::Direction>",
+      "name": "core::option::Option::<hexed::models::Direction>",
       "variants": [
         {
           "name": "Some",
-          "type": "untitled::models::Direction"
+          "type": "hexed::models::Direction"
         },
         {
           "name": "None",
@@ -1343,92 +1340,6 @@
       ]
     },
     {
-      "type": "interface",
-      "name": "dojo::world::iworld::IWorldTest",
-      "items": [
-        {
-          "type": "function",
-          "name": "set_entity_test",
-          "inputs": [
-            {
-              "name": "model_selector",
-              "type": "core::felt252"
-            },
-            {
-              "name": "index",
-              "type": "dojo::model::definition::ModelIndex"
-            },
-            {
-              "name": "values",
-              "type": "core::array::Span::<core::felt252>"
-            },
-            {
-              "name": "layout",
-              "type": "dojo::meta::layout::Layout"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "delete_entity_test",
-          "inputs": [
-            {
-              "name": "model_selector",
-              "type": "core::felt252"
-            },
-            {
-              "name": "index",
-              "type": "dojo::model::definition::ModelIndex"
-            },
-            {
-              "name": "layout",
-              "type": "dojo::meta::layout::Layout"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "emit_event_test",
-          "inputs": [
-            {
-              "name": "event_selector",
-              "type": "core::felt252"
-            },
-            {
-              "name": "keys",
-              "type": "core::array::Span::<core::felt252>"
-            },
-            {
-              "name": "values",
-              "type": "core::array::Span::<core::felt252>"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "type": "function",
-          "name": "dojo_contract_address",
-          "inputs": [
-            {
-              "name": "contract_selector",
-              "type": "core::felt252"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "core::starknet::contract_address::ContractAddress"
-            }
-          ],
-          "state_mutability": "view"
-        }
-      ]
-    },
-    {
       "type": "enum",
       "name": "dojo::world::resource::Resource",
       "variants": [
@@ -2098,7 +2009,7 @@
       "inputs": [
         {
           "name": "event",
-          "type": "untitled::systems::actions::actions::Spawned"
+          "type": "hexed::systems::actions::actions::Spawned"
         }
       ],
       "outputs": [],
@@ -2117,7 +2028,7 @@
       "inputs": [
         {
           "name": "value",
-          "type": "untitled::systems::actions::actions::SpawnedValue"
+          "type": "hexed::systems::actions::actions::SpawnedValue"
         }
       ],
       "outputs": [],
@@ -2125,7 +2036,7 @@
     },
     {
       "type": "enum",
-      "name": "untitled::models::Direction",
+      "name": "hexed::models::Direction",
       "variants": [
         {
           "name": "East",
@@ -2155,7 +2066,7 @@
     },
     {
       "type": "struct",
-      "name": "untitled::models::DirectionsAvailable",
+      "name": "hexed::models::DirectionsAvailable",
       "members": [
         {
           "name": "player",
@@ -2163,23 +2074,23 @@
         },
         {
           "name": "directions",
-          "type": "core::array::Array::<untitled::models::Direction>"
+          "type": "core::array::Array::<hexed::models::Direction>"
         }
       ]
     },
     {
       "type": "struct",
-      "name": "untitled::models::DirectionsAvailableValue",
+      "name": "hexed::models::DirectionsAvailableValue",
       "members": [
         {
           "name": "directions",
-          "type": "core::array::Array::<untitled::models::Direction>"
+          "type": "core::array::Array::<hexed::models::Direction>"
         }
       ]
     },
     {
       "type": "struct",
-      "name": "untitled::models::Moves",
+      "name": "hexed::models::Moves",
       "members": [
         {
           "name": "player",
@@ -2187,7 +2098,7 @@
         },
         {
           "name": "last_direction",
-          "type": "core::option::Option::<untitled::models::Direction>"
+          "type": "core::option::Option::<hexed::models::Direction>"
         },
         {
           "name": "can_move",
@@ -2197,11 +2108,11 @@
     },
     {
       "type": "struct",
-      "name": "untitled::models::MovesValue",
+      "name": "hexed::models::MovesValue",
       "members": [
         {
           "name": "last_direction",
-          "type": "core::option::Option::<untitled::models::Direction>"
+          "type": "core::option::Option::<hexed::models::Direction>"
         },
         {
           "name": "can_move",
@@ -2211,7 +2122,7 @@
     },
     {
       "type": "struct",
-      "name": "untitled::models::Position",
+      "name": "hexed::models::Position",
       "members": [
         {
           "name": "player",
@@ -2219,13 +2130,13 @@
         },
         {
           "name": "vec",
-          "type": "untitled::models::Vec2"
+          "type": "hexed::models::Vec2"
         }
       ]
     },
     {
       "type": "struct",
-      "name": "untitled::models::PositionCount",
+      "name": "hexed::models::PositionCount",
       "members": [
         {
           "name": "identity",
@@ -2239,7 +2150,7 @@
     },
     {
       "type": "struct",
-      "name": "untitled::models::PositionCountValue",
+      "name": "hexed::models::PositionCountValue",
       "members": [
         {
           "name": "position",
@@ -2249,17 +2160,17 @@
     },
     {
       "type": "struct",
-      "name": "untitled::models::PositionValue",
+      "name": "hexed::models::PositionValue",
       "members": [
         {
           "name": "vec",
-          "type": "untitled::models::Vec2"
+          "type": "hexed::models::Vec2"
         }
       ]
     },
     {
       "type": "struct",
-      "name": "untitled::models::Vec2",
+      "name": "hexed::models::Vec2",
       "members": [
         {
           "name": "x",
@@ -2273,31 +2184,31 @@
     },
     {
       "type": "event",
-      "name": "untitled::models::m_DirectionsAvailable::Event",
+      "name": "hexed::models::m_DirectionsAvailable::Event",
       "kind": "enum",
       "variants": []
     },
     {
       "type": "event",
-      "name": "untitled::models::m_Moves::Event",
+      "name": "hexed::models::m_Moves::Event",
       "kind": "enum",
       "variants": []
     },
     {
       "type": "event",
-      "name": "untitled::models::m_Position::Event",
+      "name": "hexed::models::m_Position::Event",
       "kind": "enum",
       "variants": []
     },
     {
       "type": "event",
-      "name": "untitled::models::m_PositionCount::Event",
+      "name": "hexed::models::m_PositionCount::Event",
       "kind": "enum",
       "variants": []
     },
     {
       "type": "interface",
-      "name": "untitled::systems::actions::IActions",
+      "name": "hexed::systems::actions::IActions",
       "items": [
         {
           "type": "function",
@@ -2312,7 +2223,7 @@
           "inputs": [
             {
               "name": "direction",
-              "type": "untitled::models::Direction"
+              "type": "hexed::models::Direction"
             }
           ],
           "outputs": [],
@@ -2322,7 +2233,7 @@
     },
     {
       "type": "event",
-      "name": "untitled::systems::actions::actions::Event",
+      "name": "hexed::systems::actions::actions::Event",
       "kind": "enum",
       "variants": [
         {
@@ -2339,7 +2250,7 @@
     },
     {
       "type": "struct",
-      "name": "untitled::systems::actions::actions::Moved",
+      "name": "hexed::systems::actions::actions::Moved",
       "members": [
         {
           "name": "player",
@@ -2347,31 +2258,31 @@
         },
         {
           "name": "direction",
-          "type": "untitled::models::Direction"
+          "type": "hexed::models::Direction"
         },
         {
           "name": "position",
-          "type": "untitled::models::Vec2"
+          "type": "hexed::models::Vec2"
         }
       ]
     },
     {
       "type": "struct",
-      "name": "untitled::systems::actions::actions::MovedValue",
+      "name": "hexed::systems::actions::actions::MovedValue",
       "members": [
         {
           "name": "direction",
-          "type": "untitled::models::Direction"
+          "type": "hexed::models::Direction"
         },
         {
           "name": "position",
-          "type": "untitled::models::Vec2"
+          "type": "hexed::models::Vec2"
         }
       ]
     },
     {
       "type": "struct",
-      "name": "untitled::systems::actions::actions::Spawned",
+      "name": "hexed::systems::actions::actions::Spawned",
       "members": [
         {
           "name": "player",
@@ -2379,29 +2290,29 @@
         },
         {
           "name": "position",
-          "type": "untitled::models::Vec2"
+          "type": "hexed::models::Vec2"
         }
       ]
     },
     {
       "type": "struct",
-      "name": "untitled::systems::actions::actions::SpawnedValue",
+      "name": "hexed::systems::actions::actions::SpawnedValue",
       "members": [
         {
           "name": "position",
-          "type": "untitled::models::Vec2"
+          "type": "hexed::models::Vec2"
         }
       ]
     },
     {
       "type": "event",
-      "name": "untitled::systems::actions::actions::e_Moved::Event",
+      "name": "hexed::systems::actions::actions::e_Moved::Event",
       "kind": "enum",
       "variants": []
     },
     {
       "type": "event",
-      "name": "untitled::systems::actions::actions::e_Spawned::Event",
+      "name": "hexed::systems::actions::actions::e_Spawned::Event",
       "kind": "enum",
       "variants": []
     }

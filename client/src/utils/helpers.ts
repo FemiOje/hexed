@@ -49,6 +49,17 @@ export function formatTxHash(hash: string): string {
 }
 
 /**
+ * Shorten an address for display
+ * @param address - The full address
+ * @returns Shortened address string
+ */
+export function shortAddress(address: string): string {
+  if (!address) return "";
+  if (address.length <= 10) return address;
+  return `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
+}
+
+/**
  * Check if a value is defined and not null
  * @param value - Value to check
  * @returns True if value is defined

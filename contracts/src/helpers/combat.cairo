@@ -1,9 +1,9 @@
 use dojo::model::ModelStorage;
-use untitled::models::{
+use hexed::models::{
     COMBAT_DAMAGE, COMBAT_XP_REWARD, Direction, GameSession, PlayerState, PlayerStats, TileOccupant,
     Vec2,
 };
-use untitled::utils::hex::get_neighbor;
+use hexed::utils::hex::get_neighbor;
 
 /// Returned by resolve_combat so the caller can emit events.
 #[derive(Drop, Copy)]

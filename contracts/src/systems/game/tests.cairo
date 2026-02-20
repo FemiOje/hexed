@@ -2,15 +2,15 @@
 mod tests {
     use dojo::model::{ModelStorage, ModelStorageTest};
     // use dojo::world::WorldStorageTrait;
-    use untitled::models::{
+    use hexed::models::{
         COMBAT_DAMAGE, COMBAT_XP_REWARD, DRAIN_XP_AMOUNT, Direction, GameSession, MAX_HP,
         MIN_MAX_HP, PlayerState, PlayerStats, STARTING_HP, TileOccupant, Vec2,
     };
-    use untitled::systems::game::contracts::{ // IGameSystemsDispatcher,
+    use hexed::systems::game::contracts::{ // IGameSystemsDispatcher,
         IGameSystemsDispatcherTrait,
     };
-    use untitled::utils::hex::is_within_bounds;
-    use untitled::utils::setup::{ATTACKER_ADDR, DEFENDER_ADDR, PLAYER_ADDR, deploy_world};
+    use hexed::utils::hex::is_within_bounds;
+    use hexed::utils::setup::{ATTACKER_ADDR, DEFENDER_ADDR, PLAYER_ADDR, deploy_world};
     // use starknet::ContractAddress;
 
     // ------------------------------------------ //

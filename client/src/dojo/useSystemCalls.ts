@@ -74,6 +74,33 @@ export const useSystemCalls = () => {
   };
 
   /**
+   * Factory function for register_score action
+   * Registers the player's score on the leaderboard
+   *
+   * @param player - Player contract address
+   * @param username - Player username (felt252)
+   * @param xp - Player XP score (u32)
+   * @returns Contract call object
+   */
+  const registerScore = (player: string, username: string, xp: number) => {
+    // Convert username string to felt252 (simple ASCII encoding)
+    const usernameFelt = BigInt(
+      username === address
+        ? 0
+        : username
+            .slice(0, 31)
+            .split("")
+            .reduce((acc, char) => acc * 256n + BigInt(char.charCodeAt(0)), 0n)
+    ).toString();
+
+    return {
+      contractAddress: GAME_SYSTEMS_ADDRESS,
+      entrypoint: "register_score",
+      calldata: [player, usernameFelt, xp],
+    };
+  };
+
+  /**
    * Wait for global state synchronization
    * Ensures local state matches blockchain state before executing action
    *
@@ -282,6 +309,7 @@ export const useSystemCalls = () => {
     // Contract call factories
     spawn,
     move,
+    registerScore,
 
     // Transaction execution
     executeAction,

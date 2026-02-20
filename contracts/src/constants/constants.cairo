@@ -3,5 +3,5 @@ pub const GRID_MIN: i32 = -10;
 pub const GRID_MAX: i32 = 10;
 
 pub fn DEFAULT_NS() -> ByteArray {
-    "untitled"
+    "hexed"
 }

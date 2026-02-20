@@ -9,10 +9,10 @@ contracts = [
 
 [sql]
 historical = [
-  "untitled-Moves", 
-  "untitled-DirectionsAvailable", 
-  "untitled-Position", 
-  "untitled-PositionCount",
-  "untitled-Moved", 
-  "untitled-Spawned", 
+  "hexed-Moves", 
+  "hexed-DirectionsAvailable", 
+  "hexed-Position", 
+  "hexed-PositionCount",
+  "hexed-Moved", 
+  "hexed-Spawned", 
 ]

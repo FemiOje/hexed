@@ -14,6 +14,12 @@ import {
 } from "@/utils/position";
 import { isVec2Equal } from "@/types/game";
 
+interface HighestScore {
+  player: string;
+  username: string;
+  xp: number;
+}
+
 interface GameState {
   // Player identification
   playerAddress: string | null;
@@ -38,6 +44,9 @@ interface GameState {
 
   // Neighbor occupancy bitmask
   occupiedNeighbors: number;
+
+  // Leaderboard state
+  highestScore: HighestScore | null;
 
   // Game events log
   eventLog: GameEvent[];
@@ -68,6 +77,9 @@ interface GameState {
 
   // Actions - Neighbor Occupancy
   setOccupiedNeighbors: (mask: number) => void;
+
+  // Actions - Leaderboard Management
+  setHighestScore: (score: HighestScore | null) => void;
 
   // Actions - Event Management
   addEvent: (event: GameEvent) => void;
@@ -100,6 +112,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   maxHp: 0,
   xp: 0,
   occupiedNeighbors: 0,
+  highestScore: null,
   eventLog: [],
   isInitializing: false,
   isSyncing: false,
@@ -191,6 +204,9 @@ export const useGameStore = create<GameState>((set, get) => ({
   // Neighbor Occupancy Actions
   setOccupiedNeighbors: (mask: number) => set({ occupiedNeighbors: mask }),
 
+  // Leaderboard Actions
+  setHighestScore: (score: HighestScore | null) => set({ highestScore: score }),
+
   // Event Management Actions
   addEvent: (event: GameEvent) =>
     set((state) => ({
@@ -220,6 +236,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       maxHp: 0,
       xp: 0,
       occupiedNeighbors: 0,
+      highestScore: null,
       eventLog: [],
       isInitializing: false,
       isSyncing: false,
@@ -274,6 +291,9 @@ export const useCanPlayerMove = () =>
 export const usePlayerHp = () => useGameStore((state) => state.hp);
 export const usePlayerMaxHp = () => useGameStore((state) => state.maxHp);
 export const usePlayerXp = () => useGameStore((state) => state.xp);
+
+export const useHighestScore = () =>
+  useGameStore((state) => state.highestScore);
 
 export const useEventLog = () => useGameStore((state) => state.eventLog);
 

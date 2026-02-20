@@ -71,6 +71,17 @@ pub struct PlayerStats {
     pub xp: u32,
 }
 
+// Global leaderboard - tracks the highest scoring player
+#[derive(Copy, Drop, Serde, Debug)]
+#[dojo::model]
+pub struct HighestScore {
+    #[key]
+    pub game_id: u32,  // Always 0 for singleton
+    pub player: ContractAddress,
+    pub username: felt252,  // Cartridge username as felt252
+    pub xp: u32,
+}
+
 // Return struct for get_game_state view function (not a model)
 #[derive(Copy, Drop, Serde)]
 pub struct GameState {

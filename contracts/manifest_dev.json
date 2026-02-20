@@ -36,7 +36,7 @@
       "address": "0x305699afcd703eec3163a096ca7d21e134d00b103b318666bdbcda0a28a0e9a",
       "class_hash": "0x7b776b9f4c8991ceb283862b6372f1d2b62fb9ebf25e3a3db0e4ab4e6237b2f",
       "init_calldata": [],
-      "tag": "untitled-actions",
+      "tag": "hexed-game_systems",
       "selector": "0x5afa061741b9774c0d1c33cd425394821df428c96ad37229a18717fb8512277",
       "systems": [
         "spawn",
@@ -56,7 +56,7 @@
         },
         {
           "name": "directions",
-          "type": "core::array::Array::<untitled::models::Direction>",
+          "type": "core::array::Array::<hexed::models::Direction>",
           "key": false
         }
       ],
@@ -73,7 +73,7 @@
         },
         {
           "name": "last_direction",
-          "type": "core::option::Option::<untitled::models::Direction>",
+          "type": "core::option::Option::<hexed::models::Direction>",
           "key": false
         },
         {
@@ -95,7 +95,7 @@
         },
         {
           "name": "vec",
-          "type": "untitled::models::Vec2",
+          "type": "hexed::models::Vec2",
           "key": false
         }
       ],
@@ -131,12 +131,12 @@
         },
         {
           "name": "direction",
-          "type": "untitled::models::Direction",
+          "type": "hexed::models::Direction",
           "key": false
         },
         {
           "name": "position",
-          "type": "untitled::models::Vec2",
+          "type": "hexed::models::Vec2",
           "key": false
         }
       ],
@@ -153,7 +153,7 @@
         },
         {
           "name": "position",
-          "type": "untitled::models::Vec2",
+          "type": "hexed::models::Vec2",
           "key": false
         }
       ],
@@ -317,11 +317,11 @@
     },
     {
       "type": "enum",
-      "name": "core::option::Option::<untitled::models::Direction>",
+      "name": "core::option::Option::<hexed::models::Direction>",
       "variants": [
         {
           "name": "Some",
-          "type": "untitled::models::Direction"
+          "type": "hexed::models::Direction"
         },
         {
           "name": "None",
@@ -2009,7 +2009,7 @@
       "inputs": [
         {
           "name": "event",
-          "type": "untitled::systems::actions::actions::Spawned"
+          "type": "hexed::systems::actions::actions::Spawned"
         }
       ],
       "outputs": [],
@@ -2028,7 +2028,7 @@
       "inputs": [
         {
           "name": "value",
-          "type": "untitled::systems::actions::actions::SpawnedValue"
+          "type": "hexed::systems::actions::actions::SpawnedValue"
         }
       ],
       "outputs": [],
@@ -2036,7 +2036,7 @@
     },
     {
       "type": "enum",
-      "name": "untitled::models::Direction",
+      "name": "hexed::models::Direction",
       "variants": [
         {
           "name": "East",
@@ -2066,7 +2066,7 @@
     },
     {
       "type": "struct",
-      "name": "untitled::models::DirectionsAvailable",
+      "name": "hexed::models::DirectionsAvailable",
       "members": [
         {
           "name": "player",
@@ -2074,23 +2074,23 @@
         },
         {
           "name": "directions",
-          "type": "core::array::Array::<untitled::models::Direction>"
+          "type": "core::array::Array::<hexed::models::Direction>"
         }
       ]
     },
     {
       "type": "struct",
-      "name": "untitled::models::DirectionsAvailableValue",
+      "name": "hexed::models::DirectionsAvailableValue",
       "members": [
         {
           "name": "directions",
-          "type": "core::array::Array::<untitled::models::Direction>"
+          "type": "core::array::Array::<hexed::models::Direction>"
         }
       ]
     },
     {
       "type": "struct",
-      "name": "untitled::models::Moves",
+      "name": "hexed::models::Moves",
       "members": [
         {
           "name": "player",
@@ -2098,7 +2098,7 @@
         },
         {
           "name": "last_direction",
-          "type": "core::option::Option::<untitled::models::Direction>"
+          "type": "core::option::Option::<hexed::models::Direction>"
         },
         {
           "name": "can_move",
@@ -2108,11 +2108,11 @@
     },
     {
       "type": "struct",
-      "name": "untitled::models::MovesValue",
+      "name": "hexed::models::MovesValue",
       "members": [
         {
           "name": "last_direction",
-          "type": "core::option::Option::<untitled::models::Direction>"
+          "type": "core::option::Option::<hexed::models::Direction>"
         },
         {
           "name": "can_move",
@@ -2122,7 +2122,7 @@
     },
     {
       "type": "struct",
-      "name": "untitled::models::Position",
+      "name": "hexed::models::Position",
       "members": [
         {
           "name": "player",
@@ -2130,13 +2130,13 @@
         },
         {
           "name": "vec",
-          "type": "untitled::models::Vec2"
+          "type": "hexed::models::Vec2"
         }
       ]
     },
     {
       "type": "struct",
-      "name": "untitled::models::PositionCount",
+      "name": "hexed::models::PositionCount",
       "members": [
         {
           "name": "identity",
@@ -2150,7 +2150,7 @@
     },
     {
       "type": "struct",
-      "name": "untitled::models::PositionCountValue",
+      "name": "hexed::models::PositionCountValue",
       "members": [
         {
           "name": "position",
@@ -2160,17 +2160,17 @@
     },
     {
       "type": "struct",
-      "name": "untitled::models::PositionValue",
+      "name": "hexed::models::PositionValue",
       "members": [
         {
           "name": "vec",
-          "type": "untitled::models::Vec2"
+          "type": "hexed::models::Vec2"
         }
       ]
     },
     {
       "type": "struct",
-      "name": "untitled::models::Vec2",
+      "name": "hexed::models::Vec2",
       "members": [
         {
           "name": "x",
@@ -2184,31 +2184,31 @@
     },
     {
       "type": "event",
-      "name": "untitled::models::m_DirectionsAvailable::Event",
+      "name": "hexed::models::m_DirectionsAvailable::Event",
       "kind": "enum",
       "variants": []
     },
     {
       "type": "event",
-      "name": "untitled::models::m_Moves::Event",
+      "name": "hexed::models::m_Moves::Event",
       "kind": "enum",
       "variants": []
     },
     {
       "type": "event",
-      "name": "untitled::models::m_Position::Event",
+      "name": "hexed::models::m_Position::Event",
       "kind": "enum",
       "variants": []
     },
     {
       "type": "event",
-      "name": "untitled::models::m_PositionCount::Event",
+      "name": "hexed::models::m_PositionCount::Event",
       "kind": "enum",
       "variants": []
     },
     {
       "type": "interface",
-      "name": "untitled::systems::actions::IActions",
+      "name": "hexed::systems::actions::IActions",
       "items": [
         {
           "type": "function",
@@ -2223,7 +2223,7 @@
           "inputs": [
             {
               "name": "direction",
-              "type": "untitled::models::Direction"
+              "type": "hexed::models::Direction"
             }
           ],
           "outputs": [],
@@ -2233,7 +2233,7 @@
     },
     {
       "type": "event",
-      "name": "untitled::systems::actions::actions::Event",
+      "name": "hexed::systems::actions::actions::Event",
       "kind": "enum",
       "variants": [
         {
@@ -2250,7 +2250,7 @@
     },
     {
       "type": "struct",
-      "name": "untitled::systems::actions::actions::Moved",
+      "name": "hexed::systems::actions::actions::Moved",
       "members": [
         {
           "name": "player",
@@ -2258,31 +2258,31 @@
         },
         {
           "name": "direction",
-          "type": "untitled::models::Direction"
+          "type": "hexed::models::Direction"
         },
         {
           "name": "position",
-          "type": "untitled::models::Vec2"
+          "type": "hexed::models::Vec2"
         }
       ]
     },
     {
       "type": "struct",
-      "name": "untitled::systems::actions::actions::MovedValue",
+      "name": "hexed::systems::actions::actions::MovedValue",
       "members": [
         {
           "name": "direction",
-          "type": "untitled::models::Direction"
+          "type": "hexed::models::Direction"
         },
         {
           "name": "position",
-          "type": "untitled::models::Vec2"
+          "type": "hexed::models::Vec2"
         }
       ]
     },
     {
       "type": "struct",
-      "name": "untitled::systems::actions::actions::Spawned",
+      "name": "hexed::systems::actions::actions::Spawned",
       "members": [
         {
           "name": "player",
@@ -2290,29 +2290,29 @@
         },
         {
           "name": "position",
-          "type": "untitled::models::Vec2"
+          "type": "hexed::models::Vec2"
         }
       ]
     },
     {
       "type": "struct",
-      "name": "untitled::systems::actions::actions::SpawnedValue",
+      "name": "hexed::systems::actions::actions::SpawnedValue",
       "members": [
         {
           "name": "position",
-          "type": "untitled::models::Vec2"
+          "type": "hexed::models::Vec2"
         }
       ]
     },
     {
       "type": "event",
-      "name": "untitled::systems::actions::actions::e_Moved::Event",
+      "name": "hexed::systems::actions::actions::e_Moved::Event",
       "kind": "enum",
       "variants": []
     },
     {
       "type": "event",
-      "name": "untitled::systems::actions::actions::e_Spawned::Event",
+      "name": "hexed::systems::actions::actions::e_Spawned::Event",
       "kind": "enum",
       "variants": []
     }

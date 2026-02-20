@@ -1,9 +1,9 @@
 {
   "world": {
     "class_hash": "0x381899226c066a0262f45d6ab815f89818e0874ec3e66cdf72b5e92d8db4680",
-    "address": "0x49a3c55d530bee77d88e38826b82e0685b371e856b9791305459705db94ca13",
-    "seed": "dojo_starter_8",
-    "name": "Untitled",
+    "address": "0x3e4767d0616f48781ea197029a6be8e7209afeb2c029689e1853b487b760076",
+    "seed": "hexedseed_1",
+    "name": "hexed",
     "entrypoints": [
       "uuid",
       "set_metadata",
@@ -33,14 +33,15 @@
   },
   "contracts": [
     {
-      "address": "0x364aba833da4b99c418e62a220b69eed039fcb4338b175b59ae0f194b3544c9",
-      "class_hash": "0x24428debffd75a3488491210b773fced28a4f44999b97c9012a1f0f9b6b955d",
+      "address": "0x203ac293399249b51f83bdbc2d1ef78c390a91ab29d8938babb3354d961fe58",
+      "class_hash": "0x22afa27dd76a75b6912d9e7d5a42d4069e69481a91dfe9ac19b2cdc9ffbdc62",
       "init_calldata": [],
-      "tag": "untitled-game_systems",
-      "selector": "0x4b9982c93d239b953e976f12f77152699704606d385e04b78d305470ff49ca6",
+      "tag": "hexed-game_systems",
+      "selector": "0x3bb99aa127029bddf81f8e76230bdfdb13e05a56168222e21cd145b9f69f128",
       "systems": [
         "spawn",
         "move",
+        "register_score",
         "upgrade"
       ]
     }
@@ -65,9 +66,36 @@
           "key": false
         }
       ],
-      "class_hash": "0x39e39e27f98483eac9253edd851815e7dbd4a3f0d2ad144ab0456ff9b9cfaa2",
-      "tag": "untitled-GameSession",
-      "selector": "0x6637fc10e128c868563ca070a594d810b96065dfd785150a7618b9307a89a52"
+      "class_hash": "0x41204605d567bc67aec86f14b6b89ca4a685c39aa9acb7dff0a954013fa06ae",
+      "tag": "hexed-GameSession",
+      "selector": "0x2c0b0fabde796e9ce6cb695e57e380ca9323d7bbf315dbb89f0c32aa3d56444"
+    },
+    {
+      "members": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "key": true
+        },
+        {
+          "name": "player",
+          "type": "core::starknet::contract_address::ContractAddress",
+          "key": false
+        },
+        {
+          "name": "username",
+          "type": "core::felt252",
+          "key": false
+        },
+        {
+          "name": "xp",
+          "type": "core::integer::u32",
+          "key": false
+        }
+      ],
+      "class_hash": "0x1d8181daeb111b61533963a0ae5c6ade51ec62b7874a530b2ad61507ae58222",
+      "tag": "hexed-HighestScore",
+      "selector": "0x5c9c7f3f4f52784c9aa88e025f62db8a0146c2c1b386edd880f52a834fbb4b"
     },
     {
       "members": [
@@ -78,12 +106,12 @@
         },
         {
           "name": "position",
-          "type": "untitled::models::Vec2",
+          "type": "hexed::models::Vec2",
           "key": false
         },
         {
           "name": "last_direction",
-          "type": "core::option::Option::<untitled::models::Direction>",
+          "type": "core::option::Option::<hexed::models::Direction>",
           "key": false
         },
         {
@@ -92,9 +120,9 @@
           "key": false
         }
       ],
-      "class_hash": "0x68aaf4ff6445cd3bb700b7aaface04b47408cc8f3c595917358eb4bec8bc29a",
-      "tag": "untitled-PlayerState",
-      "selector": "0x46ebe51322811725309a85d5f947e522a8c025a7b33c634c0b222f728e8b033"
+      "class_hash": "0x6221a1b39955184649577e22741b960eb17294d7a1b7e1670ec132b13943be6",
+      "tag": "hexed-PlayerState",
+      "selector": "0xf4a3ecd1d15e1b588d4abce213a57decb4cbf3448c872bb8926ec692c94c1f"
     },
     {
       "members": [
@@ -119,9 +147,9 @@
           "key": false
         }
       ],
-      "class_hash": "0x672a8115fb340d66d8341250a40c05d61e9060b8b379b305897baa386c576d5",
-      "tag": "untitled-PlayerStats",
-      "selector": "0x2adec7b8d996a70a0b36e745f13b5fb6e50c2137bbb6622deec156ecea22295"
+      "class_hash": "0x3bf0e3662d1280a1d12599e2b3e19004a2042db225238743d2073931d7dcdd7",
+      "tag": "hexed-PlayerStats",
+      "selector": "0x472b85aced0f22b35e9f25dbd7bd96d666e0f840cf2f2b49a000ed1d8f3f958"
     },
     {
       "members": [
@@ -141,9 +169,9 @@
           "key": false
         }
       ],
-      "class_hash": "0x696a33ac504071e613c0ee4bf8c844d3a13a7d34e0163b797b577dc4e7e3c1b",
-      "tag": "untitled-TileOccupant",
-      "selector": "0x5d0afec0385802703996519ba6b5aaa37387ae43bc214d6352f14a4a48d4c30"
+      "class_hash": "0x657825b0b8d5f81b0122f13825850c4995b5f9231680b9feb09fde1c20f230f",
+      "tag": "hexed-TileOccupant",
+      "selector": "0x261082bd584c6ae741849585292d3aea7b33867932b926b81ae84f7a5e7b7b5"
     }
   ],
   "events": [
@@ -166,12 +194,12 @@
         },
         {
           "name": "attacker_position",
-          "type": "untitled::models::Vec2",
+          "type": "hexed::models::Vec2",
           "key": false
         },
         {
           "name": "defender_position",
-          "type": "untitled::models::Vec2",
+          "type": "hexed::models::Vec2",
           "key": false
         },
         {
@@ -190,9 +218,9 @@
           "key": false
         }
       ],
-      "class_hash": "0x5707dcefb86ad77b20002fd5a8219850980aedf24f74d7718298e8edc8bf918",
-      "tag": "untitled-CombatResult",
-      "selector": "0x63b0a0d3d1e3c91574e4f5e03480f649fbe3fdef17316bb1f5a2c707c317cd8"
+      "class_hash": "0x3a5693571a785877df4921ce716b7dce5603828774a8634137554a4d2284096",
+      "tag": "hexed-CombatResult",
+      "selector": "0x10122a649422b626f4bd437c690e498c48ba089d9a8f03a0f51aebc6388f5cb"
     },
     {
       "members": [
@@ -232,9 +260,31 @@
           "key": false
         }
       ],
-      "class_hash": "0x5e7d91392035107ea40df534a678927498d6c2447729b670f8cc5795d49d675",
-      "tag": "untitled-EncounterOccurred",
-      "selector": "0x6290c33e40f5fb1fbb317e39dfa0df367d6d8a997b5aac7bea0962856f325c"
+      "class_hash": "0x510bc4e31b2e76f27e29565c07a09643b251ca00abf310a053f2d90094ad713",
+      "tag": "hexed-EncounterOccurred",
+      "selector": "0x614a3b36c54d27e5a6af94c4a7ecb977407620da98f14ec197a602a062e5721"
+    },
+    {
+      "members": [
+        {
+          "name": "player",
+          "type": "core::starknet::contract_address::ContractAddress",
+          "key": true
+        },
+        {
+          "name": "username",
+          "type": "core::felt252",
+          "key": false
+        },
+        {
+          "name": "xp",
+          "type": "core::integer::u32",
+          "key": false
+        }
+      ],
+      "class_hash": "0x5387a109a88406ee7d165bc20b41ddc0189ded011cf885f19a5c16295d4b24d",
+      "tag": "hexed-HighestScoreUpdated",
+      "selector": "0x6903f5ccee01a4b5610a1bbda8950cc0502ec390d4c05bb25262a3a2bc843e0"
     },
     {
       "members": [
@@ -245,18 +295,18 @@
         },
         {
           "name": "direction",
-          "type": "untitled::models::Direction",
+          "type": "hexed::models::Direction",
           "key": false
         },
         {
           "name": "position",
-          "type": "untitled::models::Vec2",
+          "type": "hexed::models::Vec2",
           "key": false
         }
       ],
-      "class_hash": "0x15091781eba8ef5c4b0468b25e9d60e941d3e9693c9270fcb31563de8504afa",
-      "tag": "untitled-Moved",
-      "selector": "0x62a794a096ae2445ca892f72cfd1569e60909c3a57f937a7a87b1689e9f5794"
+      "class_hash": "0x4e3189c3d3e71425209780ea1e2d00949a0dbaf6229f62b54944a89f356019b",
+      "tag": "hexed-Moved",
+      "selector": "0x27114709c38c2c6bf66b388a12a725a1aa302402ecd8b67b01680052510f0e0"
     },
     {
       "members": [
@@ -267,7 +317,7 @@
         },
         {
           "name": "position",
-          "type": "untitled::models::Vec2",
+          "type": "hexed::models::Vec2",
           "key": false
         },
         {
@@ -276,9 +326,9 @@
           "key": false
         }
       ],
-      "class_hash": "0x1b9123cc83a94958ee92701feb1db94bf6d73e36e15e4c6f33af20bba10b91f",
-      "tag": "untitled-NeighborsRevealed",
-      "selector": "0x5d7f0bbca8a1b10015182a8c59b85ab3a0a729d3429c64b98ecc000d48c7c45"
+      "class_hash": "0x3c41dfc20b9fdc4e869274045fc302326075dc525e6e374414d8def41ee5943",
+      "tag": "hexed-NeighborsRevealed",
+      "selector": "0x4f9c2b16c04cd20e819f4935770a23560038f99f6d20012ed2858e2bdb5deff"
     },
     {
       "members": [
@@ -294,13 +344,13 @@
         },
         {
           "name": "position",
-          "type": "untitled::models::Vec2",
+          "type": "hexed::models::Vec2",
           "key": false
         }
       ],
-      "class_hash": "0x37b3f891aaa878c174d8715b8c564a9e14b6fcabea41432789332b94d8ff3cf",
-      "tag": "untitled-PlayerDied",
-      "selector": "0x694468cf2cc83d89cea890cc17586d55455e76318132a8d9c5c718451e6e6a5"
+      "class_hash": "0x30d25ec85d660273623446914ab230a9c6e589accb4e6a3a8fec55f4d7b8320",
+      "tag": "hexed-PlayerDied",
+      "selector": "0x384fcd8fe8911569f74b8df8726184097d5d608b91550e3562ce5d5eefb3cb7"
     },
     {
       "members": [
@@ -316,13 +366,13 @@
         },
         {
           "name": "position",
-          "type": "untitled::models::Vec2",
+          "type": "hexed::models::Vec2",
           "key": false
         }
       ],
-      "class_hash": "0x407de86e8e527a9e7a0cd97007b5cac8596eac8b153f58e572b66eb07f7dc45",
-      "tag": "untitled-Spawned",
-      "selector": "0x270f83119d6370b4c1e0c9d27711d3c42e220901c0b884a62005b284320cbc4"
+      "class_hash": "0x1bca0c628fd79bd1702ab5b63d129fb619af7a116fc83d4b6363bed146d2ef1",
+      "tag": "hexed-Spawned",
+      "selector": "0x1d304899557a569ac95fa06eac7b427c364f09a57d72e13522d622c88da4f94"
     }
   ],
   "external_contracts": [],
@@ -470,11 +520,11 @@
     },
     {
       "type": "enum",
-      "name": "core::option::Option::<untitled::models::Direction>",
+      "name": "core::option::Option::<hexed::models::Direction>",
       "variants": [
         {
           "name": "Some",
-          "type": "untitled::models::Direction"
+          "type": "hexed::models::Direction"
         },
         {
           "name": "None",
@@ -2162,7 +2212,7 @@
       "inputs": [
         {
           "name": "event",
-          "type": "untitled::systems::game::contracts::game_systems::Spawned"
+          "type": "hexed::systems::game::contracts::game_systems::Spawned"
         }
       ],
       "outputs": [],
@@ -2181,7 +2231,7 @@
       "inputs": [
         {
           "name": "value",
-          "type": "untitled::systems::game::contracts::game_systems::SpawnedValue"
+          "type": "hexed::systems::game::contracts::game_systems::SpawnedValue"
         }
       ],
       "outputs": [],
@@ -2189,7 +2239,7 @@
     },
     {
       "type": "enum",
-      "name": "untitled::models::Direction",
+      "name": "hexed::models::Direction",
       "variants": [
         {
           "name": "East",
@@ -2219,7 +2269,7 @@
     },
     {
       "type": "struct",
-      "name": "untitled::models::GameSession",
+      "name": "hexed::models::GameSession",
       "members": [
         {
           "name": "game_id",
@@ -2237,7 +2287,7 @@
     },
     {
       "type": "struct",
-      "name": "untitled::models::GameSessionValue",
+      "name": "hexed::models::GameSessionValue",
       "members": [
         {
           "name": "player",
@@ -2251,7 +2301,7 @@
     },
     {
       "type": "struct",
-      "name": "untitled::models::GameState",
+      "name": "hexed::models::GameState",
       "members": [
         {
           "name": "game_id",
@@ -2263,11 +2313,11 @@
         },
         {
           "name": "position",
-          "type": "untitled::models::Vec2"
+          "type": "hexed::models::Vec2"
         },
         {
           "name": "last_direction",
-          "type": "core::option::Option::<untitled::models::Direction>"
+          "type": "core::option::Option::<hexed::models::Direction>"
         },
         {
           "name": "can_move",
@@ -2297,7 +2347,47 @@
     },
     {
       "type": "struct",
-      "name": "untitled::models::PlayerState",
+      "name": "hexed::models::HighestScore",
+      "members": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "player",
+          "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "username",
+          "type": "core::felt252"
+        },
+        {
+          "name": "xp",
+          "type": "core::integer::u32"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "hexed::models::HighestScoreValue",
+      "members": [
+        {
+          "name": "player",
+          "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "username",
+          "type": "core::felt252"
+        },
+        {
+          "name": "xp",
+          "type": "core::integer::u32"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "hexed::models::PlayerState",
       "members": [
         {
           "name": "game_id",
@@ -2305,11 +2395,11 @@
         },
         {
           "name": "position",
-          "type": "untitled::models::Vec2"
+          "type": "hexed::models::Vec2"
         },
         {
           "name": "last_direction",
-          "type": "core::option::Option::<untitled::models::Direction>"
+          "type": "core::option::Option::<hexed::models::Direction>"
         },
         {
           "name": "can_move",
@@ -2319,15 +2409,15 @@
     },
     {
       "type": "struct",
-      "name": "untitled::models::PlayerStateValue",
+      "name": "hexed::models::PlayerStateValue",
       "members": [
         {
           "name": "position",
-          "type": "untitled::models::Vec2"
+          "type": "hexed::models::Vec2"
         },
         {
           "name": "last_direction",
-          "type": "core::option::Option::<untitled::models::Direction>"
+          "type": "core::option::Option::<hexed::models::Direction>"
         },
         {
           "name": "can_move",
@@ -2337,7 +2427,7 @@
     },
     {
       "type": "struct",
-      "name": "untitled::models::PlayerStats",
+      "name": "hexed::models::PlayerStats",
       "members": [
         {
           "name": "game_id",
@@ -2359,7 +2449,7 @@
     },
     {
       "type": "struct",
-      "name": "untitled::models::PlayerStatsValue",
+      "name": "hexed::models::PlayerStatsValue",
       "members": [
         {
           "name": "hp",
@@ -2377,7 +2467,7 @@
     },
     {
       "type": "struct",
-      "name": "untitled::models::TileOccupant",
+      "name": "hexed::models::TileOccupant",
       "members": [
         {
           "name": "x",
@@ -2395,7 +2485,7 @@
     },
     {
       "type": "struct",
-      "name": "untitled::models::TileOccupantValue",
+      "name": "hexed::models::TileOccupantValue",
       "members": [
         {
           "name": "game_id",
@@ -2405,7 +2495,7 @@
     },
     {
       "type": "struct",
-      "name": "untitled::models::Vec2",
+      "name": "hexed::models::Vec2",
       "members": [
         {
           "name": "x",
@@ -2419,31 +2509,37 @@
     },
     {
       "type": "event",
-      "name": "untitled::models::m_GameSession::Event",
+      "name": "hexed::models::m_GameSession::Event",
       "kind": "enum",
       "variants": []
     },
     {
       "type": "event",
-      "name": "untitled::models::m_PlayerState::Event",
+      "name": "hexed::models::m_HighestScore::Event",
       "kind": "enum",
       "variants": []
     },
     {
       "type": "event",
-      "name": "untitled::models::m_PlayerStats::Event",
+      "name": "hexed::models::m_PlayerState::Event",
       "kind": "enum",
       "variants": []
     },
     {
       "type": "event",
-      "name": "untitled::models::m_TileOccupant::Event",
+      "name": "hexed::models::m_PlayerStats::Event",
+      "kind": "enum",
+      "variants": []
+    },
+    {
+      "type": "event",
+      "name": "hexed::models::m_TileOccupant::Event",
       "kind": "enum",
       "variants": []
     },
     {
       "type": "interface",
-      "name": "untitled::systems::game::contracts::IGameSystems",
+      "name": "hexed::systems::game::contracts::IGameSystems",
       "items": [
         {
           "type": "function",
@@ -2462,7 +2558,7 @@
             },
             {
               "name": "direction",
-              "type": "untitled::models::Direction"
+              "type": "hexed::models::Direction"
             }
           ],
           "outputs": [],
@@ -2479,7 +2575,38 @@
           ],
           "outputs": [
             {
-              "type": "untitled::models::GameState"
+              "type": "hexed::models::GameState"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "register_score",
+          "inputs": [
+            {
+              "name": "player",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "username",
+              "type": "core::felt252"
+            },
+            {
+              "name": "xp",
+              "type": "core::integer::u32"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "get_highest_score",
+          "inputs": [],
+          "outputs": [
+            {
+              "type": "(core::starknet::contract_address::ContractAddress, core::felt252, core::integer::u32)"
             }
           ],
           "state_mutability": "view"
@@ -2488,7 +2615,7 @@
     },
     {
       "type": "struct",
-      "name": "untitled::systems::game::contracts::game_systems::CombatResult",
+      "name": "hexed::systems::game::contracts::game_systems::CombatResult",
       "members": [
         {
           "name": "attacker_game_id",
@@ -2504,11 +2631,11 @@
         },
         {
           "name": "attacker_position",
-          "type": "untitled::models::Vec2"
+          "type": "hexed::models::Vec2"
         },
         {
           "name": "defender_position",
-          "type": "untitled::models::Vec2"
+          "type": "hexed::models::Vec2"
         },
         {
           "name": "damage_dealt",
@@ -2526,7 +2653,7 @@
     },
     {
       "type": "struct",
-      "name": "untitled::systems::game::contracts::game_systems::CombatResultValue",
+      "name": "hexed::systems::game::contracts::game_systems::CombatResultValue",
       "members": [
         {
           "name": "defender_game_id",
@@ -2538,11 +2665,11 @@
         },
         {
           "name": "attacker_position",
-          "type": "untitled::models::Vec2"
+          "type": "hexed::models::Vec2"
         },
         {
           "name": "defender_position",
-          "type": "untitled::models::Vec2"
+          "type": "hexed::models::Vec2"
         },
         {
           "name": "damage_dealt",
@@ -2560,7 +2687,7 @@
     },
     {
       "type": "struct",
-      "name": "untitled::systems::game::contracts::game_systems::EncounterOccurred",
+      "name": "hexed::systems::game::contracts::game_systems::EncounterOccurred",
       "members": [
         {
           "name": "game_id",
@@ -2594,7 +2721,7 @@
     },
     {
       "type": "struct",
-      "name": "untitled::systems::game::contracts::game_systems::EncounterOccurredValue",
+      "name": "hexed::systems::game::contracts::game_systems::EncounterOccurredValue",
       "members": [
         {
           "name": "is_gift",
@@ -2624,7 +2751,7 @@
     },
     {
       "type": "event",
-      "name": "untitled::systems::game::contracts::game_systems::Event",
+      "name": "hexed::systems::game::contracts::game_systems::Event",
       "kind": "enum",
       "variants": [
         {
@@ -2641,7 +2768,39 @@
     },
     {
       "type": "struct",
-      "name": "untitled::systems::game::contracts::game_systems::Moved",
+      "name": "hexed::systems::game::contracts::game_systems::HighestScoreUpdated",
+      "members": [
+        {
+          "name": "player",
+          "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "username",
+          "type": "core::felt252"
+        },
+        {
+          "name": "xp",
+          "type": "core::integer::u32"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "hexed::systems::game::contracts::game_systems::HighestScoreUpdatedValue",
+      "members": [
+        {
+          "name": "username",
+          "type": "core::felt252"
+        },
+        {
+          "name": "xp",
+          "type": "core::integer::u32"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "hexed::systems::game::contracts::game_systems::Moved",
       "members": [
         {
           "name": "game_id",
@@ -2649,31 +2808,31 @@
         },
         {
           "name": "direction",
-          "type": "untitled::models::Direction"
+          "type": "hexed::models::Direction"
         },
         {
           "name": "position",
-          "type": "untitled::models::Vec2"
+          "type": "hexed::models::Vec2"
         }
       ]
     },
     {
       "type": "struct",
-      "name": "untitled::systems::game::contracts::game_systems::MovedValue",
+      "name": "hexed::systems::game::contracts::game_systems::MovedValue",
       "members": [
         {
           "name": "direction",
-          "type": "untitled::models::Direction"
+          "type": "hexed::models::Direction"
         },
         {
           "name": "position",
-          "type": "untitled::models::Vec2"
+          "type": "hexed::models::Vec2"
         }
       ]
     },
     {
       "type": "struct",
-      "name": "untitled::systems::game::contracts::game_systems::NeighborsRevealed",
+      "name": "hexed::systems::game::contracts::game_systems::NeighborsRevealed",
       "members": [
         {
           "name": "game_id",
@@ -2681,7 +2840,7 @@
         },
         {
           "name": "position",
-          "type": "untitled::models::Vec2"
+          "type": "hexed::models::Vec2"
         },
         {
           "name": "neighbors",
@@ -2691,11 +2850,11 @@
     },
     {
       "type": "struct",
-      "name": "untitled::systems::game::contracts::game_systems::NeighborsRevealedValue",
+      "name": "hexed::systems::game::contracts::game_systems::NeighborsRevealedValue",
       "members": [
         {
           "name": "position",
-          "type": "untitled::models::Vec2"
+          "type": "hexed::models::Vec2"
         },
         {
           "name": "neighbors",
@@ -2705,7 +2864,7 @@
     },
     {
       "type": "struct",
-      "name": "untitled::systems::game::contracts::game_systems::PlayerDied",
+      "name": "hexed::systems::game::contracts::game_systems::PlayerDied",
       "members": [
         {
           "name": "game_id",
@@ -2717,13 +2876,13 @@
         },
         {
           "name": "position",
-          "type": "untitled::models::Vec2"
+          "type": "hexed::models::Vec2"
         }
       ]
     },
     {
       "type": "struct",
-      "name": "untitled::systems::game::contracts::game_systems::PlayerDiedValue",
+      "name": "hexed::systems::game::contracts::game_systems::PlayerDiedValue",
       "members": [
         {
           "name": "killed_by",
@@ -2731,13 +2890,13 @@
         },
         {
           "name": "position",
-          "type": "untitled::models::Vec2"
+          "type": "hexed::models::Vec2"
         }
       ]
     },
     {
       "type": "struct",
-      "name": "untitled::systems::game::contracts::game_systems::Spawned",
+      "name": "hexed::systems::game::contracts::game_systems::Spawned",
       "members": [
         {
           "name": "game_id",
@@ -2749,13 +2908,13 @@
         },
         {
           "name": "position",
-          "type": "untitled::models::Vec2"
+          "type": "hexed::models::Vec2"
         }
       ]
     },
     {
       "type": "struct",
-      "name": "untitled::systems::game::contracts::game_systems::SpawnedValue",
+      "name": "hexed::systems::game::contracts::game_systems::SpawnedValue",
       "members": [
         {
           "name": "player",
@@ -2763,43 +2922,49 @@
         },
         {
           "name": "position",
-          "type": "untitled::models::Vec2"
+          "type": "hexed::models::Vec2"
         }
       ]
     },
     {
       "type": "event",
-      "name": "untitled::systems::game::contracts::game_systems::e_CombatResult::Event",
+      "name": "hexed::systems::game::contracts::game_systems::e_CombatResult::Event",
       "kind": "enum",
       "variants": []
     },
     {
       "type": "event",
-      "name": "untitled::systems::game::contracts::game_systems::e_EncounterOccurred::Event",
+      "name": "hexed::systems::game::contracts::game_systems::e_EncounterOccurred::Event",
       "kind": "enum",
       "variants": []
     },
     {
       "type": "event",
-      "name": "untitled::systems::game::contracts::game_systems::e_Moved::Event",
+      "name": "hexed::systems::game::contracts::game_systems::e_HighestScoreUpdated::Event",
       "kind": "enum",
       "variants": []
     },
     {
       "type": "event",
-      "name": "untitled::systems::game::contracts::game_systems::e_NeighborsRevealed::Event",
+      "name": "hexed::systems::game::contracts::game_systems::e_Moved::Event",
       "kind": "enum",
       "variants": []
     },
     {
       "type": "event",
-      "name": "untitled::systems::game::contracts::game_systems::e_PlayerDied::Event",
+      "name": "hexed::systems::game::contracts::game_systems::e_NeighborsRevealed::Event",
       "kind": "enum",
       "variants": []
     },
     {
       "type": "event",
-      "name": "untitled::systems::game::contracts::game_systems::e_Spawned::Event",
+      "name": "hexed::systems::game::contracts::game_systems::e_PlayerDied::Event",
+      "kind": "enum",
+      "variants": []
+    },
+    {
+      "type": "event",
+      "name": "hexed::systems::game::contracts::game_systems::e_Spawned::Event",
       "kind": "enum",
       "variants": []
     }

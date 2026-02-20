@@ -14,7 +14,24 @@ export function setupWorld(provider: DojoProvider) {
 
 	const game_systems_getGameState = async (gameId: BigNumberish) => {
 		try {
-			return await provider.call("untitled", build_game_systems_getGameState_calldata(gameId));
+			return await provider.call("hexed", build_game_systems_getGameState_calldata(gameId));
+		} catch (error) {
+			console.error(error);
+			throw error;
+		}
+	};
+
+	const build_game_systems_getHighestScore_calldata = (): DojoCall => {
+		return {
+			contractName: "game_systems",
+			entrypoint: "get_highest_score",
+			calldata: [],
+		};
+	};
+
+	const game_systems_getHighestScore = async () => {
+		try {
+			return await provider.call("hexed", build_game_systems_getHighestScore_calldata());
 		} catch (error) {
 			console.error(error);
 			throw error;
@@ -34,7 +51,28 @@ export function setupWorld(provider: DojoProvider) {
 			return await provider.execute(
 				snAccount,
 				build_game_systems_move_calldata(gameId, direction),
-				"untitled",
+				"hexed",
+			);
+		} catch (error) {
+			console.error(error);
+			throw error;
+		}
+	};
+
+	const build_game_systems_registerScore_calldata = (player: string, username: BigNumberish, xp: BigNumberish): DojoCall => {
+		return {
+			contractName: "game_systems",
+			entrypoint: "register_score",
+			calldata: [player, username, xp],
+		};
+	};
+
+	const game_systems_registerScore = async (snAccount: Account | AccountInterface, player: string, username: BigNumberish, xp: BigNumberish) => {
+		try {
+			return await provider.execute(
+				snAccount,
+				build_game_systems_registerScore_calldata(player, username, xp),
+				"hexed",
 			);
 		} catch (error) {
 			console.error(error);
@@ -55,7 +93,7 @@ export function setupWorld(provider: DojoProvider) {
 			return await provider.execute(
 				snAccount,
 				build_game_systems_spawn_calldata(),
-				"untitled",
+				"hexed",
 			);
 		} catch (error) {
 			console.error(error);
@@ -69,8 +107,12 @@ export function setupWorld(provider: DojoProvider) {
 		game_systems: {
 			getGameState: game_systems_getGameState,
 			buildGetGameStateCalldata: build_game_systems_getGameState_calldata,
+			getHighestScore: game_systems_getHighestScore,
+			buildGetHighestScoreCalldata: build_game_systems_getHighestScore_calldata,
 			move: game_systems_move,
 			buildMoveCalldata: build_game_systems_move_calldata,
+			registerScore: game_systems_registerScore,
+			buildRegisterScoreCalldata: build_game_systems_registerScore_calldata,
 			spawn: game_systems_spawn,
 			buildSpawnCalldata: build_game_systems_spawn_calldata,
 		},

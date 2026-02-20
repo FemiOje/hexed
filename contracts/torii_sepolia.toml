@@ -1,5 +1,5 @@
 rpc = "https://api.cartridge.gg/x/starknet/sepolia"
-world_address = "0x049a3c55d530bee77d88e38826b82e0685b371e856b9791305459705db94ca13"
+world_address = "0x03e4767d0616f48781ea197029a6be8e7209afeb2c029689e1853b487b760076"
 
 [indexing]
 contracts = [
@@ -9,11 +9,11 @@ contracts = [
 
 [sql]
 historical = [
-  "untitled-Moves", 
-  "untitled-DirectionsAvailable", 
-  "untitled-Position", 
-  "untitled-PositionCount",
-  "untitled-Moved", 
-  "untitled-Spawned", 
+  "hexed-Moves", 
+  "hexed-DirectionsAvailable", 
+  "hexed-Position", 
+  "hexed-PositionCount",
+  "hexed-Moved", 
+  "hexed-Spawned", 
 ]
 

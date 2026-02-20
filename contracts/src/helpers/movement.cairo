@@ -1,6 +1,6 @@
 use dojo::model::ModelStorage;
-use untitled::helpers::combat::add_xp;
-use untitled::models::{Direction, EXPLORE_XP_REWARD, PlayerState, PlayerStats, TileOccupant, Vec2};
+use hexed::helpers::combat::add_xp;
+use hexed::models::{Direction, EXPLORE_XP_REWARD, PlayerState, PlayerStats, TileOccupant, Vec2};
 
 /// Executes a normal move to an empty tile.
 /// Handles tile updates, state changes, and exploration XP.

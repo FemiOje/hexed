@@ -4,8 +4,8 @@ use dojo_cairo_test::{
     spawn_test_world,
 };
 use starknet::ContractAddress;
-use untitled::models::{m_GameSession, m_PlayerState, m_PlayerStats, m_TileOccupant};
-use untitled::systems::game::contracts::{IGameSystemsDispatcher, game_systems};
+use hexed::models::{m_GameSession, m_PlayerState, m_PlayerStats, m_TileOccupant};
+use hexed::systems::game::contracts::{IGameSystemsDispatcher, game_systems};
 
 // ------------------------------------------ //
 // ------------ Test Constants -------------- //
@@ -29,7 +29,7 @@ pub fn DEFENDER_ADDR() -> ContractAddress {
 
 pub fn namespace_def() -> NamespaceDef {
     NamespaceDef {
-        namespace: "untitled",
+        namespace: "hexed",
         resources: [
             TestResource::Model(m_PlayerState::TEST_CLASS_HASH),
             TestResource::Model(m_PlayerStats::TEST_CLASS_HASH),
@@ -49,8 +49,8 @@ pub fn namespace_def() -> NamespaceDef {
 
 pub fn contract_defs() -> Span<ContractDef> {
     [
-        ContractDefTrait::new(@"untitled", @"game_systems")
-            .with_writer_of([dojo::utils::bytearray_hash(@"untitled")].span())
+        ContractDefTrait::new(@"hexed", @"game_systems")
+            .with_writer_of([dojo::utils::bytearray_hash(@"hexed")].span())
     ]
         .span()
 }

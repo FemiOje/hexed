@@ -29,16 +29,16 @@ export enum ChainId {
 export const NETWORKS = {
   KATANA: {
     chainId: ChainId.KATANA,
-    namespace: "untitled",
+    namespace: "hexed",
     rpcUrl: import.meta.env.VITE_KATANA_RPC_URL || "http://localhost:5050",
     toriiUrl: import.meta.env.VITE_KATANA_TORII_URL || "http://localhost:8080",
     manifest: manifest_dev,
   },
   SN_SEPOLIA: {
     chainId: ChainId.SN_SEPOLIA,
-    namespace: "untitled",
+    namespace: "hexed",
     rpcUrl: import.meta.env.VITE_SEPOLIA_RPC_URL || "https://api.cartridge.gg/x/starknet/sepolia/rpc/v0_9",
-    toriiUrl: "https://api.cartridge.gg/x/untitled/torii",
+    toriiUrl: "https://api.cartridge.gg/x/hexed/torii",
     manifest: manifest_sepolia,
   },
 };
@@ -47,7 +47,7 @@ export function getNetworkConfig(networkKey: ChainId): NetworkConfig {
   const network = NETWORKS[networkKey as keyof typeof NETWORKS];
   if (!network) throw new Error(`Network ${networkKey} not found`);
 
-  const gameContract = network.manifest.contracts.find((c: any) => c.tag === "untitled-game_systems")?.address || "";
+  const gameContract = network.manifest.contracts.find((c: any) => c.tag === "hexed-game_systems")?.address || "";
   const policies = networkKey === ChainId.SN_SEPOLIA
     ? [
         { target: gameContract, method: "spawn" },
@@ -60,8 +60,8 @@ export function getNetworkConfig(networkKey: ChainId): NetworkConfig {
     chainId: network.chainId,
     namespace: network.namespace,
     manifest: network.manifest,
-    preset: "untitled",
-    slot: "untitled",
+    preset: "hexed",
+    slot: "hexed",
     policies,
     rpcUrl: network.rpcUrl,
     toriiUrl: network.toriiUrl,

@@ -4,7 +4,7 @@ description = "The official Dojo Starter guide, the quickest and most streamline
 cover_uri = "file://assets/cover.png"
 icon_uri = "file://assets/icon.png"
 website = "https://github.com/dojoengine/dojo-starter"
-seed = "untitled_seed_1"
+seed = "hexed_seed_1"
 
 [world.socials]
 x = "https://x.com/ohayo_dojo"
@@ -13,14 +13,14 @@ github = "https://github.com/dojoengine/dojo-starter"
 telegram = "https://t.me/dojoengine"
 
 [namespace]
-default = "untitled"
+default = "hexed"
 
 [env]
-rpc_url = "https://api.cartridge.gg/x/untitled/katana"
+rpc_url = "https://api.cartridge.gg/x/hexed/katana"
 # Default account for katana with seed = 0
 account_address = "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec"
 private_key = "0xc5b2fcab997346f3ea1c00b002ecf6f382c5f9c9659a3894eb783c5320f912"
 world_address = "0x06d1b48e127071958aae55efce2eeb6652f005825df733d28129f2afe4cc53b6"
 
 [writers]
-"untitled" = ["untitled-game_systems"]
+"hexed" = ["hexed-game_systems"]

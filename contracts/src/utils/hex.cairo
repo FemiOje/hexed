@@ -1,6 +1,6 @@
 use dojo::model::ModelStorage;
-use untitled::constants::constants::{GRID_MAX, GRID_MIN};
-use untitled::models::{Direction, GameSession, TileOccupant, Vec2};
+use hexed::constants::constants::{GRID_MAX, GRID_MIN};
+use hexed::models::{Direction, GameSession, TileOccupant, Vec2};
 
 /// Get neighbor hex in axial coordinates (pointy-top orientation)
 /// Axial system: q (x-axis), r (y-axis)
@@ -77,7 +77,7 @@ pub fn is_within_bounds(position: Vec2) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use untitled::models::{Direction, Vec2};
+    use hexed::models::{Direction, Vec2};
     use super::{get_neighbor, is_within_bounds};
 
     #[test]

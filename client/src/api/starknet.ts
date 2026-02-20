@@ -258,10 +258,94 @@ export const useStarknetApi = () => {
     }
   };
 
+  /**
+   * Get highest score from leaderboard
+   * Calls get_highest_score view function on game_systems contract
+   *
+   * @returns Object with player, username, xp or null
+   */
+  const getHighestScore = async () => {
+    try {
+      // Get game_systems contract address from manifest
+      const gameSystemsContract = getContractByName(
+        currentNetworkConfig.manifest,
+        currentNetworkConfig.namespace,
+        "game_systems"
+      );
+
+      if (!gameSystemsContract) {
+        console.error("game_systems contract not found in manifest");
+        return null;
+      }
+
+      // Call get_highest_score view function (takes no parameters)
+      const selector = hash.getSelectorFromName("get_highest_score");
+
+      const response = await fetch(currentNetworkConfig.rpcUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          jsonrpc: "2.0",
+          method: "starknet_call",
+          params: [
+            {
+              contract_address: gameSystemsContract.address,
+              entry_point_selector: selector,
+              calldata: [], // get_highest_score takes no parameters
+            },
+            "pre_confirmed",
+          ],
+          id: 0,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!data?.result || data.result.length < 3) {
+        // No highest score yet
+        return null;
+      }
+
+      // Parse HighestScore struct: player, username (felt252), xp
+      const player = data.result[0];
+      const usernameFelt = data.result[1];
+      const xp = parseInt(data.result[2], 16);
+
+      // Convert felt252 username back to string (simple ASCII decoding)
+      let username = "";
+      try {
+        if (usernameFelt !== "0x0") {
+          const usernameBigInt = BigInt(usernameFelt);
+          let temp = usernameBigInt;
+          const chars: string[] = [];
+          while (temp > 0n) {
+            chars.unshift(String.fromCharCode(Number(temp & 0xffn)));
+            temp = temp >> 8n;
+          }
+          username = chars.join("");
+        }
+      } catch {
+        username = usernameFelt; // Fallback to felt value
+      }
+
+      return {
+        player,
+        username: username || player, // Fallback to player address if no username
+        xp,
+      };
+    } catch (error) {
+      console.error("Error fetching highest score:", error);
+      return null;
+    }
+  };
+
   return {
     getPlayerPosition,
     getPlayerMoves,
     getPlayerState,
     getGameState,
+    getHighestScore,
   };
 };

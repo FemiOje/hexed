@@ -1,4 +1,4 @@
-use untitled::models::{Direction, GameState};
+use hexed::models::{Direction, GameState};
 
 
 #[starknet::interface]
@@ -6,6 +6,8 @@ pub trait IGameSystems<T> {
     fn spawn(ref self: T);
     fn move(ref self: T, game_id: u32, direction: Direction);
     fn get_game_state(self: @T, game_id: u32) -> GameState;
+    fn register_score(ref self: T, player: starknet::ContractAddress, username: felt252, xp: u32);
+    fn get_highest_score(self: @T) -> (starknet::ContractAddress, felt252, u32);
 }
 
 #[dojo::contract]
@@ -14,14 +16,14 @@ pub mod game_systems {
     use dojo::model::ModelStorage;
     use dojo::world::IWorldDispatcherTrait;
     use starknet::{ContractAddress, get_caller_address};
-    use untitled::constants::constants::DEFAULT_NS;
-    use untitled::helpers::encounter::{EncounterOutcomeIntoU8, EncounterOutcomeTrait};
-    use untitled::helpers::{combat, encounter, movement, spawn};
-    use untitled::models::{
-        COMBAT_DAMAGE, COMBAT_XP_REWARD, GameSession, MAX_HP, PlayerState, PlayerStats, STARTING_HP,
-        TileOccupant, Vec2,
+    use hexed::constants::constants::DEFAULT_NS;
+    use hexed::helpers::encounter::{EncounterOutcomeIntoU8, EncounterOutcomeTrait};
+    use hexed::helpers::{combat, encounter, movement, spawn};
+    use hexed::models::{
+        COMBAT_DAMAGE, COMBAT_XP_REWARD, GameSession, HighestScore, MAX_HP, PlayerState, PlayerStats,
+        STARTING_HP, TileOccupant, Vec2,
     };
-    use untitled::utils::hex::{get_neighbor, get_neighbor_occupancy, is_within_bounds};
+    use hexed::utils::hex::{get_neighbor, get_neighbor_occupancy, is_within_bounds};
     use super::{Direction, GameState, IGameSystems};
 
     // ------------------------------------------ //
@@ -89,6 +91,15 @@ pub mod game_systems {
         pub max_hp_after: u32,
         pub xp_after: u32,
         pub player_died: bool,
+    }
+
+    #[derive(Copy, Drop, Serde)]
+    #[dojo::event]
+    pub struct HighestScoreUpdated {
+        #[key]
+        pub player: ContractAddress,
+        pub username: felt252,
+        pub xp: u32,
     }
 
     // ------------------------------------------ //
@@ -247,6 +258,28 @@ pub mod game_systems {
                 xp: stats.xp,
                 neighbor_occupancy,
             }
+        }
+
+        fn register_score(ref self: ContractState, player: ContractAddress, username: felt252, xp: u32) {
+            let mut world = self.world_default();
+            let mut current: HighestScore = world.read_model(0_u32);
+
+            // If this is the first score or higher than current, update
+            if xp > current.xp {
+                current.player = player;
+                current.username = username;
+                current.xp = xp;
+                current.game_id = 0_u32;  // Singleton key
+
+                world.write_model(@current);
+                world.emit_event(@HighestScoreUpdated { player, username, xp });
+            }
+        }
+
+        fn get_highest_score(self: @ContractState) -> (ContractAddress, felt252, u32) {
+            let mut world = self.world_default();
+            let score: HighestScore = world.read_model(0_u32);
+            (score.player, score.username, score.xp)
         }
     }
 
