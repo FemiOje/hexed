@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Button } from "@mui/material";
 import { num } from "starknet";
 import HexGrid from "../components/HexGrid";
 import Header from "../components/Header";
@@ -42,12 +41,6 @@ export default function GamePage() {
     const xp = usePlayerXp();
     const occupiedNeighbors = useGameStore((state) => state.occupiedNeighbors);
     const { handleMove: handleBlockchainMove, isMoving } = useGameActions();
-
-    // Manual refresh handler
-    const handleRefresh = useCallback(async () => {
-        console.log("🔄 Manual refresh triggered");
-        await refreshGameState();
-    }, [refreshGameState]);
 
     // Track isMoving in a ref so the polling interval can read it
     // without restarting the interval on every isMoving change
@@ -312,24 +305,6 @@ export default function GamePage() {
                             <>Can Move: {canMove ? "Yes" : "Wait..."}</>
                         )}
                     </div>
-                    <Button
-                        variant="outlined"
-                        size="small"
-                        onClick={handleRefresh}
-                        sx={{
-                            fontSize: "0.7rem",
-                            padding: "4px 8px",
-                            minWidth: "auto",
-                            borderColor: "rgba(66, 133, 244, 0.5)",
-                            color: "#4285f4",
-                            "&:hover": {
-                                borderColor: "#4285f4",
-                                backgroundColor: "rgba(66, 133, 244, 0.1)",
-                            }
-                        }}
-                    >
-                        Refresh State
-                    </Button>
                 </div>
 
                 <HexGrid

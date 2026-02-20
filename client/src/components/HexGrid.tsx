@@ -58,6 +58,32 @@ function isNeighbor(a: HexPosition, b: HexPosition): boolean {
   return Math.abs(dist - NEIGHBOR_DIST) < NEIGHBOR_TOLERANCE;
 }
 
+/**
+ * Calculate hex grid distance using proper axial coordinate math
+ */
+function hexDistance(a: HexPosition, b: HexPosition): number {
+  const dq = Math.abs(a.col - b.col);
+  const dr = Math.abs(a.row - b.row);
+  const ds = Math.abs((a.col + a.row) - (b.col + b.row));
+  return Math.max(dq, dr, ds);
+}
+
+/**
+ * Calculate opacity based on distance from player with smooth falloff
+ */
+function calculateOpacity(distance: number): number {
+  const FADE_START = 6; // Full opacity within 6 hexes
+  const FADE_END = 9; // Minimum opacity at 9+ hexes
+
+  if (distance <= FADE_START) return 1.0;
+  if (distance >= FADE_END) return 0.15;
+
+  // Smoothstep interpolation for natural falloff
+  const t = (distance - FADE_START) / (FADE_END - FADE_START);
+  const smoothT = t * t * (3 - 2 * t);
+  return 1.0 - (0.85 * smoothT);
+}
+
 interface TooltipState {
   hex: HexPosition;
   screenX: number;
@@ -78,11 +104,19 @@ export default function HexGrid({
   const hexesRef = useRef<HexPosition[]>([]);
   const hoveredRef = useRef<number>(-1);
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
+  const controlsRef = useRef<OrbitControls | null>(null);
   const raycaster = useRef(new THREE.Raycaster());
   const pointer = useRef(new THREE.Vector2());
+  const playerPositionRef = useRef<HexPosition>(playerPosition);
+  const userIsInteractingRef = useRef(false);
 
   const [tooltip, setTooltip] = useState<TooltipState | null>(null);
   const tooltipRef = useRef<TooltipState | null>(null);
+
+  // Update player position ref when it changes (without recreating scene)
+  useEffect(() => {
+    playerPositionRef.current = playerPosition;
+  }, [playerPosition]);
 
   const updateColors = useCallback(
     (hoverIndex: number) => {
@@ -95,24 +129,42 @@ export default function HexGrid({
         const key = hexKey(hexes[i]);
         const bi = biomeIndex(hexes[i]);
 
+        // Calculate distance-based opacity for edge blending
+        const distance = hexDistance(hexes[i], playerPosition);
+        const opacity = calculateOpacity(distance);
+
+        let baseColor: THREE.Color;
         if (key === playerKey) {
-          mesh.setColorAt(i, COLOR_PLAYER);
+          baseColor = COLOR_PLAYER;
         } else if (isNeighbor(hexes[i], playerPosition)) {
           if (i === hoverIndex) {
-            mesh.setColorAt(i, COLOR_HOVER_VALID);
+            baseColor = COLOR_HOVER_VALID;
           } else {
             // Check if this neighbor direction is occupied
             const dir = calculateDirection(playerPosition, hexes[i]);
             const isOccupied = dir !== null && occupiedNeighborsMask > 0 && ((occupiedNeighborsMask >> dir) & 1) === 1;
             if (isOccupied) {
-              mesh.setColorAt(i, COLOR_OCCUPIED_NEIGHBOR);
+              baseColor = COLOR_OCCUPIED_NEIGHBOR;
             } else {
-              mesh.setColorAt(i, BIOME_ADJACENT[bi]);
+              baseColor = BIOME_ADJACENT[bi];
             }
           }
         } else {
-          mesh.setColorAt(i, BIOME_COLORS[bi]);
+          baseColor = BIOME_COLORS[bi];
         }
+
+        // Apply opacity by fading to darker, muted version of biome color
+        const fadedColor = baseColor.clone();
+        if (opacity < 1.0) {
+          // Create darker, desaturated version of the base color
+          const mutedColor = baseColor.clone();
+          mutedColor.multiplyScalar(0.4); // Darken to 40%
+          mutedColor.lerp(new THREE.Color(0x606060), 0.3); // Desaturate with gray
+
+          fadedColor.lerp(mutedColor, 1.0 - opacity);
+        }
+
+        mesh.setColorAt(i, fadedColor);
       }
       if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
     },
@@ -145,8 +197,11 @@ export default function HexGrid({
     if (container.clientWidth === 0 || container.clientHeight === 0) return;
 
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x3b2d5e);
-    scene.fog = new THREE.Fog(0x3b2d5e, 200, 500);
+    scene.background = new THREE.Color(0x87ceeb); // Sky blue
+    scene.fog = new THREE.Fog(0x87ceeb, 200, 500);
+
+    // Initialize camera at player position
+    const playerWorldPos = getWorldPositionForHex(playerPosition);
 
     const camera = new THREE.PerspectiveCamera(
       45,
@@ -154,8 +209,8 @@ export default function HexGrid({
       0.1,
       500
     );
-    camera.position.set(0, 40, 50);
-    camera.lookAt(0, 0, 0);
+    camera.position.set(playerWorldPos.x, 40, playerWorldPos.z + 50);
+    camera.lookAt(playerWorldPos.x, 0, playerWorldPos.z);
     cameraRef.current = camera;
 
     const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -171,11 +226,20 @@ export default function HexGrid({
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.05;
-    controls.target.set(0, 0, 0);
+    controls.target.set(playerWorldPos.x, 0, playerWorldPos.z);
     controls.maxPolarAngle = Math.PI / 2.2;
     controls.minDistance = 15;
     controls.maxDistance = 120;
     controls.panSpeed = 2.0;
+    controlsRef.current = controls;
+
+    // Track user interaction with controls
+    controls.addEventListener('start', () => {
+      userIsInteractingRef.current = true;
+    });
+    controls.addEventListener('end', () => {
+      userIsInteractingRef.current = false;
+    });
 
     // Lighting
     const hemiLight = new THREE.HemisphereLight(0xb0c4de, 0x556b2f, 1.0);
@@ -279,21 +343,43 @@ export default function HexGrid({
     scene.add(borderMesh);
     scene.add(instancedMesh);
 
-    const groundGeometry = new THREE.PlaneGeometry(400, 400);
-    const groundMaterial = new THREE.MeshStandardMaterial({
-      color: 0x1b1e2b,
-      roughness: 0.9,
-      metalness: 0.0,
-    });
-    const ground = new THREE.Mesh(groundGeometry, groundMaterial);
-    ground.rotation.x = -Math.PI / 2;
-    ground.position.y = -0.1;
-    ground.receiveShadow = true;
-    scene.add(ground);
+    // Smooth camera tracking
+    const CAMERA_LERP_SPEED = 0.08; // Smooth but responsive
+    const targetCameraPos = new THREE.Vector3();
+    const targetControlsTarget = new THREE.Vector3();
 
-    // Animation loop — also updates tooltip screen position if camera moves
+    // Store initial camera offset relative to player
+    const initialPlayerWorldPos = getWorldPositionForHex(playerPosition);
+    const initialOffset = camera.position.clone().sub(new THREE.Vector3(initialPlayerWorldPos.x, 0, initialPlayerWorldPos.z));
+
+    // Animation loop — updates camera tracking, controls, and tooltip
     const animate = () => {
       requestAnimationFrame(animate);
+
+      // Only apply smooth camera tracking when user is NOT interacting
+      if (!userIsInteractingRef.current) {
+        // Smooth camera tracking: follow player position using ref
+        const currentPlayerWorldPos = getWorldPositionForHex(playerPositionRef.current);
+
+        // Calculate target camera position (maintain initial offset)
+        targetCameraPos.set(
+          currentPlayerWorldPos.x + initialOffset.x,
+          initialOffset.y,
+          currentPlayerWorldPos.z + initialOffset.z
+        );
+
+        // Calculate target controls target (player position at y=0)
+        targetControlsTarget.set(
+          currentPlayerWorldPos.x,
+          0,
+          currentPlayerWorldPos.z
+        );
+
+        // Smooth lerp camera and controls
+        camera.position.lerp(targetCameraPos, CAMERA_LERP_SPEED);
+        controls.target.lerp(targetControlsTarget, CAMERA_LERP_SPEED);
+      }
+
       controls.update();
       renderer.render(scene, camera);
 
@@ -335,8 +421,6 @@ export default function HexGrid({
       material.dispose();
       borderGeometry.dispose();
       borderMaterial.dispose();
-      groundGeometry.dispose();
-      groundMaterial.dispose();
       controls.dispose();
     };
   }, [width, height]);
