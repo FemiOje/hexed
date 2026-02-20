@@ -32,6 +32,11 @@ const BIOME_ADJACENT = [
 const NEIGHBOR_DIST = Math.sqrt(3) * HEX_SIZE;
 const NEIGHBOR_TOLERANCE = 2.0;
 
+// Mobile detection helper
+const isMobileDevice = (): boolean => {
+  return window.innerWidth < 768;
+};
+
 interface HexGridProps {
   width?: number;
   height?: number;
@@ -203,13 +208,18 @@ export default function HexGrid({
     // Initialize camera at player position
     const playerWorldPos = getWorldPositionForHex(playerPosition);
 
+    // Adjust camera distance based on device type
+    const isMobile = isMobileDevice();
+    const cameraHeight = isMobile ? 60 : 40;  // Higher on mobile
+    const cameraZOffset = isMobile ? 70 : 50;  // Further back on mobile
+
     const camera = new THREE.PerspectiveCamera(
       45,
       container.clientWidth / container.clientHeight,
       0.1,
       500
     );
-    camera.position.set(playerWorldPos.x, 40, playerWorldPos.z + 50);
+    camera.position.set(playerWorldPos.x, cameraHeight, playerWorldPos.z + cameraZOffset);
     camera.lookAt(playerWorldPos.x, 0, playerWorldPos.z);
     cameraRef.current = camera;
 
@@ -228,7 +238,7 @@ export default function HexGrid({
     controls.dampingFactor = 0.05;
     controls.target.set(playerWorldPos.x, 0, playerWorldPos.z);
     controls.maxPolarAngle = Math.PI / 2.2;
-    controls.minDistance = 15;
+    controls.minDistance = isMobile ? 30 : 15;  // Larger minimum distance on mobile
     controls.maxDistance = 120;
     controls.panSpeed = 2.0;
     controlsRef.current = controls;
