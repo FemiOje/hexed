@@ -32,11 +32,6 @@ const BIOME_ADJACENT = [
 const NEIGHBOR_DIST = Math.sqrt(3) * HEX_SIZE;
 const NEIGHBOR_TOLERANCE = 2.0;
 
-// Mobile detection helper
-const isMobileDevice = (): boolean => {
-  return window.innerWidth < 768;
-};
-
 interface HexGridProps {
   width?: number;
   height?: number;
@@ -202,8 +197,8 @@ export default function HexGrid({
     if (container.clientWidth === 0 || container.clientHeight === 0) return;
 
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x87ceeb); // Sky blue
-    scene.fog = new THREE.Fog(0x87ceeb, 200, 500);
+    scene.background = new THREE.Color(0x0a140a); // Dark, murky green
+    scene.fog = new THREE.Fog(0x0a1a0a, 120, 350); // Thicker, spookier fog
 
     // Initialize camera at player position
     const playerWorldPos = getWorldPositionForHex(playerPosition);
@@ -252,11 +247,11 @@ export default function HexGrid({
       userIsInteractingRef.current = false;
     });
 
-    // Lighting
-    const hemiLight = new THREE.HemisphereLight(0xb0c4de, 0x556b2f, 1.0);
+    // Lighting - darker, spookier atmosphere
+    const hemiLight = new THREE.HemisphereLight(0x4a6741, 0x1a2e1a, 0.85);
     scene.add(hemiLight);
 
-    const sunLight = new THREE.DirectionalLight(0xfff4e0, 1.5);
+    const sunLight = new THREE.DirectionalLight(0x8faf7f, 4.1);
     sunLight.position.set(-10, 25, 15);
     sunLight.castShadow = true;
     sunLight.shadow.mapSize.width = 2048;
@@ -270,7 +265,7 @@ export default function HexGrid({
     sunLight.shadow.bias = -0.002;
     scene.add(sunLight);
 
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.37);
     scene.add(ambientLight);
 
     // Hex grid
@@ -540,7 +535,7 @@ export default function HexGrid({
             left: 0,
             width: "100%",
             height: "100%",
-            background: "rgba(10, 10, 30, 0.4)",
+            background: "rgba(10, 25, 15, 0.4)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -550,13 +545,13 @@ export default function HexGrid({
         >
           <div
             style={{
-              background: "rgba(10, 10, 30, 0.85)",
-              border: "1px solid rgba(245, 166, 35, 0.4)",
+              background: "rgba(10, 25, 15, 0.85)",
+              border: "2px solid rgba(68, 204, 68, 0.6)",
               borderRadius: 8,
               padding: "12px 24px",
               fontFamily: "monospace",
               fontSize: 14,
-              color: "#f5a623",
+              color: "#44cc44",
               fontWeight: 600,
               letterSpacing: 1,
             }}
