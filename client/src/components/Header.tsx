@@ -1,7 +1,11 @@
 import WalletConnect from "./WalletConnect";
-import { Box, Typography } from '@mui/material';
+import { Box, Typography, IconButton } from '@mui/material';
+import { HelpCircle } from 'lucide-react';
+import { useUIStore } from '../stores/uiStore';
 
 function Header() {
+  const { setShowHelpModal } = useUIStore();
+
   return (
     <Box sx={styles.header}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -11,6 +15,14 @@ function Header() {
       </Box>
 
       <Box sx={styles.headerButtons}>
+        <IconButton
+          onClick={() => setShowHelpModal(true)}
+          sx={styles.helpButton}
+          size="small"
+          aria-label="How to play"
+        >
+          <HelpCircle size={20} />
+        </IconButton>
         <WalletConnect />
       </Box>
     </Box>
@@ -36,5 +48,16 @@ const styles = {
     height: '36px',
     alignItems: 'center',
     gap: 2
+  },
+  helpButton: {
+    color: 'rgba(0, 212, 255, 0.7)',
+    border: '1px solid rgba(0, 212, 255, 0.3)',
+    borderRadius: 0,
+    transition: 'all 0.2s',
+    '&:hover': {
+      color: '#00d4ff',
+      borderColor: 'rgba(0, 212, 255, 0.6)',
+      backgroundColor: 'rgba(0, 212, 255, 0.1)',
+    }
   }
 };

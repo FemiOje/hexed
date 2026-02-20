@@ -6,6 +6,7 @@ import { ControllerProvider } from "./contexts/controller";
 import { GameDirectorProvider } from "./contexts/GameDirector";
 import StartPage from "./pages/StartPage";
 import GamePage from "./pages/GamePage";
+import HowToPlayModal from "./components/HowToPlayModal";
 
 const theme = createTheme({
     palette: {
@@ -37,6 +38,7 @@ function App() {
                                 error: { duration: 4000 },
                             }}
                         />
+                        <HowToPlayModal />
                         <Routes>
                             <Route path="/" element={<StartPage />} />
                             <Route path="/game" element={<GamePage />} />

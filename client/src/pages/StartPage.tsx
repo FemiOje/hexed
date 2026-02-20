@@ -1,11 +1,26 @@
-import { Box, Typography } from "@mui/material";
+import { useEffect } from "react";
+import { Box, Typography, IconButton } from "@mui/material";
+import { HelpCircle } from "lucide-react";
 import { useController } from "../contexts/controller";
 import WalletConnect from "../components/WalletConnect";
 import MyGames from "../components/MyGames";
 import { HighestScoreDisplay } from "../components/HighestScoreDisplay";
+import { useUIStore } from "../stores/uiStore";
 
 export default function StartPage() {
     const { address } = useController();
+    const { setShowHelpModal } = useUIStore();
+
+    // Show tutorial on first visit
+    useEffect(() => {
+        const hasSeenTutorial = localStorage.getItem("hexed_tutorial_seen");
+        if (!hasSeenTutorial && address) {
+            // Show tutorial after brief delay for better UX
+            setTimeout(() => {
+                setShowHelpModal(true);
+            }, 800);
+        }
+    }, [address, setShowHelpModal]);
 
     return (
         <Box sx={styles.container}>
@@ -23,6 +38,15 @@ export default function StartPage() {
 
             {/* Content */}
             <Box sx={styles.content}>
+                {/* Help button */}
+                <IconButton
+                    onClick={() => setShowHelpModal(true)}
+                    sx={styles.helpButton}
+                    aria-label="How to play"
+                >
+                    <HelpCircle size={24} />
+                </IconButton>
+
                 <Box sx={styles.titleContainer}>
                     <Typography sx={styles.title}>HEXED</Typography>
                     <Box sx={styles.titleGlow} />
@@ -75,6 +99,21 @@ const styles = {
         alignItems: "center",
         justifyContent: "center",
         overflow: "hidden",
+    },
+    helpButton: {
+        position: "absolute" as const,
+        top: { xs: "16px", sm: "24px" },
+        right: { xs: "16px", sm: "24px" },
+        color: "rgba(0, 212, 255, 0.6)",
+        border: "1px solid rgba(0, 212, 255, 0.3)",
+        borderRadius: 0,
+        padding: "8px",
+        transition: "all 0.2s",
+        "&:hover": {
+            color: "#00d4ff",
+            borderColor: "rgba(0, 212, 255, 0.6)",
+            backgroundColor: "rgba(0, 212, 255, 0.1)",
+        },
     },
     backgroundGradient: {
         position: "absolute",
