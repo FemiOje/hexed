@@ -60,9 +60,9 @@ pnpm run dev
 1. **Spawn**: Call `spawn()` to create a new game session. You get placed at a random position on the hex grid with 100 HP and 0 XP.
 2. **Move**: Call `move(game_id, direction)` with one of 6 directions (East, NorthEast, NorthWest, West, SouthWest, SouthEast).
 3. **Encounter or Fight**:
-   - **Empty tile**: An encounter triggers automatically. You receive a gift (65% chance) or curse (35% chance) that modifies your HP, max HP, or XP.
+   - **Empty tile**: An encounter triggers automatically. You receive a gift (65% chance) or curse (35% chance) that modifies your HP or XP.
    - **Occupied tile**: Combat resolves automatically. The player with higher XP wins. The loser takes 10 damage and the winner gains 30 XP.
-4. **Survive**: Curses like Poison (-15 HP) or Hex (-10 HP, -5 max HP, -10 XP) can kill you. Combat losses stack up. Death ends your game session.
+4. **Survive**: Curses like Poison (-15 HP) or Hex (-10 HP, -5 XP) can kill you. Combat losses stack up. Death ends your game session.
 5. **Scout**: After each action, you receive a bitmask showing which of your 6 neighboring tiles are occupied — plan your route accordingly.
 
 ### Encounter Outcomes
@@ -70,15 +70,13 @@ pnpm run dev
 | Type | Outcome | Effect |
 |------|---------|--------|
 | Gift (65%) | **Heal** (40%) | +20 HP, capped at max |
-| | **Fortify** (30%) | +10 max HP, +10 HP |
-| | **Empower** (20%) | +25 XP |
-| | **Blessing** (10%) | +10 HP, +5 max HP, +15 XP |
+| | **Empower** (35%) | +25 XP |
+| | **Blessing** (25%) | +10 HP, +15 XP |
 | Curse (35%) | **Poison** (40%) | -15 HP (can kill) |
-| | **Wither** (30%) | -10 max HP (floor: 10) |
-| | **Drain** (20%) | -20 XP (floor: 0) |
-| | **Hex** (10%) | -10 HP, -5 max HP, -10 XP (can kill) |
+| | **Drain** (40%) | -5 XP (floor: 0) |
+| | **Hex** (20%) | -10 HP, -5 XP (can kill) |
 
-The encounter system has a net-positive expected value, rewarding exploration while keeping risk present.
+Max HP is fixed at 110 and never changes. The encounter system has a net-positive expected value, rewarding exploration while keeping risk present.
 
 ## Architecture
 

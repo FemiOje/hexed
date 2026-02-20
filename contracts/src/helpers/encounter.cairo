@@ -4,26 +4,23 @@ use dojo::model::ModelStorage;
 use starknet::get_block_timestamp;
 use untitled::helpers::combat::{add_xp, handle_player_death};
 use untitled::models::{
-    BLESSING_HP_AMOUNT, BLESSING_MAX_HP_AMOUNT, BLESSING_XP_AMOUNT, DRAIN_XP_AMOUNT,
-    EMPOWER_XP_AMOUNT, FORTIFY_HP_AMOUNT, FORTIFY_MAX_HP_AMOUNT, GIFT_THRESHOLD, HEAL_AMOUNT,
-    HEX_HP_AMOUNT, HEX_MAX_HP_AMOUNT, HEX_XP_AMOUNT, MIN_MAX_HP, POISON_DAMAGE, PlayerStats, Vec2,
-    WITHER_MAX_HP_AMOUNT,
+    BLESSING_HP_AMOUNT, BLESSING_XP_AMOUNT, DRAIN_XP_AMOUNT,
+    EMPOWER_XP_AMOUNT, GIFT_THRESHOLD, HEAL_AMOUNT,
+    HEX_HP_AMOUNT, HEX_XP_AMOUNT, POISON_DAMAGE, PlayerStats, Vec2,
 };
 
 // ------------------------------------------ //
 // ------------ Types ----------------------- //
 // ------------------------------------------ //
 
-/// All possible encounter outcomes. Gifts = 0-3, Curses = 4-7.
+/// All possible encounter outcomes. Gifts = 0-2, Curses = 3-5.
 #[derive(Copy, Drop, PartialEq, Debug)]
 pub enum EncounterOutcome {
     #[default]
     Heal,
-    Fortify,
     Empower,
     Blessing,
     Poison,
-    Wither,
     Drain,
     Hex,
 }
@@ -46,13 +43,11 @@ pub impl EncounterOutcomeIntoU8 of Into<EncounterOutcome, u8> {
     fn into(self: EncounterOutcome) -> u8 {
         match self {
             EncounterOutcome::Heal => 0,
-            EncounterOutcome::Fortify => 1,
-            EncounterOutcome::Empower => 2,
-            EncounterOutcome::Blessing => 3,
-            EncounterOutcome::Poison => 4,
-            EncounterOutcome::Wither => 5,
-            EncounterOutcome::Drain => 6,
-            EncounterOutcome::Hex => 7,
+            EncounterOutcome::Empower => 1,
+            EncounterOutcome::Blessing => 2,
+            EncounterOutcome::Poison => 3,
+            EncounterOutcome::Drain => 4,
+            EncounterOutcome::Hex => 5,
         }
     }
 }
@@ -61,7 +56,7 @@ pub impl EncounterOutcomeIntoU8 of Into<EncounterOutcome, u8> {
 pub impl EncounterOutcomeImpl of EncounterOutcomeTrait {
     fn is_gift(self: EncounterOutcome) -> bool {
         let val: u8 = self.into();
-        val < 4
+        val < 3
     }
 }
 
@@ -72,23 +67,19 @@ pub impl EncounterOutcomeImpl of EncounterOutcomeTrait {
 /// Determines encounter outcome from two pre-rolled random values (0-99 each).
 pub fn determine_outcome(encounter_roll: u8, subtype_roll: u8) -> EncounterOutcome {
     if encounter_roll < GIFT_THRESHOLD {
-        // Gift: Heal 40%, Fortify 25%, Empower 25%, Blessing 10%
+        // Gift: Heal 40%, Empower 35%, Blessing 25%
         if subtype_roll < 40 {
             EncounterOutcome::Heal
-        } else if subtype_roll < 65 {
-            EncounterOutcome::Fortify
-        } else if subtype_roll < 90 {
+        } else if subtype_roll < 75 {
             EncounterOutcome::Empower
         } else {
             EncounterOutcome::Blessing
         }
     } else {
-        // Curse: Poison 40%, Wither 25%, Drain 25%, Hex 10%
+        // Curse: Poison 40%, Drain 40%, Hex 20%
         if subtype_roll < 40 {
             EncounterOutcome::Poison
-        } else if subtype_roll < 65 {
-            EncounterOutcome::Wither
-        } else if subtype_roll < 90 {
+        } else if subtype_roll < 80 {
             EncounterOutcome::Drain
         } else {
             EncounterOutcome::Hex
@@ -108,13 +99,8 @@ pub fn apply_encounter(ref stats: PlayerStats, outcome: EncounterOutcome) -> boo
                 stats.hp += HEAL_AMOUNT;
             }
         },
-        EncounterOutcome::Fortify => {
-            stats.max_hp += FORTIFY_MAX_HP_AMOUNT;
-            stats.hp += FORTIFY_HP_AMOUNT;
-        },
         EncounterOutcome::Empower => { add_xp(ref stats, EMPOWER_XP_AMOUNT); },
         EncounterOutcome::Blessing => {
-            stats.max_hp += BLESSING_MAX_HP_AMOUNT;
             let headroom = stats.max_hp - stats.hp;
             if headroom < BLESSING_HP_AMOUNT {
                 stats.hp = stats.max_hp;
@@ -130,16 +116,6 @@ pub fn apply_encounter(ref stats: PlayerStats, outcome: EncounterOutcome) -> boo
                 stats.hp -= POISON_DAMAGE;
             }
         },
-        EncounterOutcome::Wither => {
-            if stats.max_hp <= MIN_MAX_HP + WITHER_MAX_HP_AMOUNT {
-                stats.max_hp = MIN_MAX_HP;
-            } else {
-                stats.max_hp -= WITHER_MAX_HP_AMOUNT;
-            }
-            if stats.hp > stats.max_hp {
-                stats.hp = stats.max_hp;
-            }
-        },
         EncounterOutcome::Drain => {
             if stats.xp <= DRAIN_XP_AMOUNT {
                 stats.xp = 0;
@@ -148,16 +124,6 @@ pub fn apply_encounter(ref stats: PlayerStats, outcome: EncounterOutcome) -> boo
             }
         },
         EncounterOutcome::Hex => {
-            // Reduce max_hp first
-            if stats.max_hp <= MIN_MAX_HP + HEX_MAX_HP_AMOUNT {
-                stats.max_hp = MIN_MAX_HP;
-            } else {
-                stats.max_hp -= HEX_MAX_HP_AMOUNT;
-            }
-            // Clamp hp to new max
-            if stats.hp > stats.max_hp {
-                stats.hp = stats.max_hp;
-            }
             // Apply HP damage
             if stats.hp <= HEX_HP_AMOUNT {
                 stats.hp = 0;
@@ -228,10 +194,10 @@ pub fn resolve_encounter(
 #[cfg(test)]
 mod tests {
     use untitled::models::{
-        BLESSING_HP_AMOUNT, BLESSING_MAX_HP_AMOUNT, BLESSING_XP_AMOUNT, DRAIN_XP_AMOUNT,
-        EMPOWER_XP_AMOUNT, EXPLORE_XP_REWARD, FORTIFY_HP_AMOUNT, FORTIFY_MAX_HP_AMOUNT, HEAL_AMOUNT,
-        HEX_HP_AMOUNT, HEX_MAX_HP_AMOUNT, HEX_XP_AMOUNT, MAX_HP, MIN_MAX_HP, POISON_DAMAGE,
-        PlayerStats, STARTING_HP, WITHER_MAX_HP_AMOUNT,
+        BLESSING_HP_AMOUNT, BLESSING_XP_AMOUNT, DRAIN_XP_AMOUNT,
+        EMPOWER_XP_AMOUNT, EXPLORE_XP_REWARD, HEAL_AMOUNT,
+        HEX_HP_AMOUNT, HEX_XP_AMOUNT, MAX_HP, POISON_DAMAGE,
+        PlayerStats, STARTING_HP,
     };
     use super::{EncounterOutcome, EncounterOutcomeTrait, apply_encounter, determine_outcome};
 
@@ -256,25 +222,19 @@ mod tests {
     }
 
     #[test]
-    fn test_gift_fortify() {
-        // encounter_roll < 65 (gift), 40 <= subtype_roll < 65 (fortify)
-        let outcome = determine_outcome(30, 50);
-        assert(outcome == EncounterOutcome::Fortify, 'should be Fortify');
-        assert(outcome.is_gift(), 'Fortify is a gift');
-    }
-
-    #[test]
     fn test_gift_empower() {
-        // encounter_roll < 65 (gift), 65 <= subtype_roll < 90 (empower)
-        let outcome = determine_outcome(10, 70);
+        // encounter_roll < 65 (gift), 40 <= subtype_roll < 75 (empower)
+        let outcome = determine_outcome(10, 50);
         assert(outcome == EncounterOutcome::Empower, 'should be Empower');
+        assert(outcome.is_gift(), 'Empower is a gift');
     }
 
     #[test]
     fn test_gift_blessing() {
-        // encounter_roll < 65 (gift), subtype_roll >= 90 (blessing)
+        // encounter_roll < 65 (gift), subtype_roll >= 75 (blessing)
         let outcome = determine_outcome(10, 95);
         assert(outcome == EncounterOutcome::Blessing, 'should be Blessing');
+        assert(outcome.is_gift(), 'Blessing is a gift');
     }
 
     #[test]
@@ -285,24 +245,18 @@ mod tests {
         assert(!outcome.is_gift(), 'Poison is a curse');
     }
 
-    #[test]
-    fn test_curse_wither() {
-        // encounter_roll >= 65 (curse), 40 <= subtype_roll < 65 (wither)
-        let outcome = determine_outcome(70, 50);
-        assert(outcome == EncounterOutcome::Wither, 'should be Wither');
-    }
 
     #[test]
     fn test_curse_drain() {
-        // encounter_roll >= 65 (curse), 65 <= subtype_roll < 90 (drain)
-        let outcome = determine_outcome(99, 80);
+        // encounter_roll >= 65 (curse), 40 <= subtype_roll < 80 (drain)
+        let outcome = determine_outcome(99, 70);
         assert(outcome == EncounterOutcome::Drain, 'should be Drain');
     }
 
     #[test]
     fn test_curse_hex() {
-        // encounter_roll >= 65 (curse), subtype_roll >= 90 (hex)
-        let outcome = determine_outcome(65, 99);
+        // encounter_roll >= 65 (curse), subtype_roll >= 80 (hex)
+        let outcome = determine_outcome(65, 90);
         assert(outcome == EncounterOutcome::Hex, 'should be Hex');
     }
 
@@ -319,28 +273,26 @@ mod tests {
 
     #[test]
     fn test_subtype_boundaries_gift() {
-        // 39 → Heal, 40 → Fortify
+        // 39 → Heal, 40 → Empower
         assert(determine_outcome(0, 39) == EncounterOutcome::Heal, '39 should be Heal');
-        assert(determine_outcome(0, 40) == EncounterOutcome::Fortify, '40 should be Fortify');
-        // 64 → Fortify, 65 → Empower
-        assert(determine_outcome(0, 64) == EncounterOutcome::Fortify, '64 should be Fortify');
-        assert(determine_outcome(0, 65) == EncounterOutcome::Empower, '65 should be Empower');
-        // 89 → Empower, 90 → Blessing
-        assert(determine_outcome(0, 89) == EncounterOutcome::Empower, '89 should be Empower');
-        assert(determine_outcome(0, 90) == EncounterOutcome::Blessing, '90 should be Blessing');
+        assert(determine_outcome(0, 40) == EncounterOutcome::Empower, '40 should be Empower');
+        // 74 → Empower, 75 → Blessing
+        assert(determine_outcome(0, 74) == EncounterOutcome::Empower, '74 should be Empower');
+        assert(determine_outcome(0, 75) == EncounterOutcome::Blessing, '75 should be Blessing');
+        // 99 → Blessing (last value)
+        assert(determine_outcome(0, 99) == EncounterOutcome::Blessing, '99 should be Blessing');
     }
 
     #[test]
     fn test_subtype_boundaries_curse() {
-        // 39 → Poison, 40 → Wither
+        // 39 → Poison, 40 → Drain
         assert(determine_outcome(80, 39) == EncounterOutcome::Poison, '39 should be Poison');
-        assert(determine_outcome(80, 40) == EncounterOutcome::Wither, '40 should be Wither');
-        // 64 → Wither, 65 → Drain
-        assert(determine_outcome(80, 64) == EncounterOutcome::Wither, '64 should be Wither');
-        assert(determine_outcome(80, 65) == EncounterOutcome::Drain, '65 should be Drain');
-        // 89 → Drain, 90 → Hex
-        assert(determine_outcome(80, 89) == EncounterOutcome::Drain, '89 should be Drain');
-        assert(determine_outcome(80, 90) == EncounterOutcome::Hex, '90 should be Hex');
+        assert(determine_outcome(80, 40) == EncounterOutcome::Drain, '40 should be Drain');
+        // 79 → Drain, 80 → Hex
+        assert(determine_outcome(80, 79) == EncounterOutcome::Drain, '79 should be Drain');
+        assert(determine_outcome(80, 80) == EncounterOutcome::Hex, '80 should be Hex');
+        // 99 → Hex (last value)
+        assert(determine_outcome(80, 99) == EncounterOutcome::Hex, '99 should be Hex');
     }
 
     // ------------------------------------------ //
@@ -370,23 +322,6 @@ mod tests {
     }
 
     #[test]
-    fn test_apply_fortify() {
-        let mut stats = stats_with(1, 80, 100, 0);
-        apply_encounter(ref stats, EncounterOutcome::Fortify);
-        assert(stats.max_hp == 100 + FORTIFY_MAX_HP_AMOUNT, 'max_hp should increase');
-        assert(stats.hp == 80 + FORTIFY_HP_AMOUNT, 'hp should increase');
-        assert(stats.hp <= stats.max_hp, 'hp should not exceed max');
-    }
-
-    #[test]
-    fn test_apply_fortify_at_full_hp() {
-        let mut stats = stats_with(1, 100, 100, 0);
-        apply_encounter(ref stats, EncounterOutcome::Fortify);
-        assert(stats.max_hp == 110, 'max_hp grows');
-        assert(stats.hp == 110, 'hp grows with max');
-    }
-
-    #[test]
     fn test_apply_empower() {
         let mut stats = stats_with(1, 100, 100, 50);
         apply_encounter(ref stats, EncounterOutcome::Empower);
@@ -398,7 +333,7 @@ mod tests {
     fn test_apply_blessing() {
         let mut stats = stats_with(1, 80, 100, 10);
         apply_encounter(ref stats, EncounterOutcome::Blessing);
-        assert(stats.max_hp == 100 + BLESSING_MAX_HP_AMOUNT, 'max_hp should increase');
+        assert(stats.max_hp == 100, 'max_hp unchanged');
         assert(stats.hp == 80 + BLESSING_HP_AMOUNT, 'hp should increase');
         assert(stats.xp == 10 + BLESSING_XP_AMOUNT, 'xp should increase');
     }
@@ -407,8 +342,8 @@ mod tests {
     fn test_apply_blessing_hp_capped() {
         let mut stats = stats_with(1, 100, 100, 0);
         apply_encounter(ref stats, EncounterOutcome::Blessing);
-        assert(stats.max_hp == 105, 'max_hp grows by 5');
-        assert(stats.hp == 105, 'hp capped at new max');
+        assert(stats.max_hp == 100, 'max_hp unchanged');
+        assert(stats.hp == 100, 'hp stays at max');
     }
 
     // ------------------------------------------ //
@@ -440,39 +375,6 @@ mod tests {
     }
 
     #[test]
-    fn test_apply_wither() {
-        let mut stats = stats_with(1, 80, 100, 0);
-        let died = apply_encounter(ref stats, EncounterOutcome::Wither);
-        assert(!died, 'should survive');
-        assert(stats.max_hp == 100 - WITHER_MAX_HP_AMOUNT, 'max_hp reduced');
-        assert(stats.hp == 80, 'hp unchanged (below new max)');
-    }
-
-    #[test]
-    fn test_apply_wither_clamps_hp() {
-        let mut stats = stats_with(1, 100, 100, 0);
-        apply_encounter(ref stats, EncounterOutcome::Wither);
-        assert(stats.max_hp == 90, 'max_hp reduced');
-        assert(stats.hp == 90, 'hp clamped to new max');
-    }
-
-    #[test]
-    fn test_apply_wither_floor() {
-        let mut stats = stats_with(1, 15, 15, 0);
-        apply_encounter(ref stats, EncounterOutcome::Wither);
-        assert(stats.max_hp == MIN_MAX_HP, 'max_hp at floor');
-        assert(stats.hp == MIN_MAX_HP, 'hp clamped to floor');
-    }
-
-    #[test]
-    fn test_apply_wither_already_at_floor() {
-        let mut stats = stats_with(1, 10, MIN_MAX_HP, 0);
-        apply_encounter(ref stats, EncounterOutcome::Wither);
-        assert(stats.max_hp == MIN_MAX_HP, 'max_hp stays at floor');
-        assert(stats.hp == MIN_MAX_HP, 'hp stays at floor');
-    }
-
-    #[test]
     fn test_apply_drain() {
         let mut stats = stats_with(1, 100, 100, 50);
         apply_encounter(ref stats, EncounterOutcome::Drain);
@@ -499,7 +401,7 @@ mod tests {
         let mut stats = stats_with(1, 80, 100, 50);
         let died = apply_encounter(ref stats, EncounterOutcome::Hex);
         assert(!died, 'should survive');
-        assert(stats.max_hp == 100 - HEX_MAX_HP_AMOUNT, 'max_hp reduced');
+        assert(stats.max_hp == 100, 'max_hp unchanged');
         assert(stats.hp == 80 - HEX_HP_AMOUNT, 'hp reduced');
         assert(stats.xp == 50 - HEX_XP_AMOUNT, 'xp reduced');
     }
@@ -514,11 +416,10 @@ mod tests {
 
     #[test]
     fn test_apply_hex_all_floors() {
-        let mut stats = stats_with(1, 50, MIN_MAX_HP + 2, 3);
+        let mut stats = stats_with(1, 50, 100, 3);
         apply_encounter(ref stats, EncounterOutcome::Hex);
-        assert(stats.max_hp == MIN_MAX_HP, 'max_hp at floor');
-        // hp was 50, clamped to min_max_hp (10), then -10 = 0
-        assert(stats.hp == 0, 'hp should be 0');
+        assert(stats.max_hp == 100, 'max_hp unchanged');
+        assert(stats.hp == 50 - HEX_HP_AMOUNT, 'hp reduced by damage');
         assert(stats.xp == 0, 'xp floored at 0');
     }
 
@@ -531,17 +432,15 @@ mod tests {
         let heal_val: u8 = EncounterOutcome::Heal.into();
         let hex_val: u8 = EncounterOutcome::Hex.into();
         assert(heal_val == 0, 'Heal = 0');
-        assert(hex_val == 7, 'Hex = 7');
+        assert(hex_val == 5, 'Hex = 5');
     }
 
     #[test]
     fn test_is_gift() {
         assert(EncounterOutcome::Heal.is_gift(), 'Heal is gift');
-        assert(EncounterOutcome::Fortify.is_gift(), 'Fortify is gift');
         assert(EncounterOutcome::Empower.is_gift(), 'Empower is gift');
         assert(EncounterOutcome::Blessing.is_gift(), 'Blessing is gift');
         assert(!EncounterOutcome::Poison.is_gift(), 'Poison not gift');
-        assert(!EncounterOutcome::Wither.is_gift(), 'Wither not gift');
         assert(!EncounterOutcome::Drain.is_gift(), 'Drain not gift');
         assert(!EncounterOutcome::Hex.is_gift(), 'Hex not gift');
     }
@@ -554,8 +453,7 @@ mod tests {
     fn test_hp_never_exceeds_max_hp_after_gift() {
         // Test all gift outcomes at various HP levels
         let outcomes = array![
-            EncounterOutcome::Heal, EncounterOutcome::Fortify, EncounterOutcome::Empower,
-            EncounterOutcome::Blessing,
+            EncounterOutcome::Heal, EncounterOutcome::Empower, EncounterOutcome::Blessing,
         ];
         let hp_levels = array![1_u32, 50, 95, 100];
 
@@ -573,30 +471,11 @@ mod tests {
     }
 
     #[test]
-    fn test_max_hp_never_below_floor_after_curse() {
-        let outcomes = array![EncounterOutcome::Wither, EncounterOutcome::Hex];
-        let max_hp_levels = array![MIN_MAX_HP, MIN_MAX_HP + 1, MIN_MAX_HP + 5, 20_u32, 100];
-
-        let mut i: u32 = 0;
-        while i < outcomes.len() {
-            let mut j: u32 = 0;
-            while j < max_hp_levels.len() {
-                let mhp = *max_hp_levels.at(j);
-                let mut stats = stats_with(1, mhp, mhp, 50);
-                apply_encounter(ref stats, *outcomes.at(i));
-                assert(stats.max_hp >= MIN_MAX_HP, 'max_hp below floor');
-                j += 1;
-            }
-            i += 1;
-        }
-    }
-
-    #[test]
     fn test_explore_xp_then_drain_net_effect() {
-        // Player moves (gets 10 XP from exploration) then gets Drain (-20 XP).
-        // Starting at 0 XP: after explore = 10, after drain = 0 (floor).
+        // Player moves (gets 10 XP from exploration) then gets Drain (-5 XP).
+        // Starting at 10 XP: after drain = 5 XP (net effect of one move + one drain).
         let mut stats = stats_with(1, 100, 100, EXPLORE_XP_REWARD);
         apply_encounter(ref stats, EncounterOutcome::Drain);
-        assert(stats.xp == 0, 'drain after explore = 0');
+        assert(stats.xp == 5, 'drain after explore = 5');
     }
 }

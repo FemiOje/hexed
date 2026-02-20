@@ -113,17 +113,15 @@ export interface GameAction {
 
 /**
  * EncounterOutcome enum matching Cairo EncounterOutcome model
- * Gifts (0-3) and Curses (4-7)
+ * Gifts (0-2) and Curses (3-5)
  */
 export enum EncounterOutcome {
   Heal = 0,
-  Fortify = 1,
-  Empower = 2,
-  Blessing = 3,
-  Poison = 4,
-  Wither = 5,
-  Drain = 6,
-  Hex = 7,
+  Empower = 1,
+  Blessing = 2,
+  Poison = 3,
+  Drain = 4,
+  Hex = 5,
 }
 
 /**

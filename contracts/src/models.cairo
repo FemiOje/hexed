@@ -2,7 +2,7 @@ use starknet::ContractAddress;
 
 // Combat & stat constants
 pub const STARTING_HP: u32 = 100;
-pub const MAX_HP: u32 = 100;
+pub const MAX_HP: u32 = 110;
 pub const COMBAT_DAMAGE: u32 = 10;
 pub const COMBAT_XP_REWARD: u32 = 30;
 pub const EXPLORE_XP_REWARD: u32 = 10;
@@ -23,10 +23,10 @@ pub const BLESSING_XP_AMOUNT: u32 = 15;
 // Curse amounts
 pub const POISON_DAMAGE: u32 = 15;
 pub const WITHER_MAX_HP_AMOUNT: u32 = 10;
-pub const DRAIN_XP_AMOUNT: u32 = 20;
+pub const DRAIN_XP_AMOUNT: u32 = 5;
 pub const HEX_HP_AMOUNT: u32 = 10;
 pub const HEX_MAX_HP_AMOUNT: u32 = 5;
-pub const HEX_XP_AMOUNT: u32 = 10;
+pub const HEX_XP_AMOUNT: u32 = 5;
 
 // Maps game_id → player address and tracks active state
 #[derive(Copy, Drop, Serde, Debug)]

@@ -22,20 +22,16 @@ function formatEncounterText(event: GameEvent): string {
   switch (event.encounterOutcome) {
     case EncounterOutcome.Heal:
       return "HEAL! +20 HP";
-    case EncounterOutcome.Fortify:
-      return "FORTIFY! +10 max HP, +10 HP";
     case EncounterOutcome.Empower:
       return "EMPOWER! +25 XP";
     case EncounterOutcome.Blessing:
-      return "BLESSING! +10 HP, +5 max HP, +15 XP";
+      return "BLESSING! +10 HP, +15 XP";
     case EncounterOutcome.Poison:
       return "POISON!! -15 HP";
-    case EncounterOutcome.Wither:
-      return "WITHER!! -10 max HP";
     case EncounterOutcome.Drain:
-      return "DRAIN!! you lost 20 XP";
+      return "DRAIN!! -5 XP";
     case EncounterOutcome.Hex:
-      return "HEX!! -10 HP, -5 max HP, -10 XP";
+      return "HEX!! -10 HP, -5 XP";
     default:
       return "Unknown encounter";
   }

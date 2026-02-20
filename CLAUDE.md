@@ -134,16 +134,16 @@ Single contract: `game_systems` in namespace `untitled`.
 
 **Probability**: 65% Gift / 35% Curse
 
+**Max HP is fixed at 110 and never changes**
+
 | Type | Outcome | Effect | Subtype Range |
 |------|---------|--------|---------------|
 | Gift | Heal | +20 HP (capped at max_hp) | 0-39 (40%) |
-| Gift | Fortify | +10 max_hp, +10 HP | 40-69 (30%) |
-| Gift | Empower | +25 XP | 70-89 (20%) |
-| Gift | Blessing | +10 HP, +5 max_hp, +15 XP | 90-99 (10%) |
+| Gift | Empower | +25 XP | 40-74 (35%) |
+| Gift | Blessing | +10 HP, +15 XP | 75-99 (25%) |
 | Curse | Poison | -15 HP (can kill) | 0-39 (40%) |
-| Curse | Wither | -10 max_hp (floor: 10), HP capped to new max | 40-69 (30%) |
-| Curse | Drain | -20 XP (floor: 0) | 70-89 (20%) |
-| Curse | Hex | -10 HP, -5 max_hp, -10 XP (can kill) | 90-99 (10%) |
+| Curse | Drain | -5 XP (floor: 0) | 40-79 (40%) |
+| Curse | Hex | -10 HP, -5 XP (can kill) | 80-99 (20%) |
 
 ### Fog of War
 - After each move/spawn, a 6-bit `neighbors` bitmask reveals which adjacent tiles are occupied
@@ -151,13 +151,11 @@ Single contract: `game_systems` in namespace `untitled`.
 
 ### Constants (`models.cairo`)
 ```
-STARTING_HP = 100, MAX_HP = 100
+STARTING_HP = 100, MAX_HP = 110 (fixed, never changes)
 COMBAT_DAMAGE = 10, COMBAT_XP_REWARD = 30, EXPLORE_XP_REWARD = 10
 GIFT_THRESHOLD = 65 (65% gift, 35% curse)
-HEAL = +20 HP, FORTIFY = +10 max_hp/+10 HP, EMPOWER = +25 XP
-BLESSING = +10 HP/+5 max_hp/+15 XP
-POISON = -15 HP, WITHER = -10 max_hp, DRAIN = -20 XP
-HEX = -10 HP/-5 max_hp/-10 XP, MIN_MAX_HP = 10
+HEAL = +20 HP, EMPOWER = +25 XP, BLESSING = +10 HP/+15 XP
+POISON = -15 HP, DRAIN = -5 XP, HEX = -10 HP/-5 XP
 ```
 
 Grid: `GRID_MIN = -10`, `GRID_MAX = 10` (in `constants/constants.cairo`)

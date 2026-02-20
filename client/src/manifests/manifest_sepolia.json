@@ -34,7 +34,7 @@
   "contracts": [
     {
       "address": "0x364aba833da4b99c418e62a220b69eed039fcb4338b175b59ae0f194b3544c9",
-      "class_hash": "0x267d2e42f4b7b5ce4cdea23cbed42e11cd96a45bd2aba119d31b5dcee8ccca0",
+      "class_hash": "0x24428debffd75a3488491210b773fced28a4f44999b97c9012a1f0f9b6b955d",
       "init_calldata": [],
       "tag": "untitled-game_systems",
       "selector": "0x4b9982c93d239b953e976f12f77152699704606d385e04b78d305470ff49ca6",
