@@ -4,6 +4,7 @@ use starknet::ContractAddress;
 pub const STARTING_HP: u32 = 100;
 pub const MAX_HP: u32 = 110;
 pub const COMBAT_DAMAGE: u32 = 10;
+pub const COMBAT_RETALIATION_DAMAGE: u32 = 5;
 pub const COMBAT_XP_REWARD: u32 = 30;
 pub const EXPLORE_XP_REWARD: u32 = 10;
 

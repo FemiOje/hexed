@@ -1,8 +1,8 @@
 {
   "world": {
     "class_hash": "0x381899226c066a0262f45d6ab815f89818e0874ec3e66cdf72b5e92d8db4680",
-    "address": "0x3e4767d0616f48781ea197029a6be8e7209afeb2c029689e1853b487b760076",
-    "seed": "hexedseed_1",
+    "address": "0x76c2ee5118ae6f4e59ed275f47a12c65aff4ced8fbed6356200df86cb457c80",
+    "seed": "hexedseed_2",
     "name": "hexed",
     "entrypoints": [
       "uuid",
@@ -33,8 +33,8 @@
   },
   "contracts": [
     {
-      "address": "0x203ac293399249b51f83bdbc2d1ef78c390a91ab29d8938babb3354d961fe58",
-      "class_hash": "0x46beef42c9a3c6d5cdd3fbcd7f2463664ace3c7363bd2d1ab4d6ba1fee601aa",
+      "address": "0x212526af19f06259bce5b983db5642139efd34755a9b5eca01f5f476a1a6c0f",
+      "class_hash": "0x64abf57a1d7fa2a965e079fe9d22d3e905643e0cb4f9de04ee665fd356c4fca",
       "init_calldata": [],
       "tag": "hexed-game_systems",
       "selector": "0x3bb99aa127029bddf81f8e76230bdfdb13e05a56168222e21cd145b9f69f128",
@@ -225,17 +225,27 @@
           "key": false
         },
         {
+          "name": "retaliation_damage",
+          "type": "core::integer::u32",
+          "key": false
+        },
+        {
           "name": "xp_awarded",
           "type": "core::integer::u32",
           "key": false
         },
         {
-          "name": "loser_died",
+          "name": "attacker_died",
+          "type": "core::bool",
+          "key": false
+        },
+        {
+          "name": "defender_died",
           "type": "core::bool",
           "key": false
         }
       ],
-      "class_hash": "0x3a5693571a785877df4921ce716b7dce5603828774a8634137554a4d2284096",
+      "class_hash": "0x4bf47cd66a8d9e96745dccfdb9d1fa9613db56dee2042c1d9f8e9f3cd655ed",
       "tag": "hexed-CombatResult",
       "selector": "0x10122a649422b626f4bd437c690e498c48ba089d9a8f03a0f51aebc6388f5cb"
     },
@@ -2689,11 +2699,19 @@
           "type": "core::integer::u32"
         },
         {
+          "name": "retaliation_damage",
+          "type": "core::integer::u32"
+        },
+        {
           "name": "xp_awarded",
           "type": "core::integer::u32"
         },
         {
-          "name": "loser_died",
+          "name": "attacker_died",
+          "type": "core::bool"
+        },
+        {
+          "name": "defender_died",
           "type": "core::bool"
         }
       ]
@@ -2723,11 +2741,19 @@
           "type": "core::integer::u32"
         },
         {
+          "name": "retaliation_damage",
+          "type": "core::integer::u32"
+        },
+        {
           "name": "xp_awarded",
           "type": "core::integer::u32"
         },
         {
-          "name": "loser_died",
+          "name": "attacker_died",
+          "type": "core::bool"
+        },
+        {
+          "name": "defender_died",
           "type": "core::bool"
         }
       ]

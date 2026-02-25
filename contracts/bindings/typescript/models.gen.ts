@@ -60,8 +60,10 @@ export interface CombatResult {
 	attacker_position: Vec2;
 	defender_position: Vec2;
 	damage_dealt: BigNumberish;
+	retaliation_damage: BigNumberish;
 	xp_awarded: BigNumberish;
-	loser_died: boolean;
+	attacker_died: boolean;
+	defender_died: boolean;
 }
 
 // Type definition for `hexed::systems::game::contracts::game_systems::EncounterOccurred` struct
@@ -200,8 +202,10 @@ export const schema: SchemaType = {
 		attacker_position: { x: 0, y: 0, },
 		defender_position: { x: 0, y: 0, },
 			damage_dealt: 0,
+			retaliation_damage: 0,
 			xp_awarded: 0,
-			loser_died: false,
+			attacker_died: false,
+			defender_died: false,
 		},
 		EncounterOccurred: {
 			game_id: 0,

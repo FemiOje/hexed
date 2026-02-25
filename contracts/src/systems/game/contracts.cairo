@@ -19,8 +19,9 @@ pub mod game_systems {
     use hexed::helpers::encounter::{EncounterOutcomeIntoU8, EncounterOutcomeTrait};
     use hexed::helpers::{combat, encounter, movement, spawn};
     use hexed::models::{
-        COMBAT_DAMAGE, COMBAT_XP_REWARD, GameCounter, GameSession, HighestScore, MAX_CONCURRENT_GAMES,
-        MAX_HP, PlayerState, PlayerStats, STARTING_HP, TileOccupant, Vec2,
+        COMBAT_DAMAGE, COMBAT_RETALIATION_DAMAGE, COMBAT_XP_REWARD, GameCounter, GameSession,
+        HighestScore, MAX_CONCURRENT_GAMES, MAX_HP, PlayerState, PlayerStats, STARTING_HP,
+        TileOccupant, Vec2,
     };
     use hexed::utils::hex::{get_neighbor, get_neighbor_occupancy, is_within_bounds};
     use starknet::{ContractAddress, get_caller_address};
@@ -58,8 +59,10 @@ pub mod game_systems {
         pub attacker_position: Vec2,
         pub defender_position: Vec2,
         pub damage_dealt: u32,
+        pub retaliation_damage: u32,
         pub xp_awarded: u32,
-        pub loser_died: bool,
+        pub attacker_died: bool,
+        pub defender_died: bool,
     }
 
     #[derive(Copy, Drop, Serde)]
@@ -186,23 +189,35 @@ pub mod game_systems {
                             attacker_position: outcome.attacker_position,
                             defender_position: outcome.defender_position,
                             damage_dealt: COMBAT_DAMAGE,
+                            retaliation_damage: if outcome.attacker_won {
+                                0
+                            } else {
+                                COMBAT_RETALIATION_DAMAGE
+                            },
                             xp_awarded: COMBAT_XP_REWARD,
-                            loser_died: outcome.loser_died,
+                            attacker_died: outcome.attacker_died,
+                            defender_died: outcome.defender_died,
                         },
                     );
 
-                if outcome.loser_died {
-                    let (dead_id, killer_id) = if outcome.attacker_won {
-                        (defender_game_id, game_id)
-                    } else {
-                        (game_id, defender_game_id)
-                    };
+                if outcome.attacker_died {
                     world
                         .emit_event(
                             @PlayerDied {
-                                game_id: dead_id,
-                                killed_by: killer_id,
-                                position: outcome.death_position,
+                                game_id,
+                                killed_by: defender_game_id,
+                                position: outcome.attacker_position,
+                            },
+                        );
+                }
+
+                if outcome.defender_died {
+                    world
+                        .emit_event(
+                            @PlayerDied {
+                                game_id: defender_game_id,
+                                killed_by: game_id,
+                                position: outcome.defender_position,
                             },
                         );
                 }
