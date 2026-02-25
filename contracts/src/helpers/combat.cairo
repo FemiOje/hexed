@@ -1,7 +1,7 @@
 use dojo::model::ModelStorage;
 use hexed::models::{
-    COMBAT_DAMAGE, COMBAT_XP_REWARD, Direction, GameCounter, GameSession, PlayerState, PlayerStats,
-    TileOccupant, Vec2,
+    COMBAT_DAMAGE, COMBAT_RETALIATION_DAMAGE, COMBAT_XP_REWARD, Direction, GameCounter,
+    GameSession, PlayerState, PlayerStats, TileOccupant, Vec2,
 };
 use hexed::utils::hex::get_neighbor;
 
@@ -9,11 +9,10 @@ use hexed::utils::hex::get_neighbor;
 #[derive(Drop, Copy)]
 pub struct CombatOutcome {
     pub attacker_won: bool,
-    pub loser_died: bool,
+    pub attacker_died: bool,
+    pub defender_died: bool,
     pub attacker_position: Vec2,
     pub defender_position: Vec2,
-    /// Position where the loser died (only valid when loser_died == true).
-    pub death_position: Vec2,
 }
 
 /// Checks whether the tile's occupant is an active player.
@@ -55,14 +54,15 @@ pub fn resolve_combat(
 
     // Higher XP wins. Equal XP penalises defender (attacker wins).
     let attacker_won = attacker_stats.xp >= defender_stats.xp;
-    let mut loser_died = false;
+    let mut attacker_died = false;
+    let mut defender_died = false;
 
     if attacker_won {
         add_xp(ref attacker_stats, COMBAT_XP_REWARD);
 
         if defender_stats.hp <= COMBAT_DAMAGE {
             defender_stats.hp = 0;
-            loser_died = true;
+            defender_died = true;
         } else {
             defender_stats.hp -= COMBAT_DAMAGE;
         }
@@ -70,7 +70,7 @@ pub fn resolve_combat(
         world.write_model(@attacker_stats);
         world.write_model(@defender_stats);
 
-        if loser_died {
+        if defender_died {
             handle_player_death(ref world, defender_game_id, next_vec, game_id);
 
             state.position = next_vec;
@@ -99,27 +99,41 @@ pub fn resolve_combat(
     } else {
         add_xp(ref defender_stats, COMBAT_XP_REWARD);
 
+        // Attacker takes full combat damage
         if attacker_stats.hp <= COMBAT_DAMAGE {
             attacker_stats.hp = 0;
-            loser_died = true;
+            attacker_died = true;
         } else {
             attacker_stats.hp -= COMBAT_DAMAGE;
+        }
+
+        // Defender takes retaliation damage (half of combat damage)
+        if defender_stats.hp <= COMBAT_RETALIATION_DAMAGE {
+            defender_stats.hp = 0;
+            defender_died = true;
+        } else {
+            defender_stats.hp -= COMBAT_RETALIATION_DAMAGE;
         }
 
         world.write_model(@attacker_stats);
         world.write_model(@defender_stats);
 
-        if loser_died {
+        if attacker_died {
             handle_player_death(ref world, game_id, old_position, defender_game_id);
         } else {
             state.last_direction = Option::Some(direction);
             world.write_model(@state);
         }
+
+        if defender_died {
+            handle_player_death(ref world, defender_game_id, next_vec, game_id);
+        }
     }
 
     CombatOutcome {
         attacker_won,
-        loser_died,
+        attacker_died,
+        defender_died,
         attacker_position: if attacker_won {
             next_vec
         } else {
@@ -129,11 +143,6 @@ pub fn resolve_combat(
             old_position
         } else {
             next_vec
-        },
-        death_position: if attacker_won {
-            next_vec
-        } else {
-            old_position
         },
     }
 }

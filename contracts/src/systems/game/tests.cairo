@@ -3,8 +3,9 @@ mod tests {
     use dojo::model::{ModelStorage, ModelStorageTest};
     // use dojo::world::WorldStorageTrait;
     use hexed::models::{
-        COMBAT_DAMAGE, COMBAT_XP_REWARD, DRAIN_XP_AMOUNT, Direction, GameCounter, GameSession,
-        MAX_HP, MIN_MAX_HP, PlayerState, PlayerStats, STARTING_HP, TileOccupant, Vec2,
+        COMBAT_DAMAGE, COMBAT_RETALIATION_DAMAGE, COMBAT_XP_REWARD, DRAIN_XP_AMOUNT, Direction,
+        GameCounter, GameSession, MAX_HP, MIN_MAX_HP, PlayerState, PlayerStats, STARTING_HP,
+        TileOccupant, Vec2,
     };
     use hexed::systems::game::contracts::{ // IGameSystemsDispatcher,
     IGameSystemsDispatcherTrait};
@@ -1096,8 +1097,8 @@ mod tests {
         assert(atk_state.position.x == 0 && atk_state.position.y == 0, 'atk should stay');
         assert(atk_stats.hp == MAX_HP - COMBAT_DAMAGE, 'loser hp wrong');
         assert(atk_stats.xp == 10, 'loser xp should not change');
-        // Defender wins: gets XP reward, keeps HP
-        assert(def_stats.hp == MAX_HP, 'winner hp should be full');
+        // Defender wins: gets XP reward, takes retaliation damage
+        assert(def_stats.hp == MAX_HP - COMBAT_RETALIATION_DAMAGE, 'winner retaliation hp wrong');
         assert(def_stats.xp == 50 + COMBAT_XP_REWARD, 'winner xp wrong');
     }
 
