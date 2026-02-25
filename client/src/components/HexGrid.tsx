@@ -1,10 +1,11 @@
-import { useRef, useEffect, useCallback, useState } from "react";
+import { useRef, useEffect, useCallback } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { createHexagonShape } from "../three/hexagon-geometry";
 import { getWorldPositionForHex, type HexPosition } from "../three/utils";
 import { HEX_SIZE } from "../three/constants";
 import { calculateDirection } from "../utils/coordinateMapping";
+import toast from "react-hot-toast";
 
 // --- Color palette ---
 const COLOR_PLAYER = new THREE.Color(0xf5a623);
@@ -84,12 +85,6 @@ function calculateOpacity(distance: number): number {
   return 1.0 - (0.85 * smoothT);
 }
 
-interface TooltipState {
-  hex: HexPosition;
-  screenX: number;
-  screenY: number;
-}
-
 export default function HexGrid({
   width = 10,
   height = 10,
@@ -110,14 +105,21 @@ export default function HexGrid({
   const playerPositionRef = useRef<HexPosition>(playerPosition);
   const userIsInteractingRef = useRef(false);
 
-  const [tooltip, setTooltip] = useState<TooltipState | null>(null);
-  const tooltipRef = useRef<TooltipState | null>(null);
-  const [isMobileDevice, setIsMobileDevice] = useState(false);
+
+  // Mobile double-tap refs
+  const isMobileDeviceRef = useRef(false);
+  const pendingMobileHexRef = useRef<HexPosition | null>(null);
+  const mobileToastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const mobileToastIdRef = useRef<string | null>(null);
+  const pointerDownPosRef = useRef<{ x: number; y: number } | null>(null);
+  const onMoveRef = useRef(onMove);
+  const occupiedNeighborsMaskRef = useRef(occupiedNeighborsMask);
+  const disabledRef = useRef(disabled);
 
   // Detect mobile on mount
   useEffect(() => {
     const checkMobile = () => {
-      setIsMobileDevice(mountRef.current ? mountRef.current.clientWidth < 900 : false);
+      isMobileDeviceRef.current = mountRef.current ? mountRef.current.clientWidth < 900 : false;
     };
     checkMobile();
     window.addEventListener("resize", checkMobile);
@@ -128,6 +130,11 @@ export default function HexGrid({
   useEffect(() => {
     playerPositionRef.current = playerPosition;
   }, [playerPosition]);
+
+  // Sync prop refs for use in event handlers
+  useEffect(() => { onMoveRef.current = onMove; }, [onMove]);
+  useEffect(() => { occupiedNeighborsMaskRef.current = occupiedNeighborsMask; }, [occupiedNeighborsMask]);
+  useEffect(() => { disabledRef.current = disabled; }, [disabled]);
 
   const updateColors = useCallback(
     (hoverIndex: number) => {
@@ -180,25 +187,6 @@ export default function HexGrid({
       if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
     },
     [playerPosition, occupiedNeighborsMask]
-  );
-
-  // Project a hex's world position to screen coordinates
-  const projectToScreen = useCallback(
-    (hex: HexPosition): { x: number; y: number } | null => {
-      const camera = cameraRef.current;
-      const container = mountRef.current;
-      if (!camera || !container) return null;
-
-      const worldPos = getWorldPositionForHex(hex);
-      const vec = new THREE.Vector3(worldPos.x, 0.05, worldPos.z);
-      vec.project(camera);
-
-      const rect = container.getBoundingClientRect();
-      const x = ((vec.x + 1) / 2) * rect.width;
-      const y = ((-vec.y + 1) / 2) * rect.height;
-      return { x, y };
-    },
-    []
   );
 
   // --- Scene setup ---
@@ -369,7 +357,7 @@ export default function HexGrid({
     const initialPlayerWorldPos = getWorldPositionForHex(playerPosition);
     const initialOffset = camera.position.clone().sub(new THREE.Vector3(initialPlayerWorldPos.x, 0, initialPlayerWorldPos.z));
 
-    // Animation loop — updates camera tracking, controls, and tooltip
+    // Animation loop — updates camera tracking and controls
     const animate = () => {
       requestAnimationFrame(animate);
 
@@ -399,22 +387,6 @@ export default function HexGrid({
 
       controls.update();
       renderer.render(scene, camera);
-
-      // Keep tooltip pinned to hex while camera orbits
-      const tt = tooltipRef.current;
-      if (tt) {
-        const worldPos = getWorldPositionForHex(tt.hex);
-        const vec = new THREE.Vector3(worldPos.x, 0.005, worldPos.z);
-        vec.project(camera);
-        const rect = container.getBoundingClientRect();
-        const sx = ((vec.x + 1) / 2) * rect.width;
-        const sy = ((-vec.y + 1) / 2) * rect.height;
-        if (Math.abs(sx - tt.screenX) > 1 || Math.abs(sy - tt.screenY) > 1) {
-          const updated = { hex: tt.hex, screenX: sx, screenY: sy };
-          tooltipRef.current = updated;
-          setTooltip(updated);
-        }
-      }
     };
     animate();
 
@@ -445,11 +417,20 @@ export default function HexGrid({
   // Re-color when player moves or disabled changes
   useEffect(() => {
     if (disabled) {
-      // Clear hover and tooltip when grid is disabled
       hoveredRef.current = -1;
-      tooltipRef.current = null;
-      setTooltip(null);
     }
+
+    // Clear mobile pending state on position change or disable
+    pendingMobileHexRef.current = null;
+    if (mobileToastIdRef.current) {
+      toast.dismiss(mobileToastIdRef.current);
+      mobileToastIdRef.current = null;
+    }
+    if (mobileToastTimeoutRef.current) {
+      clearTimeout(mobileToastTimeoutRef.current);
+      mobileToastTimeoutRef.current = null;
+    }
+
     updateColors(hoveredRef.current);
   }, [playerPosition, disabled, occupiedNeighborsMask, updateColors]);
 
@@ -488,48 +469,135 @@ export default function HexGrid({
         hoveredRef.current = newHover;
         updateColors(newHover);
 
-        if (newHover >= 0) {
-          const hex = hexesRef.current[newHover];
-          const screen = projectToScreen(hex);
-          if (screen) {
-            const tt = { hex, screenX: screen.x, screenY: screen.y };
-            tooltipRef.current = tt;
-            setTooltip(tt);
+        // Tooltip suppressed — double-click/tap flow handles move confirmation via toast
+
+      }
+    };
+
+    // Track pointer start position to distinguish taps from drags
+    const onPointerDown = (e: PointerEvent) => {
+      pointerDownPosRef.current = { x: e.clientX, y: e.clientY };
+    };
+
+    // Double-tap/click handler for move confirmation
+    const onPointerUp = (e: PointerEvent) => {
+      if (disabledRef.current) return;
+
+      // Distinguish tap from drag/pan — ignore if pointer moved > 10px
+      const down = pointerDownPosRef.current;
+      if (down) {
+        const dist = Math.sqrt((e.clientX - down.x) ** 2 + (e.clientY - down.y) ** 2);
+        if (dist > 10) return;
+      }
+
+      const rect = container.getBoundingClientRect();
+      pointer.current.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      pointer.current.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+
+      const cam = cameraRef.current;
+      const mesh = meshRef.current;
+      if (!cam || !mesh) return;
+
+      raycaster.current.setFromCamera(pointer.current, cam);
+      const intersects = raycaster.current.intersectObject(mesh);
+
+      if (intersects.length > 0 && intersects[0].instanceId !== undefined) {
+        const idx = intersects[0].instanceId;
+        const hex = hexesRef.current[idx];
+        if (hex && isNeighbor(hex, playerPositionRef.current)) {
+          const pending = pendingMobileHexRef.current;
+
+          if (pending && pending.col === hex.col && pending.row === hex.row) {
+            // Second click on same hex → execute move
+            onMoveRef.current(hex);
+
+            // Clear pending state and highlight
+            pendingMobileHexRef.current = null;
+            hoveredRef.current = -1;
+            updateColors(-1);
+
+            // Dismiss toast and clear timeout
+            if (mobileToastIdRef.current) {
+              toast.dismiss(mobileToastIdRef.current);
+              mobileToastIdRef.current = null;
+            }
+            if (mobileToastTimeoutRef.current) {
+              clearTimeout(mobileToastTimeoutRef.current);
+              mobileToastTimeoutRef.current = null;
+            }
+          } else {
+            // First click (or different hex) → set as pending, highlight it, show toast
+            pendingMobileHexRef.current = hex;
+            hoveredRef.current = idx;
+            updateColors(idx);
+
+            // Dismiss previous toast
+            if (mobileToastIdRef.current) {
+              toast.dismiss(mobileToastIdRef.current);
+            }
+            if (mobileToastTimeoutRef.current) {
+              clearTimeout(mobileToastTimeoutRef.current);
+            }
+
+            const mask = occupiedNeighborsMaskRef.current;
+            const dir = calculateDirection(playerPositionRef.current, hex);
+            const isOccupied = dir !== null && mask > 0 && ((mask >> dir) & 1) === 1;
+            const message = isOccupied
+              ? `⚔ Click again to attack (${hex.col}, ${hex.row})`
+              : `Click again to move to (${hex.col}, ${hex.row})`;
+            const borderColor = isOccupied ? "#e05555" : "#44cc44";
+
+            const toastId = toast.custom(
+              (t) => (
+                <div
+                  style={{
+                    opacity: t.visible ? 1 : 0,
+                    transition: "opacity 0.2s ease",
+                    background: "rgba(10, 10, 30, 0.95)",
+                    border: `1px solid ${borderColor}`,
+                    borderRadius: 8,
+                    padding: "12px 16px",
+                    color: "#e0e0e0",
+                    fontFamily: "monospace",
+                    fontSize: 14,
+                    maxWidth: 280,
+                  }}
+                >
+                  <div style={{ fontWeight: 600, color: borderColor }}>
+                    {message}
+                  </div>
+                </div>
+              ),
+              { duration: 3000, position: "top-center" }
+            );
+            mobileToastIdRef.current = toastId;
+
+            // Auto-clear pending hex after timeout
+            mobileToastTimeoutRef.current = setTimeout(() => {
+              pendingMobileHexRef.current = null;
+              mobileToastIdRef.current = null;
+              mobileToastTimeoutRef.current = null;
+            }, 3000);
           }
-        } else {
-          tooltipRef.current = null;
-          setTooltip(null);
         }
       }
     };
 
     container.addEventListener("pointermove", onPointerMove);
+    container.addEventListener("pointerdown", onPointerDown);
+    container.addEventListener("pointerup", onPointerUp);
 
     return () => {
       container.removeEventListener("pointermove", onPointerMove);
+      container.removeEventListener("pointerdown", onPointerDown);
+      container.removeEventListener("pointerup", onPointerUp);
+      // Clean up mobile toast timeout on unmount
+      if (mobileToastTimeoutRef.current) {
+        clearTimeout(mobileToastTimeoutRef.current);
+      }
     };
-  }, [playerPosition, disabled, updateColors, projectToScreen]);
+  }, [playerPosition, disabled, updateColors]);
 
-  const handleConfirm = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
-    e.preventDefault();
-    if (disabled) return;
-    if (tooltip) {
-      onMove(tooltip.hex);
-      tooltipRef.current = null;
-      setTooltip(null);
-      hoveredRef.current = -1;
-    }
-  }, [tooltip, disabled, onMove]);
-
-  const handleCancel = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
-    e.preventDefault();
-    tooltipRef.current = null;
-    setTooltip(null);
-    hoveredRef.current = -1;
-    updateColors(-1);
-  }, [updateColors]);
 
   return (
     <div
@@ -573,99 +641,6 @@ export default function HexGrid({
           >
             Resolving move...
           </div>
-        </div>
-      )}
-      {!disabled && tooltip && (
-        <div
-          style={{
-            position: isMobileDevice ? "fixed" : "absolute",
-            ...(isMobileDevice
-              ? { top: 20, right: 20 }
-              : { left: tooltip.screenX, top: tooltip.screenY, transform: "translate(-50%, -120%)" }
-            ),
-            pointerEvents: "auto",
-            zIndex: 9999,
-          }}
-        >
-          <div
-            style={{
-              background: "rgba(10, 10, 30, 0.92)",
-              border: "1px solid rgba(255,255,255,0.15)",
-              borderRadius: 8,
-              padding: isMobileDevice ? "16px 20px" : "8px 10px",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              gap: isMobileDevice ? 12 : 6,
-              fontFamily: "monospace",
-              fontSize: isMobileDevice ? 16 : 12,
-              color: "#e0e0e0",
-              boxShadow: "0 4px 16px rgba(0,0,0,0.5)",
-              whiteSpace: "nowrap",
-            }}
-          >
-            <span style={{ color: "#44cc44", fontWeight: 600 }}>
-              {(() => {
-                const dir = calculateDirection(playerPosition, tooltip.hex);
-                const isOccupied = dir !== null && occupiedNeighborsMask > 0 && ((occupiedNeighborsMask >> dir) & 1) === 1;
-                return isOccupied
-                  ? `⚔ Occupied — Move to (${tooltip.hex.col}, ${tooltip.hex.row})?`
-                  : `Move to (${tooltip.hex.col}, ${tooltip.hex.row})?`;
-              })()}
-            </span>
-            <div style={{ display: "flex", gap: isMobileDevice ? 10 : 6, flexDirection: isMobileDevice ? "column" : "row" }}>
-              <button
-                onClick={handleConfirm}
-                style={{
-                  background: "#44cc44",
-                  color: "#0a0a1e",
-                  border: "none",
-                  borderRadius: 4,
-                  padding: isMobileDevice ? "14px 24px" : "4px 12px",
-                  fontFamily: "monospace",
-                  fontSize: isMobileDevice ? 16 : 12,
-                  fontWeight: 700,
-                  cursor: "pointer",
-                  minWidth: isMobileDevice ? 140 : "auto",
-                }}
-              >
-                {(() => {
-                  const dir = calculateDirection(playerPosition, tooltip.hex);
-                  const isOccupied = dir !== null && occupiedNeighborsMask > 0 && ((occupiedNeighborsMask >> dir) & 1) === 1;
-                  return isOccupied ? "Attack" : "Confirm";
-                })()}
-              </button>
-              <button
-                onClick={handleCancel}
-                style={{
-                  background: "transparent",
-                  color: "#aaa",
-                  border: "1px solid rgba(255,255,255,0.2)",
-                  borderRadius: 4,
-                  padding: isMobileDevice ? "14px 24px" : "4px 12px",
-                  fontFamily: "monospace",
-                  fontSize: isMobileDevice ? 16 : 12,
-                  cursor: "pointer",
-                  minWidth: isMobileDevice ? 140 : "auto",
-                }}
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-          {/* Arrow pointing down - only on desktop */}
-          {!isMobileDevice && (
-            <div
-              style={{
-                width: 0,
-                height: 0,
-                borderLeft: "6px solid transparent",
-                borderRight: "6px solid transparent",
-                borderTop: "6px solid rgba(10, 10, 30, 0.92)",
-                margin: "0 auto",
-              }}
-            />
-          )}
         </div>
       )}
     </div>

@@ -36,12 +36,18 @@ type GamePhase = "intro" | "gameplay" | "death";
 
 /**
  * AudioManager — imperative audio control outside React's effect cycle.
- * Follows death-mountain's AudioManager pattern.
+ *
+ * Owns all play/pause decisions internally.  React effects just sync
+ * three pieces of state: unlocked (user interacted), musicEnabled, and
+ * the current game phase.  Each setter calls play/pause as appropriate,
+ * eliminating effect-ordering bugs.
  */
 class AudioManager {
   private audio: HTMLAudioElement;
   private currentPhase: GamePhase | null = null;
   private gameplayIndex = 0;
+  private _musicEnabled = true;
+  private _unlocked = false;
 
   constructor() {
     this.audio = new Audio();
@@ -59,14 +65,36 @@ class AudioManager {
     });
   }
 
-  async play() {
-    await this.audio.play().catch(() => {});
+  private get shouldPlay(): boolean {
+    return this._unlocked && this._musicEnabled;
   }
 
-  pause() {
-    this.audio.pause();
+  /**
+   * Call from within a user-gesture handler (click/touch/keydown) to
+   * satisfy browser autoplay policy and unmute + start audible playback.
+   */
+  unlock() {
+    if (this._unlocked) return;
+    this._unlocked = true;
+    if (this._musicEnabled) {
+      // Unmute — the track is already playing silently from switchPhase
+      this.audio.muted = false;
+      this.audio.play().catch(() => {});
+    }
   }
 
+  /** Sync the mute/unmute preference from the UI store. */
+  setMusicEnabled(enabled: boolean) {
+    this._musicEnabled = enabled;
+    if (this.shouldPlay) {
+      this.audio.muted = false;
+      this.audio.play().catch(() => {});
+    } else if (this._unlocked) {
+      this.audio.pause();
+    }
+  }
+
+  /** Switch to a new game phase (sets track src, auto-plays if allowed). */
   switchPhase(phase: GamePhase) {
     if (phase === this.currentPhase) return;
     this.currentPhase = phase;
@@ -87,14 +115,24 @@ class AudioManager {
         break;
     }
 
-    // Eagerly attempt play — browser will block if no gesture yet,
-    // but the track is loaded and ready for when the user interacts.
-    this.audio.play().catch(() => {});
+    if (this.shouldPlay) {
+      // Already unlocked and enabled — play audibly
+      this.audio.muted = false;
+      this.audio.play().catch(() => {});
+    } else if (this._musicEnabled) {
+      // Not yet unlocked — start playing MUTED so the track is buffered
+      // and already at the right position when the user first interacts.
+      // Browsers allow muted autoplay.
+      this.audio.muted = true;
+      this.audio.play().catch(() => {});
+    }
   }
 
   destroy() {
     this.audio.pause();
     this.audio.src = "";
+    // Reset so switchPhase re-applies the src after a StrictMode remount
+    this.currentPhase = null;
   }
 }
 
@@ -119,39 +157,29 @@ export const SoundProvider = ({ children }: PropsWithChildren) => {
   const phase: GamePhase =
     location.pathname === "/game" ? (isDead ? "death" : "gameplay") : "intro";
 
-  // Detect first user interaction
+  // Detect first user interaction — unlock audio in the gesture context
   useEffect(() => {
-    const handleFirstInteraction = () => {
+    if (hasInteracted) return;
+    const handler = () => {
       setHasInteracted(true);
-      if (musicEnabled) {
-        manager.current.play();
-      }
-      document.removeEventListener("click", handleFirstInteraction);
-      document.removeEventListener("touchstart", handleFirstInteraction);
-      document.removeEventListener("keydown", handleFirstInteraction);
+      manager.current.unlock();
     };
-    document.addEventListener("click", handleFirstInteraction);
-    document.addEventListener("touchstart", handleFirstInteraction);
-    document.addEventListener("keydown", handleFirstInteraction);
+    document.addEventListener("click", handler);
+    document.addEventListener("touchstart", handler);
+    document.addEventListener("keydown", handler);
     return () => {
-      document.removeEventListener("click", handleFirstInteraction);
-      document.removeEventListener("touchstart", handleFirstInteraction);
-      document.removeEventListener("keydown", handleFirstInteraction);
+      document.removeEventListener("click", handler);
+      document.removeEventListener("touchstart", handler);
+      document.removeEventListener("keydown", handler);
     };
+  }, [hasInteracted]);
+
+  // Sync musicEnabled preference into AudioManager
+  useEffect(() => {
+    manager.current.setMusicEnabled(musicEnabled);
   }, [musicEnabled]);
 
-  // Play/pause when musicEnabled toggles (after interaction)
-  useEffect(() => {
-    if (!hasInteracted) return;
-
-    if (musicEnabled) {
-      manager.current.play();
-    } else {
-      manager.current.pause();
-    }
-  }, [musicEnabled, hasInteracted]);
-
-  // Switch track when phase changes
+  // Sync game phase (sets track src, auto-plays if unlocked + enabled)
   useEffect(() => {
     manager.current.switchPhase(phase);
   }, [phase]);
