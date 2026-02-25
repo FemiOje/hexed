@@ -19,9 +19,9 @@ pub mod game_systems {
     use hexed::helpers::encounter::{EncounterOutcomeIntoU8, EncounterOutcomeTrait};
     use hexed::helpers::{combat, encounter, movement, spawn};
     use hexed::models::{
-        COMBAT_DAMAGE, COMBAT_HP_REWARD, COMBAT_RETALIATION_DAMAGE, COMBAT_XP_REWARD,
-        GameCounter, GameSession, HighestScore, MAX_CONCURRENT_GAMES, MAX_HP, PlayerState,
-        PlayerStats, STARTING_HP, TileOccupant, Vec2,
+        COMBAT_DAMAGE, COMBAT_HP_REWARD, COMBAT_RETALIATION_DAMAGE, COMBAT_XP_REWARD, GameCounter,
+        GameSession, HighestScore, MAX_CONCURRENT_GAMES, MAX_HP, PlayerState, PlayerStats,
+        STARTING_HP, TileOccupant, Vec2,
     };
     use hexed::utils::hex::{get_neighbor, get_neighbor_occupancy, is_within_bounds};
     use starknet::{ContractAddress, get_caller_address};

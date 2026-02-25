@@ -155,7 +155,8 @@ pub fn resolve_combat(
     }
 }
 
-/// Cleans up a dead player: clears tile, deactivates session, disables movement, decrements game counter.
+/// Cleans up a dead player: clears tile, deactivates session, disables movement, decrements game
+/// counter.
 /// Does NOT emit PlayerDied event — the caller is responsible for that.
 pub fn handle_player_death(
     ref world: dojo::world::WorldStorage, game_id: u32, position: Vec2, killed_by: u32,
