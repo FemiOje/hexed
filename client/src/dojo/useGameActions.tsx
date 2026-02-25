@@ -266,9 +266,15 @@ export const useGameActions = () => {
 
         // --- Toast logic ---
         if (moveOutcome === "combat_won" || moveOutcome === "combat_lost") {
-          // Combat: single toast (keep existing style)
-          const combatTitle = moveOutcome === "combat_won" ? "Won combat!" : "Lost combat!";
-          const combatColor = moveOutcome === "combat_won" ? "#4caf50" : "#f44336";
+          const won = moveOutcome === "combat_won";
+          const combatTitle = won ? "Won combat!" : "Lost combat!";
+          const combatColor = won ? "#4caf50" : "#f44336";
+          // When attacker wins: dealt 10 dmg to defender
+          // When attacker loses: dealt 5 retaliation dmg to defender
+          const opponentDmg = won ? 10 : 5;
+          const opponentNote = won
+            ? `Dealt ${opponentDmg} damage to opponent`
+            : `Opponent took ${opponentDmg} retaliation damage`;
           toast.custom(
             (t) => (
               <div
@@ -298,6 +304,9 @@ export const useGameActions = () => {
                     {hpDelta > 0 ? "+" : ""}{hpDelta} HP
                   </div>
                 )}
+                <div style={{ color: "#aaa", fontSize: 11, marginTop: 4 }}>
+                  {opponentNote}
+                </div>
               </div>
             ),
             { duration: 3000 }

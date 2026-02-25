@@ -102,6 +102,101 @@ export default function GamePage() {
         prevIsDeadRef.current = isDead;
     }, [isDead]);
 
+    // Detect being attacked while idle (via polling state changes).
+    // If HP or position changed while we're not moving, another player attacked us.
+    const attackDetectionReady = useRef(false);
+    const prevHpRef = useRef(0);
+    const prevXpRef = useRef(0);
+    const prevPosRef = useRef<{ x: number; y: number } | null>(null);
+
+    useEffect(() => {
+        // Not ready yet — wait for valid game state
+        if (!ownershipValid || !isSpawned || isDead) {
+            attackDetectionReady.current = false;
+            return;
+        }
+
+        // First valid tick: seed refs with current values and skip detection
+        if (!attackDetectionReady.current) {
+            prevHpRef.current = hp;
+            prevXpRef.current = xp;
+            prevPosRef.current = blockchainPosition;
+            attackDetectionReady.current = true;
+            return;
+        }
+
+        // During our own move the changes are expected — just track and skip
+        if (isMovingRef.current) {
+            prevHpRef.current = hp;
+            prevXpRef.current = xp;
+            prevPosRef.current = blockchainPosition;
+            return;
+        }
+
+        const prevHp = prevHpRef.current;
+        const prevXp = prevXpRef.current;
+        const prevPos = prevPosRef.current;
+
+        const hpDecreased = prevHp > 0 && hp < prevHp;
+        const xpIncreased = xp > prevXp;
+        const posChanged = prevPos && blockchainPosition &&
+            (prevPos.x !== blockchainPosition.x || prevPos.y !== blockchainPosition.y);
+
+        if (hpDecreased) {
+            const hpLost = prevHp - hp;
+
+            let title: string;
+            let detail: string;
+
+            if (posChanged && !xpIncreased) {
+                // Defender lost: took full damage, got pushed to attacker's old tile
+                title = "You were attacked!";
+                detail = `An opponent overpowered you. -${hpLost} HP. Your position has changed.`;
+            } else if (!posChanged && xpIncreased) {
+                // Defender won: took retaliation damage, gained XP, stayed put
+                const xpGained = xp - prevXp;
+                title = "You were attacked!";
+                detail = `You fought off an attacker! -${hpLost} HP (retaliation), +${xpGained} XP.`;
+            } else {
+                // Fallback
+                title = "You were attacked!";
+                detail = `Another player attacked you. -${hpLost} HP.`;
+            }
+
+            toast.custom(
+                (t) => (
+                    <div
+                        style={{
+                            opacity: t.visible ? 1 : 0,
+                            transition: "opacity 0.2s ease",
+                            background: "rgba(10, 10, 30, 0.95)",
+                            border: "1px solid #ff9800",
+                            borderRadius: 8,
+                            padding: "12px 16px",
+                            color: "#e0e0e0",
+                            fontFamily: "monospace",
+                            fontSize: 13,
+                            maxWidth: 300,
+                        }}
+                    >
+                        <div style={{ fontWeight: 600, marginBottom: 6, color: "#ff9800" }}>
+                            {title}
+                        </div>
+                        <div style={{ color: "#ccc", fontSize: 12, lineHeight: 1.4 }}>
+                            {detail}
+                        </div>
+                    </div>
+                ),
+                { duration: 5000 }
+            );
+        }
+
+        // Update refs
+        prevHpRef.current = hp;
+        prevXpRef.current = xp;
+        prevPosRef.current = blockchainPosition;
+    }, [hp, xp, blockchainPosition, ownershipValid, isSpawned, isDead]);
+
     // URL validation and ownership check
     useEffect(() => {
         // Skip if already validated or currently validating
