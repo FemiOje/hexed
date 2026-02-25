@@ -1,8 +1,8 @@
 {
   "world": {
     "class_hash": "0x381899226c066a0262f45d6ab815f89818e0874ec3e66cdf72b5e92d8db4680",
-    "address": "0x76c2ee5118ae6f4e59ed275f47a12c65aff4ced8fbed6356200df86cb457c80",
-    "seed": "hexedseed_2",
+    "address": "0x1a8c69d89cd1833654f5061099256db624348e0dafa13dc5505924bab656f8a",
+    "seed": "hexedseed_3",
     "name": "hexed",
     "entrypoints": [
       "uuid",
@@ -33,8 +33,8 @@
   },
   "contracts": [
     {
-      "address": "0x212526af19f06259bce5b983db5642139efd34755a9b5eca01f5f476a1a6c0f",
-      "class_hash": "0x64abf57a1d7fa2a965e079fe9d22d3e905643e0cb4f9de04ee665fd356c4fca",
+      "address": "0x3c5bef72bd99df88ae0a81b8284c2cae4e42da8b57874736ffdaf9dcb855d9f",
+      "class_hash": "0x3ca686204bcb4eb9850378757002f7ae785b79ce650e7478cf5d64503178915",
       "init_calldata": [],
       "tag": "hexed-game_systems",
       "selector": "0x3bb99aa127029bddf81f8e76230bdfdb13e05a56168222e21cd145b9f69f128",
@@ -235,6 +235,11 @@
           "key": false
         },
         {
+          "name": "hp_reward",
+          "type": "core::integer::u32",
+          "key": false
+        },
+        {
           "name": "attacker_died",
           "type": "core::bool",
           "key": false
@@ -245,7 +250,7 @@
           "key": false
         }
       ],
-      "class_hash": "0x4bf47cd66a8d9e96745dccfdb9d1fa9613db56dee2042c1d9f8e9f3cd655ed",
+      "class_hash": "0x39c0e33f8ab8ab0d5a6e5a5ac056e4cbea8e04fa6acf72c0a87903a77661aa5",
       "tag": "hexed-CombatResult",
       "selector": "0x10122a649422b626f4bd437c690e498c48ba089d9a8f03a0f51aebc6388f5cb"
     },
@@ -2707,6 +2712,10 @@
           "type": "core::integer::u32"
         },
         {
+          "name": "hp_reward",
+          "type": "core::integer::u32"
+        },
+        {
           "name": "attacker_died",
           "type": "core::bool"
         },
@@ -2746,6 +2755,10 @@
         },
         {
           "name": "xp_awarded",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "hp_reward",
           "type": "core::integer::u32"
         },
         {

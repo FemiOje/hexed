@@ -1,7 +1,7 @@
 use dojo::model::ModelStorage;
 use hexed::models::{
-    COMBAT_DAMAGE, COMBAT_RETALIATION_DAMAGE, COMBAT_XP_REWARD, Direction, GameCounter,
-    GameSession, PlayerState, PlayerStats, TileOccupant, Vec2,
+    COMBAT_DAMAGE, COMBAT_HP_REWARD, COMBAT_RETALIATION_DAMAGE, COMBAT_XP_REWARD, Direction,
+    GameCounter, GameSession, PlayerState, PlayerStats, TileOccupant, Vec2,
 };
 use hexed::utils::hex::get_neighbor;
 
@@ -60,6 +60,14 @@ pub fn resolve_combat(
     if attacker_won {
         add_xp(ref attacker_stats, COMBAT_XP_REWARD);
 
+        // Attacker heals on win (capped at max_hp)
+        let hp_headroom = attacker_stats.max_hp - attacker_stats.hp;
+        if hp_headroom < COMBAT_HP_REWARD {
+            attacker_stats.hp = attacker_stats.max_hp;
+        } else {
+            attacker_stats.hp += COMBAT_HP_REWARD;
+        }
+
         if defender_stats.hp <= COMBAT_DAMAGE {
             defender_stats.hp = 0;
             defender_died = true;
@@ -97,7 +105,7 @@ pub fn resolve_combat(
             world.write_model(@defender_state);
         }
     } else {
-        add_xp(ref defender_stats, COMBAT_XP_REWARD);
+        // Defender wins but receives no XP reward (passive participant)
 
         // Attacker takes full combat damage
         if attacker_stats.hp <= COMBAT_DAMAGE {

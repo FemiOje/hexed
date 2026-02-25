@@ -106,7 +106,6 @@ export default function GamePage() {
     // If HP or position changed while we're not moving, another player attacked us.
     const attackDetectionReady = useRef(false);
     const prevHpRef = useRef(0);
-    const prevXpRef = useRef(0);
     const prevPosRef = useRef<{ x: number; y: number } | null>(null);
 
     useEffect(() => {
@@ -119,7 +118,6 @@ export default function GamePage() {
         // First valid tick: seed refs with current values and skip detection
         if (!attackDetectionReady.current) {
             prevHpRef.current = hp;
-            prevXpRef.current = xp;
             prevPosRef.current = blockchainPosition;
             attackDetectionReady.current = true;
             return;
@@ -128,17 +126,14 @@ export default function GamePage() {
         // During our own move the changes are expected — just track and skip
         if (isMovingRef.current) {
             prevHpRef.current = hp;
-            prevXpRef.current = xp;
             prevPosRef.current = blockchainPosition;
             return;
         }
 
         const prevHp = prevHpRef.current;
-        const prevXp = prevXpRef.current;
         const prevPos = prevPosRef.current;
 
         const hpDecreased = prevHp > 0 && hp < prevHp;
-        const xpIncreased = xp > prevXp;
         const posChanged = prevPos && blockchainPosition &&
             (prevPos.x !== blockchainPosition.x || prevPos.y !== blockchainPosition.y);
 
@@ -148,19 +143,14 @@ export default function GamePage() {
             let title: string;
             let detail: string;
 
-            if (posChanged && !xpIncreased) {
+            if (posChanged) {
                 // Defender lost: took full damage, got pushed to attacker's old tile
                 title = "You were attacked!";
                 detail = `An opponent overpowered you. -${hpLost} HP. Your position has changed.`;
-            } else if (!posChanged && xpIncreased) {
-                // Defender won: took retaliation damage, gained XP, stayed put
-                const xpGained = xp - prevXp;
-                title = "You were attacked!";
-                detail = `You fought off an attacker! -${hpLost} HP (retaliation), +${xpGained} XP.`;
             } else {
-                // Fallback
+                // Defender won: took retaliation damage, stayed put (no XP reward)
                 title = "You were attacked!";
-                detail = `Another player attacked you. -${hpLost} HP.`;
+                detail = `You fought off an attacker! -${hpLost} HP (retaliation).`;
             }
 
             toast.custom(
@@ -193,9 +183,8 @@ export default function GamePage() {
 
         // Update refs
         prevHpRef.current = hp;
-        prevXpRef.current = xp;
         prevPosRef.current = blockchainPosition;
-    }, [hp, xp, blockchainPosition, ownershipValid, isSpawned, isDead]);
+    }, [hp, blockchainPosition, ownershipValid, isSpawned, isDead]);
 
     // URL validation and ownership check
     useEffect(() => {

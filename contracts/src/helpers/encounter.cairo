@@ -66,8 +66,8 @@ pub impl EncounterOutcomeImpl of EncounterOutcomeTrait {
 /// Determines encounter outcome from two pre-rolled random values (0-99 each).
 pub fn determine_outcome(encounter_roll: u8, subtype_roll: u8) -> EncounterOutcome {
     if encounter_roll < GIFT_THRESHOLD {
-        // Gift: Heal 40%, Empower 35%, Blessing 25%
-        if subtype_roll < 40 {
+        // Gift: Heal 30%, Empower 45%, Blessing 25%
+        if subtype_roll < 30 {
             EncounterOutcome::Heal
         } else if subtype_roll < 75 {
             EncounterOutcome::Empower
@@ -75,10 +75,10 @@ pub fn determine_outcome(encounter_roll: u8, subtype_roll: u8) -> EncounterOutco
             EncounterOutcome::Blessing
         }
     } else {
-        // Curse: Poison 40%, Drain 40%, Hex 20%
+        // Curse: Poison 40%, Drain 25%, Hex 35%
         if subtype_roll < 40 {
             EncounterOutcome::Poison
-        } else if subtype_roll < 80 {
+        } else if subtype_roll < 65 {
             EncounterOutcome::Drain
         } else {
             EncounterOutcome::Hex
@@ -193,9 +193,7 @@ pub fn resolve_encounter(
 #[cfg(test)]
 mod tests {
     use hexed::models::{
-        BLESSING_HP_AMOUNT, BLESSING_XP_AMOUNT, DRAIN_XP_AMOUNT, EMPOWER_XP_AMOUNT,
-        EXPLORE_XP_REWARD, HEAL_AMOUNT, HEX_HP_AMOUNT, HEX_XP_AMOUNT, MAX_HP, POISON_DAMAGE,
-        PlayerStats, STARTING_HP,
+        EXPLORE_XP_REWARD, HEX_HP_AMOUNT, MAX_HP, POISON_DAMAGE, PlayerStats, STARTING_HP,
     };
     use super::{EncounterOutcome, EncounterOutcomeTrait, apply_encounter, determine_outcome};
 
@@ -246,34 +244,34 @@ mod tests {
 
     #[test]
     fn test_curse_drain() {
-        // encounter_roll >= 65 (curse), 40 <= subtype_roll < 80 (drain)
-        let outcome = determine_outcome(99, 70);
+        // encounter_roll >= 50 (curse), 40 <= subtype_roll < 65 (drain)
+        let outcome = determine_outcome(99, 50);
         assert(outcome == EncounterOutcome::Drain, 'should be Drain');
     }
 
     #[test]
     fn test_curse_hex() {
-        // encounter_roll >= 65 (curse), subtype_roll >= 80 (hex)
+        // encounter_roll >= 50 (curse), subtype_roll >= 65 (hex)
         let outcome = determine_outcome(65, 90);
         assert(outcome == EncounterOutcome::Hex, 'should be Hex');
     }
 
     #[test]
     fn test_boundary_gift_vs_curse() {
-        // encounter_roll = 64 → last gift value
-        let gift = determine_outcome(64, 0);
-        assert(gift.is_gift(), '64 should be gift');
+        // encounter_roll = 49 → last gift value
+        let gift = determine_outcome(49, 0);
+        assert(gift.is_gift(), '49 should be gift');
 
-        // encounter_roll = 65 → first curse value
-        let curse = determine_outcome(65, 0);
-        assert(!curse.is_gift(), '65 should be curse');
+        // encounter_roll = 50 → first curse value
+        let curse = determine_outcome(50, 0);
+        assert(!curse.is_gift(), '50 should be curse');
     }
 
     #[test]
     fn test_subtype_boundaries_gift() {
-        // 39 → Heal, 40 → Empower
-        assert(determine_outcome(0, 39) == EncounterOutcome::Heal, '39 should be Heal');
-        assert(determine_outcome(0, 40) == EncounterOutcome::Empower, '40 should be Empower');
+        // 29 → Heal, 30 → Empower
+        assert(determine_outcome(0, 29) == EncounterOutcome::Heal, '29 should be Heal');
+        assert(determine_outcome(0, 30) == EncounterOutcome::Empower, '30 should be Empower');
         // 74 → Empower, 75 → Blessing
         assert(determine_outcome(0, 74) == EncounterOutcome::Empower, '74 should be Empower');
         assert(determine_outcome(0, 75) == EncounterOutcome::Blessing, '75 should be Blessing');
@@ -286,9 +284,9 @@ mod tests {
         // 39 → Poison, 40 → Drain
         assert(determine_outcome(80, 39) == EncounterOutcome::Poison, '39 should be Poison');
         assert(determine_outcome(80, 40) == EncounterOutcome::Drain, '40 should be Drain');
-        // 79 → Drain, 80 → Hex
-        assert(determine_outcome(80, 79) == EncounterOutcome::Drain, '79 should be Drain');
-        assert(determine_outcome(80, 80) == EncounterOutcome::Hex, '80 should be Hex');
+        // 64 → Drain, 65 → Hex
+        assert(determine_outcome(80, 64) == EncounterOutcome::Drain, '64 should be Drain');
+        assert(determine_outcome(80, 65) == EncounterOutcome::Hex, '65 should be Hex');
         // 99 → Hex (last value)
         assert(determine_outcome(80, 99) == EncounterOutcome::Hex, '99 should be Hex');
     }
@@ -302,7 +300,7 @@ mod tests {
         let mut stats = stats_with(1, 70, 100, 0);
         let died = apply_encounter(ref stats, EncounterOutcome::Heal);
         assert(!died, 'heal should not kill');
-        assert(stats.hp == 70 + HEAL_AMOUNT, 'hp should increase');
+        assert(stats.hp == 80, 'hp should increase by 10');
     }
 
     #[test]
@@ -323,7 +321,7 @@ mod tests {
     fn test_apply_empower() {
         let mut stats = stats_with(1, 100, 100, 50);
         apply_encounter(ref stats, EncounterOutcome::Empower);
-        assert(stats.xp == 50 + EMPOWER_XP_AMOUNT, 'xp should increase');
+        assert(stats.xp == 70, 'xp should increase by 20');
         assert(stats.hp == 100, 'hp unchanged');
     }
 
@@ -332,8 +330,8 @@ mod tests {
         let mut stats = stats_with(1, 80, 100, 10);
         apply_encounter(ref stats, EncounterOutcome::Blessing);
         assert(stats.max_hp == 100, 'max_hp unchanged');
-        assert(stats.hp == 80 + BLESSING_HP_AMOUNT, 'hp should increase');
-        assert(stats.xp == 10 + BLESSING_XP_AMOUNT, 'xp should increase');
+        assert(stats.hp == 85, 'hp should increase by 5');
+        assert(stats.xp == 20, 'xp should increase by 10');
     }
 
     #[test]
@@ -376,7 +374,7 @@ mod tests {
     fn test_apply_drain() {
         let mut stats = stats_with(1, 100, 100, 50);
         apply_encounter(ref stats, EncounterOutcome::Drain);
-        assert(stats.xp == 50 - DRAIN_XP_AMOUNT, 'xp reduced');
+        assert(stats.xp == 40, 'xp reduced by 10');
         assert(stats.hp == 100, 'hp unchanged');
     }
 
@@ -400,8 +398,8 @@ mod tests {
         let died = apply_encounter(ref stats, EncounterOutcome::Hex);
         assert(!died, 'should survive');
         assert(stats.max_hp == 100, 'max_hp unchanged');
-        assert(stats.hp == 80 - HEX_HP_AMOUNT, 'hp reduced');
-        assert(stats.xp == 50 - HEX_XP_AMOUNT, 'xp reduced');
+        assert(stats.hp == 70, 'hp reduced by 10');
+        assert(stats.xp == 40, 'xp reduced by 10');
     }
 
     #[test]
@@ -470,10 +468,10 @@ mod tests {
 
     #[test]
     fn test_explore_xp_then_drain_net_effect() {
-        // Player moves (gets 10 XP from exploration) then gets Drain (-5 XP).
-        // Starting at 10 XP: after drain = 5 XP (net effect of one move + one drain).
+        // Player moves (gets 10 XP from exploration) then gets Drain (-10 XP).
+        // Starting at 10 XP: after drain = 0 XP (net effect of one move + one drain).
         let mut stats = stats_with(1, 100, 100, EXPLORE_XP_REWARD);
         apply_encounter(ref stats, EncounterOutcome::Drain);
-        assert(stats.xp == 5, 'drain after explore = 5');
+        assert(stats.xp == 0, 'drain after explore = 0');
     }
 }

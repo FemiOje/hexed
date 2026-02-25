@@ -4,7 +4,7 @@ description = "hexed"
 cover_uri = "file://assets/cover.png"
 icon_uri = "file://assets/icon.png"
 website = "https://github.com/dojoengine/dojo-starter"
-seed = "hexedseed_2"
+seed = "hexedseed_3"
 
 [world.socials]
 x = "https://x.com/0xjinius"
@@ -17,7 +17,7 @@ default = "hexed"
 
 [env]
 rpc_url = "https://api.cartridge.gg/x/starknet/sepolia"
-world_address = "0x076c2ee5118ae6f4e59ed275f47a12c65aff4ced8fbed6356200df86cb457c80"
+world_address = "0x01a8c69d89cd1833654f5061099256db624348e0dafa13dc5505924bab656f8a"
 account_address = "0x04033264fbcf087ee31b5940908e53956aa718a16fa1e6a51df778be45502c55"
 keystore_path = "./deployments/keystore.json"
 

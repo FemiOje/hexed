@@ -62,6 +62,7 @@ export interface CombatResult {
 	damage_dealt: BigNumberish;
 	retaliation_damage: BigNumberish;
 	xp_awarded: BigNumberish;
+	hp_reward: BigNumberish;
 	attacker_died: boolean;
 	defender_died: boolean;
 }
@@ -204,6 +205,7 @@ export const schema: SchemaType = {
 			damage_dealt: 0,
 			retaliation_damage: 0,
 			xp_awarded: 0,
+			hp_reward: 0,
 			attacker_died: false,
 			defender_died: false,
 		},

@@ -123,27 +123,27 @@ Single contract: `game_systems` in namespace `untitled`.
 ### Combat (XP-Based)
 - Triggered when moving onto an occupied tile with an active defender
 - **Higher XP wins**; equal XP favors the attacker
-- Loser takes `COMBAT_DAMAGE` (10 HP); winner gains `COMBAT_XP_REWARD` (30 XP)
-- If loser's HP reaches 0: game deactivated, tile cleared, `PlayerDied` emitted
-- Attacker moves to defender's tile on win; stays put on loss
+- Attacker wins: +30 XP, +10 HP (`COMBAT_HP_REWARD`), moves to defender's tile. Defender: -10 HP, pushed back
+- Defender wins: Attacker -10 HP. Defender: -5 HP retaliation, no XP reward, stays put
+- If HP reaches 0: game deactivated, tile cleared, `PlayerDied` emitted
 
 ### Encounter System (Gift/Curse)
 - Triggered on **every move to an empty tile** (after movement)
 - **Deterministic RNG**: `poseidon_hash(game_id, position.x, position.y, block_timestamp)`
 - Two rolls derived: `encounter_roll` (0-99) and `subtype_roll` (0-99)
 
-**Probability**: 65% Gift / 35% Curse
+**Probability**: 50% Gift / 50% Curse
 
 **Max HP is fixed at 110 and never changes**
 
 | Type | Outcome | Effect | Subtype Range |
 |------|---------|--------|---------------|
-| Gift | Heal | +20 HP (capped at max_hp) | 0-39 (40%) |
-| Gift | Empower | +25 XP | 40-74 (35%) |
-| Gift | Blessing | +10 HP, +15 XP | 75-99 (25%) |
+| Gift | Heal | +10 HP (capped at max_hp) | 0-29 (30%) |
+| Gift | Empower | +20 XP | 30-74 (45%) |
+| Gift | Blessing | +5 HP, +10 XP | 75-99 (25%) |
 | Curse | Poison | -15 HP (can kill) | 0-39 (40%) |
-| Curse | Drain | -5 XP (floor: 0) | 40-79 (40%) |
-| Curse | Hex | -10 HP, -5 XP (can kill) | 80-99 (20%) |
+| Curse | Drain | -10 XP (floor: 0) | 40-64 (25%) |
+| Curse | Hex | -10 HP, -10 XP (can kill) | 65-99 (35%) |
 
 ### Fog of War
 - After each move/spawn, a 6-bit `neighbors` bitmask reveals which adjacent tiles are occupied
@@ -152,10 +152,10 @@ Single contract: `game_systems` in namespace `untitled`.
 ### Constants (`models.cairo`)
 ```
 STARTING_HP = 100, MAX_HP = 110 (fixed, never changes)
-COMBAT_DAMAGE = 10, COMBAT_XP_REWARD = 30, EXPLORE_XP_REWARD = 10
-GIFT_THRESHOLD = 65 (65% gift, 35% curse)
-HEAL = +20 HP, EMPOWER = +25 XP, BLESSING = +10 HP/+15 XP
-POISON = -15 HP, DRAIN = -5 XP, HEX = -10 HP/-5 XP
+COMBAT_DAMAGE = 10, COMBAT_RETALIATION_DAMAGE = 5, COMBAT_XP_REWARD = 30, COMBAT_HP_REWARD = 10, EXPLORE_XP_REWARD = 10
+GIFT_THRESHOLD = 50 (50% gift, 50% curse)
+HEAL = +10 HP, EMPOWER = +20 XP, BLESSING = +5 HP/+10 XP
+POISON = -15 HP, DRAIN = -10 XP, HEX = -10 HP/-10 XP
 ```
 
 Grid: `GRID_MIN = -10`, `GRID_MAX = 10` (in `constants/constants.cairo`)

@@ -3,9 +3,9 @@ mod tests {
     use dojo::model::{ModelStorage, ModelStorageTest};
     // use dojo::world::WorldStorageTrait;
     use hexed::models::{
-        COMBAT_DAMAGE, COMBAT_RETALIATION_DAMAGE, COMBAT_XP_REWARD, DRAIN_XP_AMOUNT, Direction,
-        GameCounter, GameSession, MAX_HP, MIN_MAX_HP, PlayerState, PlayerStats, STARTING_HP,
-        TileOccupant, Vec2,
+        COMBAT_DAMAGE, COMBAT_HP_REWARD, COMBAT_RETALIATION_DAMAGE, COMBAT_XP_REWARD,
+        DRAIN_XP_AMOUNT, Direction, GameCounter, GameSession, MAX_HP, MIN_MAX_HP, PlayerState,
+        PlayerStats, STARTING_HP, TileOccupant, Vec2,
     };
     use hexed::systems::game::contracts::{ // IGameSystemsDispatcher,
     IGameSystemsDispatcherTrait};
@@ -501,9 +501,9 @@ mod tests {
         let atk_stats: PlayerStats = world.read_model(attacker_id);
         let def_stats: PlayerStats = world.read_model(defender_id);
 
-        // Attacker wins: gets XP, keeps full HP
+        // Attacker wins: gets XP and HP reward (100 + 10 = 110 = MAX_HP)
         assert(atk_stats.xp == COMBAT_XP_REWARD, 'winner xp wrong');
-        assert(atk_stats.hp == STARTING_HP, 'winner hp should be full');
+        assert(atk_stats.hp == STARTING_HP + COMBAT_HP_REWARD, 'winner hp should include reward');
         // Defender loses: no XP, takes damage
         assert(def_stats.xp == 0, 'loser xp should be 0');
         assert(def_stats.hp == STARTING_HP - COMBAT_DAMAGE, 'loser hp wrong');
@@ -714,8 +714,8 @@ mod tests {
         assert(atk_stats.hp <= MAX_HP, 'atk hp overflow');
         assert(def_stats.hp <= MAX_HP, 'def hp overflow');
 
-        // Attacker wins, HP unchanged
-        assert(atk_stats.hp == MAX_HP, 'winner hp changed');
+        // Attacker wins, HP reward capped at MAX_HP
+        assert(atk_stats.hp == MAX_HP, 'winner hp capped at max');
         // Defender survives with reduced HP
         assert(def_stats.hp == MAX_HP - COMBAT_DAMAGE, 'loser hp wrong');
     }
@@ -1097,9 +1097,9 @@ mod tests {
         assert(atk_state.position.x == 0 && atk_state.position.y == 0, 'atk should stay');
         assert(atk_stats.hp == MAX_HP - COMBAT_DAMAGE, 'loser hp wrong');
         assert(atk_stats.xp == 10, 'loser xp should not change');
-        // Defender wins: gets XP reward, takes retaliation damage
+        // Defender wins: no XP reward (passive), takes retaliation damage
         assert(def_stats.hp == MAX_HP - COMBAT_RETALIATION_DAMAGE, 'winner retaliation hp wrong');
-        assert(def_stats.xp == 50 + COMBAT_XP_REWARD, 'winner xp wrong');
+        assert(def_stats.xp == 50, 'defender xp should not change');
     }
 
     #[test]
@@ -1158,9 +1158,9 @@ mod tests {
         let atk_state: PlayerState = world.read_model(attacker_id);
         let def_state: PlayerState = world.read_model(defender_id);
 
-        // Attacker wins: moves to defender's tile, gets XP
+        // Attacker wins: moves to defender's tile, gets XP and HP reward (capped at MAX_HP)
         assert(atk_state.position.x == 1 && atk_state.position.y == 0, 'atk should move');
-        assert(atk_stats.hp == MAX_HP, 'winner hp should be full');
+        assert(atk_stats.hp == MAX_HP, 'winner hp capped at max');
         assert(atk_stats.xp == 100 + COMBAT_XP_REWARD, 'winner xp wrong');
         // Defender loses: swapped to attacker's old position, takes damage
         assert(def_state.position.x == 0 && def_state.position.y == 0, 'def should swap');
@@ -1285,8 +1285,8 @@ mod tests {
         // HP = 1: any Poison(-15), Hex(-10), or Wither (clamps hp to <=max then stays 1)
         // will either kill or leave alive. We need a game_id/position/timestamp combo that
         // produces a curse. We'll try multiple game_ids to find one that gets a lethal curse.
-        // With 35% curse rate and 40% Poison + 10% Hex = 50% of curses are lethal at 1 HP,
-        // probability of lethal encounter = 0.35 * 0.50 = 17.5% per try.
+        // With 50% curse rate and 40% Poison + 35% Hex = 75% of curses are lethal at 1 HP,
+        // probability of lethal encounter = 0.50 * 0.75 = 37.5% per try.
         // We test the death cleanup logic by setting hp=1 and iterating game_ids.
         let mut found_death = false;
         let mut gid: u32 = 50;

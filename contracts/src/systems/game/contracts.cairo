@@ -19,9 +19,9 @@ pub mod game_systems {
     use hexed::helpers::encounter::{EncounterOutcomeIntoU8, EncounterOutcomeTrait};
     use hexed::helpers::{combat, encounter, movement, spawn};
     use hexed::models::{
-        COMBAT_DAMAGE, COMBAT_RETALIATION_DAMAGE, COMBAT_XP_REWARD, GameCounter, GameSession,
-        HighestScore, MAX_CONCURRENT_GAMES, MAX_HP, PlayerState, PlayerStats, STARTING_HP,
-        TileOccupant, Vec2,
+        COMBAT_DAMAGE, COMBAT_HP_REWARD, COMBAT_RETALIATION_DAMAGE, COMBAT_XP_REWARD,
+        GameCounter, GameSession, HighestScore, MAX_CONCURRENT_GAMES, MAX_HP, PlayerState,
+        PlayerStats, STARTING_HP, TileOccupant, Vec2,
     };
     use hexed::utils::hex::{get_neighbor, get_neighbor_occupancy, is_within_bounds};
     use starknet::{ContractAddress, get_caller_address};
@@ -61,6 +61,7 @@ pub mod game_systems {
         pub damage_dealt: u32,
         pub retaliation_damage: u32,
         pub xp_awarded: u32,
+        pub hp_reward: u32,
         pub attacker_died: bool,
         pub defender_died: bool,
     }
@@ -194,7 +195,16 @@ pub mod game_systems {
                             } else {
                                 COMBAT_RETALIATION_DAMAGE
                             },
-                            xp_awarded: COMBAT_XP_REWARD,
+                            xp_awarded: if outcome.attacker_won {
+                                COMBAT_XP_REWARD
+                            } else {
+                                0
+                            },
+                            hp_reward: if outcome.attacker_won {
+                                COMBAT_HP_REWARD
+                            } else {
+                                0
+                            },
                             attacker_died: outcome.attacker_died,
                             defender_died: outcome.defender_died,
                         },
