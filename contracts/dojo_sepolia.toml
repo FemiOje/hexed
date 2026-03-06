@@ -22,4 +22,20 @@ account_address = "0x04033264fbcf087ee31b5940908e53956aa718a16fa1e6a51df778be455
 keystore_path = "./deployments/keystore.json"
 
 [writers]
-"hexed" = ["hexed-game_systems"]
+"hexed" = [
+    "hexed-game_systems", 
+    "hexed-game_token_systems"
+]
+
+[migration]
+order_inits = [
+    "hexed-game_systems",
+    "hexed-game_token_systems"
+]
+
+[init_call_args]
+"hexed-game_token_systems" = [
+    "0x02CA2BAE77044D5646F0fc7Aaa0eDb75BDfA17a5F62635E8fddf930B26D4E764", # account address
+    "0x0142712722e62a38f9c40fcc904610e1a14c70125876ecaaf25d803556734467", # Denshokan sepolia address
+    "1" # Option::None for renderer address
+]

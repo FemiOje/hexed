@@ -45,7 +45,7 @@ pub mod game_token_systems {
             .minigame
             .initializer(
                 creator_address,
-                "Hexed",
+                "Hex'd",
                 "Fully onchain async battle royale with fog of war on a hex grid",
                 "FemiOje",
                 "FemiOje",
