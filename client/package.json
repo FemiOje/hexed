@@ -29,6 +29,7 @@
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
     "@mui/material": "^7.3.7",
+    "@provable-games/denshokan-sdk": "^0.1.12",
     "@radix-ui/react-progress": "^1.1.8",
     "@radix-ui/react-slot": "^1.2.4",
     "@react-three/drei": "^9.114.3",
