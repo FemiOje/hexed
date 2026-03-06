@@ -107,13 +107,10 @@ export const useSystemCalls = () => {
   );
 
   /**
-   * Mint a new game token (EGS flow) and return token_id as hex string.
+   * Mint a new game token (EGS flow) and return the token_id as a hex string.
    *
-   * Calls mint_game on game_token_systems, which internally mints an ERC721
-   * on the FullTokenContract and returns the token_id.
-   *
-   * Note: In the "next" branch of game-components, token_id is a packed felt252
-   * (not a small integer), so it must be handled as a hex string throughout.
+   * Extracts token_id from the ERC721 Transfer event (from=0x0, to=caller).
+   * The hex string is used as-is for contract calls, localStorage, and URL params.
    */
   const mintGame = useCallback(
     async (playerName?: string): Promise<string> => {
@@ -130,7 +127,7 @@ export const useSystemCalls = () => {
       const playerNameOpt =
         encodedName && encodedName !== "0" ? [0, encodedName] : [1];
 
-      // Build calldata matching the deployed mint_game ABI (14 params)
+      // Build calldata matching the deployed mint_game ABI
       const calldata = CallData.compile([
         ...playerNameOpt, // player_name: Option<felt252>
         1, // settings_id: None
@@ -158,43 +155,15 @@ export const useSystemCalls = () => {
 
       const receipt: any = await waitForTransaction(tx.transaction_hash, 0);
 
-      // Extract token_id from events. Based on logs, it appears in event data as a large felt252
+      // Extract token_id from ERC721 Transfer event (from=0x0 → to=us)
       const normalizedTo = num
         .toHex(num.toBigInt(account.address))
         .toLowerCase();
 
-      console.log("Mint receipt events:", receipt?.events);
-
-      // First priority: Look for token_id in event data (appears as large felt252 values)
-      for (const evt of receipt?.events || []) {
-        const data: string[] = evt?.data || [];
-
-        for (const datum of data) {
-          try {
-            const potentialTokenId = num.toBigInt(datum);
-            // Token_id appears to be large values like 0xfb40000000000000069aae31200000000000000000000000080000003
-            if (
-              potentialTokenId > 1n << 200n &&
-              potentialTokenId < 1n << 252n
-            ) {
-              console.log(
-                "Found token_id in event data:",
-                num.toHex(potentialTokenId),
-              );
-              return num.toHex(potentialTokenId);
-            }
-          } catch {
-            continue;
-          }
-        }
-      }
-
-      // Second priority: try to find ERC721 Transfer events (from = 0x0, to = our address)
       for (const evt of receipt?.events || []) {
         const data: string[] = evt?.data || [];
         const keys: string[] = evt?.keys || [];
 
-        // Check if this is a Transfer event (ERC721) - look for from=0x0 and to=our address
         if (keys.length >= 3) {
           const isFromZero = num.toBigInt(keys[1]) === 0n;
           let isToUs = false;
@@ -210,16 +179,11 @@ export const useSystemCalls = () => {
             const low = num.toBigInt(data[0]);
             const high = num.toBigInt(data[1]);
             const tokenId = high * (1n << 128n) + low;
-            console.log(
-              "Found Transfer event, extracted tokenId:",
-              num.toHex(tokenId),
-            );
             return num.toHex(tokenId);
           }
         }
       }
 
-      console.error("No matching event with token_id found");
       throw new Error(
         "Mint succeeded but could not extract token_id from events",
       );
@@ -229,9 +193,8 @@ export const useSystemCalls = () => {
 
   /**
    * Factory function for move action
-   * Moves the player in a specified direction
    *
-   * @param gameId - The game ID (u32)
+   * @param gameId - The token_id hex string (e.g. "0xfb40...")
    * @param direction - Direction enum value (0-5 for hex directions)
    * @returns Contract call object
    */

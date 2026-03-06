@@ -125,8 +125,8 @@ export const GameDirectorProvider = ({ children }: PropsWithChildren) => {
   }, [address, playerAddress]);
 
   /**
-   * Initialize game state from blockchain
-   * Uses single get_game_state call following death-mountain pattern
+   * Initialize game state from blockchain.
+   * Loads saved token_id (hex) from localStorage and fetches game state.
    */
   const initializeGame = useCallback(async () => {
     if (!address) return;
@@ -135,77 +135,52 @@ export const GameDirectorProvider = ({ children }: PropsWithChildren) => {
       setIsInitializing(true);
       clearError();
 
-      // debugLog("Initializing game for player", address);
-
-      // Set player address in store
       initializePlayerState(address);
 
-      // Load game_id from localStorage if available
+      // Load token_id from localStorage
       const storageKey = `hexed_game_id_${address}`;
-      const savedGameId = localStorage.getItem(storageKey);
+      const savedTokenId = localStorage.getItem(storageKey);
 
-      if (savedGameId) {
-        const gameId = savedGameId;
-        if (gameId && gameId !== "0") {
-          // debugLog("Loaded game_id from localStorage", gameId);
-          setGameId(gameId);
+      if (savedTokenId && savedTokenId !== "0") {
+        setGameId(savedTokenId);
 
-          // Fetch complete game state with single RPC call
-          const gameState = await getGameState(gameId);
+        const gameState = await getGameState(savedTokenId);
 
-          if (gameState) {
-            // Validate ownership with normalized addresses
-            const gamePlayer = normalizeAddress(gameState.player);
-            const connectedAddr = normalizeAddress(address);
+        if (gameState) {
+          const gamePlayer = normalizeAddress(gameState.player);
+          const connectedAddr = normalizeAddress(address);
 
-            if (gamePlayer === connectedAddr) {
-              // debugLog("Game state loaded successfully", gameState);
+          if (gamePlayer === connectedAddr) {
+            setPosition({ player: address, vec: gameState.position });
+            setMoves({
+              player: address,
+              last_direction: gameState.last_direction,
+              can_move: gameState.can_move,
+            });
+            setStats(gameState.hp, gameState.max_hp, gameState.xp);
+            setOccupiedNeighbors(gameState.neighbor_occupancy);
+            setIsSpawned(gameState.is_active);
 
-              // Populate store
-              setPosition({
-                player: address,
-                vec: gameState.position,
-              });
-              setMoves({
-                player: address,
-                last_direction: gameState.last_direction,
-                can_move: gameState.can_move,
-              });
-              setStats(gameState.hp, gameState.max_hp, gameState.xp);
-              setOccupiedNeighbors(gameState.neighbor_occupancy);
-              setIsSpawned(gameState.is_active);
-
-              // Detect death: player has a game but is no longer active with 0 HP
-              if (!gameState.is_active && gameState.hp === 0) {
-                setIsDead(true, gameState.xp, "Fell in a previous battle");
-                // Register death score on leaderboard
-                await registerDeathScore(gameState.xp);
-              }
-
-              setIsInitialized(true);
-              // debugLog("Game initialization complete");
-            } else {
-              localStorage.removeItem(storageKey);
-              setGameId(null);
-              setIsSpawned(false);
-              setIsInitialized(true);
+            if (!gameState.is_active && gameState.hp === 0) {
+              setIsDead(true, gameState.xp, "Fell in a previous battle");
+              await registerDeathScore(gameState.xp);
             }
           } else {
+            // Ownership mismatch — stale localStorage entry
+            localStorage.removeItem(storageKey);
+            setGameId(null);
             setIsSpawned(false);
-            setIsInitialized(true);
           }
         } else {
-          // Invalid game ID from storage
           setIsSpawned(false);
-          setIsInitialized(true);
         }
       } else {
-        // No saved game - player needs to spawn
         setIsSpawned(false);
-        setIsInitialized(true);
       }
 
-      // Fetch highest score for leaderboard display (always fetch, regardless of game state)
+      setIsInitialized(true);
+
+      // Always fetch leaderboard
       const highestScore = await getHighestScore();
       if (highestScore) {
         setHighestScore(highestScore);
@@ -287,51 +262,40 @@ export const GameDirectorProvider = ({ children }: PropsWithChildren) => {
   );
 
   /**
-   * Manually refresh game state from blockchain
-   * Uses single get_game_state call following death-mountain pattern
+   * Refresh game state from blockchain via get_game_state(token_id).
    */
   const refreshGameState = useCallback(async () => {
     if (!address || !gameId) return;
 
     try {
-      // debugLog("Manually refreshing game state");
-
-      // Fetch fresh state with single RPC call
       const gameState = await getGameState(gameId);
 
-      if (gameState) {
-        // Validate ownership with normalized addresses
-        const gamePlayer = normalizeAddress(gameState.player);
-        const connectedAddr = normalizeAddress(address);
-
-        if (gamePlayer === connectedAddr) {
-          // Update store
-          setPosition({
-            player: address,
-            vec: gameState.position,
-          });
-          setMoves({
-            player: address,
-            last_direction: gameState.last_direction,
-            can_move: gameState.can_move,
-          });
-          setStats(gameState.hp, gameState.max_hp, gameState.xp);
-          setOccupiedNeighbors(gameState.neighbor_occupancy);
-          setIsSpawned(gameState.is_active);
-
-          // Detect death
-          if (!gameState.is_active && gameState.hp === 0) {
-            setIsDead(true, gameState.xp, "Slain by another player");
-            await registerDeathScore(gameState.xp);
-          }
-        } else {
-          // console.warn("Game ownership mismatch during refresh");
-          // console.warn("Game player:", gameState.player, "→", gamePlayer);
-          // console.warn("Connected:", address, "→", connectedAddr);
-          setError("Game ownership validation failed");
-        }
-      } else {
+      if (!gameState) {
         setError("Failed to load game state");
+        return;
+      }
+
+      const gamePlayer = normalizeAddress(gameState.player);
+      const connectedAddr = normalizeAddress(address);
+
+      if (gamePlayer !== connectedAddr) {
+        setError("Game ownership validation failed");
+        return;
+      }
+
+      setPosition({ player: address, vec: gameState.position });
+      setMoves({
+        player: address,
+        last_direction: gameState.last_direction,
+        can_move: gameState.can_move,
+      });
+      setStats(gameState.hp, gameState.max_hp, gameState.xp);
+      setOccupiedNeighbors(gameState.neighbor_occupancy);
+      setIsSpawned(gameState.is_active);
+
+      if (!gameState.is_active && gameState.hp === 0) {
+        setIsDead(true, gameState.xp, "Slain by another player");
+        await registerDeathScore(gameState.xp);
       }
     } catch (error) {
       console.error("Error refreshing game state:", error);

@@ -27,7 +27,7 @@ interface GameState {
   isDead: boolean;
   deathXp: number;
   deathReason: string | null;
-  gameId: string | null;  // Current active token_id (packed felt252 hex)
+  gameId: string | null;  // EGS token_id as hex string (e.g. "0xfb40...")
 
   // Position state
   position: Position | null;

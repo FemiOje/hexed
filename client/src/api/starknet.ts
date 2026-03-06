@@ -8,7 +8,7 @@
 import { useDynamicConnector } from "@/starknet-provider";
 import { getContractByName } from "@/utils/networkConfig";
 import { Position, Moves, GameState } from "@/types/game";
-import { num, hash } from "starknet";
+import { hash } from "starknet";
 import { feltHexToI32 } from "@/utils/helpers";
 
 /**

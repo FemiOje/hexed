@@ -1,18 +1,36 @@
 /**
  * MyGames Component
  *
- * Displays the player's active game status and provides Resume/Start options
- * Implements Phase 1 of the persistence pattern with localStorage for game_id tracking
+ * Displays the player's active game status and provides Resume/Start options.
+ * Game identity is a single hex token_id stored in localStorage and the Zustand store.
  */
 
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { Box, Button, Card, CardContent, Typography, CircularProgress } from "@mui/material";
+import {
+  Box,
+  Button,
+  Card,
+  CardContent,
+  Typography,
+  CircularProgress,
+} from "@mui/material";
 import { useController } from "../contexts/controller";
 import { useGameActions } from "../dojo/useGameActions";
-import { useIsSpawned, useCurrentPosition, useGameId, useGameStore } from "../stores/gameStore";
+import {
+  useIsSpawned,
+  useCurrentPosition,
+  useGameId,
+  useGameStore,
+} from "../stores/gameStore";
 
 const STORAGE_KEY_PREFIX = "hexed_game_id_";
+
+/** Truncate a hex token_id for display: "0xfb40...0003" */
+function truncateTokenId(tokenId: string): string {
+  if (tokenId.length <= 14) return tokenId;
+  return `${tokenId.slice(0, 8)}...${tokenId.slice(-4)}`;
+}
 
 export default function MyGames() {
   const navigate = useNavigate();
@@ -20,29 +38,24 @@ export default function MyGames() {
   const { handleSpawn, isSpawning } = useGameActions();
   const isSpawned = useIsSpawned();
   const currentPosition = useCurrentPosition();
-  const gameId = useGameId(); // Get from store
+  const gameId = useGameId();
 
-  const [savedGameId, setSavedGameId] = useState<number | null>(null);
+  const [savedGameId, setSavedGameId] = useState<string | null>(null);
   const [isLoadingSaved, setIsLoadingSaved] = useState(true);
 
-  // Load saved game_id from localStorage on mount, or use store value
+  // Load saved game_id from store or localStorage
   useEffect(() => {
     if (address) {
-      // First check store
       if (gameId) {
         setSavedGameId(gameId);
         setIsLoadingSaved(false);
         return;
       }
 
-      // Fall back to localStorage
       const storageKey = `${STORAGE_KEY_PREFIX}${address}`;
       const saved = localStorage.getItem(storageKey);
-      if (saved) {
-        const savedId = parseInt(saved, 10);
-        if (!isNaN(savedId) && savedId > 0) {
-          setSavedGameId(savedId);
-        }
+      if (saved && saved !== "0") {
+        setSavedGameId(saved);
       }
     }
     setIsLoadingSaved(false);
@@ -50,41 +63,40 @@ export default function MyGames() {
 
   // Handle spawn and navigate
   const handleStartGame = useCallback(async () => {
-    if (!address) {
-      return;
-    }
+    if (!address) return;
 
     try {
-
-      // Call spawn - this will capture game_id and save to store + localStorage
       await handleSpawn();
 
-      // Wait a bit for the store to update, then navigate with game_id
+      // Navigate once store is updated
       setTimeout(() => {
-        const currentGameId = useGameStore.getState().gameId;
-        if (currentGameId) {
-          navigate(`/game?id=${currentGameId}`);
-        } else {
-          navigate("/game");
+        const tokenId = useGameStore.getState().gameId;
+        if (tokenId) {
+          navigate(`/game?id=${encodeURIComponent(tokenId)}`);
         }
-      }, 1500);
-
+      }, 500);
     } catch (error) {
-      console.error("❌ Start game failed:", error);
+      console.error("Start game failed:", error);
     }
   }, [handleSpawn, address, navigate]);
 
   // Handle resume
   const handleResume = useCallback(() => {
     if (savedGameId) {
-      navigate(`/game?id=${savedGameId}`);
+      navigate(`/game?id=${encodeURIComponent(savedGameId)}`);
     }
   }, [savedGameId, navigate]);
 
-  // Loading state
   if (isLoadingSaved) {
     return (
-      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", p: 3 }}>
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          p: 3,
+        }}
+      >
         <CircularProgress size={24} />
       </Box>
     );
@@ -98,8 +110,10 @@ export default function MyGames() {
           <Typography sx={styles.cardTitle}>Active Game</Typography>
 
           <Box sx={styles.gameInfo}>
-            <Typography sx={styles.infoLabel}>Game ID:</Typography>
-            <Typography sx={styles.infoValue}>#{savedGameId}</Typography>
+            <Typography sx={styles.infoLabel}>Token ID:</Typography>
+            <Typography sx={styles.infoValue}>
+              {truncateTokenId(savedGameId)}
+            </Typography>
           </Box>
 
           {currentPosition && (
