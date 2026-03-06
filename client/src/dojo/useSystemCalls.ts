@@ -37,12 +37,12 @@ export const useSystemCalls = () => {
   const GAME_SYSTEMS_ADDRESS = getContractByName(
     manifest,
     namespace,
-    "game_systems"
+    "game_systems",
   )?.address;
 
   // Read game_token_systems directly from manifest to preserve init_calldata
   const gameTokenEntry = manifest?.contracts?.find(
-    (c: any) => c.tag === `${namespace}-game_token_systems`
+    (c: any) => c.tag === `${namespace}-game_token_systems`,
   );
   const GAME_TOKEN_SYSTEMS_ADDRESS = gameTokenEntry?.address;
 
@@ -64,21 +64,18 @@ export const useSystemCalls = () => {
     };
   };
 
-  const encodeNameToFelt = useCallback(
-    (name: string): string => {
-      // Match the registerScore encoding so "player name" is a felt252 (not a shortstring)
-      // Keep within 31 bytes to fit in a felt.
-      const trimmed = (name || "").trim();
-      if (!trimmed) return "0";
-      return BigInt(
-        trimmed
-          .slice(0, 31)
-          .split("")
-          .reduce((acc, char) => acc * 256n + BigInt(char.charCodeAt(0)), 0n)
-      ).toString();
-    },
-    []
-  );
+  const encodeNameToFelt = useCallback((name: string): string => {
+    // Match the registerScore encoding so "player name" is a felt252 (not a shortstring)
+    // Keep within 31 bytes to fit in a felt.
+    const trimmed = (name || "").trim();
+    if (!trimmed) return "0";
+    return BigInt(
+      trimmed
+        .slice(0, 31)
+        .split("")
+        .reduce((acc, char) => acc * 256n + BigInt(char.charCodeAt(0)), 0n),
+    ).toString();
+  }, []);
 
   /**
    * Wait for full transaction confirmation
@@ -106,7 +103,7 @@ export const useSystemCalls = () => {
         return waitForTransaction(txHash, retries + 1);
       }
     },
-    [account]
+    [account],
   );
 
   /**
@@ -131,26 +128,24 @@ export const useSystemCalls = () => {
       // player_name Option<felt252>
       const encodedName = playerName ? encodeNameToFelt(playerName) : "0";
       const playerNameOpt =
-        encodedName && encodedName !== "0"
-          ? [0, encodedName]
-          : [1];
+        encodedName && encodedName !== "0" ? [0, encodedName] : [1];
 
       // Build calldata matching the deployed mint_game ABI (14 params)
       const calldata = CallData.compile([
-        ...playerNameOpt,     // player_name: Option<felt252>
-        1,                    // settings_id: None
-        1,                    // start: None
-        1,                    // end: None
-        1,                    // objective_id: None
-        1,                    // context: None
-        1,                    // client_url: None
-        1,                    // renderer_address: None
-        1,                    // skills_address: None
-        account.address,      // to: ContractAddress
-        0,                    // soulbound: false
-        0,                    // paymaster: false
-        0,                    // salt: 0
-        0,                    // metadata: 0
+        ...playerNameOpt, // player_name: Option<felt252>
+        1, // settings_id: None
+        1, // start: None
+        1, // end: None
+        1, // objective_id: None
+        1, // context: None
+        1, // client_url: None
+        1, // renderer_address: None
+        1, // skills_address: None
+        account.address, // to: ContractAddress
+        0, // soulbound: false
+        0, // paymaster: false
+        0, // salt: 0
+        0, // metadata: 0
       ]);
 
       const tx = await account.execute([
@@ -164,7 +159,9 @@ export const useSystemCalls = () => {
       const receipt: any = await waitForTransaction(tx.transaction_hash, 0);
 
       // Extract token_id from events. Based on logs, it appears in event data as a large felt252
-      const normalizedTo = num.toHex(num.toBigInt(account.address)).toLowerCase();
+      const normalizedTo = num
+        .toHex(num.toBigInt(account.address))
+        .toLowerCase();
 
       console.log("Mint receipt events:", receipt?.events);
 
@@ -176,8 +173,14 @@ export const useSystemCalls = () => {
           try {
             const potentialTokenId = num.toBigInt(datum);
             // Token_id appears to be large values like 0xfb40000000000000069aae31200000000000000000000000080000003
-            if (potentialTokenId > (1n << 200n) && potentialTokenId < (1n << 252n)) {
-              console.log("Found token_id in event data:", num.toHex(potentialTokenId));
+            if (
+              potentialTokenId > 1n << 200n &&
+              potentialTokenId < 1n << 252n
+            ) {
+              console.log(
+                "Found token_id in event data:",
+                num.toHex(potentialTokenId),
+              );
               return num.toHex(potentialTokenId);
             }
           } catch {
@@ -196,7 +199,8 @@ export const useSystemCalls = () => {
           const isFromZero = num.toBigInt(keys[1]) === 0n;
           let isToUs = false;
           try {
-            isToUs = num.toHex(num.toBigInt(keys[2])).toLowerCase() === normalizedTo;
+            isToUs =
+              num.toHex(num.toBigInt(keys[2])).toLowerCase() === normalizedTo;
           } catch {
             continue;
           }
@@ -206,21 +210,21 @@ export const useSystemCalls = () => {
             const low = num.toBigInt(data[0]);
             const high = num.toBigInt(data[1]);
             const tokenId = high * (1n << 128n) + low;
-            console.log("Found Transfer event, extracted tokenId:", num.toHex(tokenId));
+            console.log(
+              "Found Transfer event, extracted tokenId:",
+              num.toHex(tokenId),
+            );
             return num.toHex(tokenId);
           }
         }
       }
 
       console.error("No matching event with token_id found");
-      throw new Error("Mint succeeded but could not extract token_id from events");
+      throw new Error(
+        "Mint succeeded but could not extract token_id from events",
+      );
     },
-    [
-      GAME_TOKEN_SYSTEMS_ADDRESS,
-      account,
-      encodeNameToFelt,
-      waitForTransaction,
-    ]
+    [GAME_TOKEN_SYSTEMS_ADDRESS, account, encodeNameToFelt, waitForTransaction],
   );
 
   /**
@@ -256,7 +260,7 @@ export const useSystemCalls = () => {
         : username
             .slice(0, 31)
             .split("")
-            .reduce((acc, char) => acc * 256n + BigInt(char.charCodeAt(0)), 0n)
+            .reduce((acc, char) => acc * 256n + BigInt(char.charCodeAt(0)), 0n),
     ).toString();
 
     return {
@@ -297,7 +301,6 @@ export const useSystemCalls = () => {
 
         // Check if player can move
         if (!latestMoves.can_move) {
-
           if (retries > 9) {
             return true;
           }
@@ -311,7 +314,7 @@ export const useSystemCalls = () => {
 
       return true;
     },
-    [address, getPlayerMoves]
+    [address, getPlayerMoves],
   );
 
   /**
@@ -351,7 +354,7 @@ export const useSystemCalls = () => {
         return waitForPreConfirmedTransaction(txHash, retries + 1);
       }
     },
-    [account]
+    [account],
   );
 
   /**
@@ -375,7 +378,7 @@ export const useSystemCalls = () => {
     async (
       calls: any[],
       forceResetAction: () => void,
-      successCallback: () => void
+      successCallback: () => void,
     ): Promise<GameEvent[]> => {
       try {
         if (!account) {
@@ -395,7 +398,7 @@ export const useSystemCalls = () => {
         // Wait for pre-confirmed receipt (fast UX)
         const receipt: any = await waitForPreConfirmedTransaction(
           tx.transaction_hash,
-          0
+          0,
         );
 
         // Check for revert
@@ -419,7 +422,7 @@ export const useSystemCalls = () => {
         throw error;
       }
     },
-    [account, manifest, waitForPreConfirmedTransaction, waitForGlobalState]
+    [account, manifest, waitForPreConfirmedTransaction, waitForGlobalState],
   );
 
   return {
