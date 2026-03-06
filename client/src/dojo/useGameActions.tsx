@@ -39,7 +39,7 @@ function formatEncounterText(event: GameEvent): string {
 
 export const useGameActions = () => {
   const { address, playerName } = useController();
-  const { spawn, move, registerScore, executeAction, setCurrentMoves } = useSystemCalls();
+  const { mintGame, spawn, move, registerScore, executeAction, setCurrentMoves } = useSystemCalls();
   const { processEvent, refreshGameState } = useGameDirector();
   const { getHighestScore } = useStarknetApi();
 
@@ -73,9 +73,14 @@ export const useGameActions = () => {
       setIsSpawning(true);
       setIsTransactionPending(true);
 
+      // Mint a new EGS game token first (returns token_id)
+      const nameForMint = playerName && playerName.trim().length > 0
+        ? playerName
+        : address;
+      const tokenId = await mintGame(nameForMint);
 
       // Create spawn call
-      const spawnCall = spawn();
+      const spawnCall = spawn(tokenId);
 
       // Execute with callbacks
       const events = await executeAction(
@@ -100,14 +105,15 @@ export const useGameActions = () => {
         if (event.type === "spawned") {
           setIsSpawned(true);
 
-          // Capture and save game_id
-          if (event.gameId) {
-            setGameId(event.gameId);
+          // Capture and save token_id (stored as gameId in UI)
+          const newId = event.gameId ?? tokenId;
+          if (newId) {
+            setGameId(newId);
 
             // Save to localStorage for persistence
             if (address) {
               const storageKey = `hexed_game_id_${address}`;
-              localStorage.setItem(storageKey, event.gameId.toString());
+              localStorage.setItem(storageKey, newId.toString());
             }
           }
 
@@ -129,6 +135,8 @@ export const useGameActions = () => {
     }
   }, [
     address,
+    playerName,
+    mintGame,
     spawn,
     executeAction,
     processEvent,

@@ -25,7 +25,7 @@ export default function GamePage() {
 
     // Get game_id from URL
     const gameIdFromUrl = searchParams.get("id");
-    const gameId = gameIdFromUrl ? parseInt(gameIdFromUrl, 10) : null;
+    const gameId = gameIdFromUrl || null;
 
     // Ownership validation state
     const [isValidatingOwnership, setIsValidatingOwnership] = useState(true);

@@ -154,10 +154,10 @@ export const useStarknetApi = () => {
    * Single RPC call to actions.get_game_state(game_id)
    * Following death-mountain pattern for efficient state restoration
    *
-   * @param gameId - The game ID (u32)
+   * @param gameId - The token_id (packed felt252 hex string)
    * @returns GameState object or null
    */
-  const getGameState = async (gameId: number): Promise<GameState | null> => {
+  const getGameState = async (gameId: string): Promise<GameState | null> => {
     try {
       // Get actions contract address from manifest
       const gameSystemsContract = getContractByName(
@@ -189,7 +189,7 @@ export const useStarknetApi = () => {
             {
               contract_address: gameSystemsContract.address,
               entry_point_selector: selector,
-              calldata: [num.toHex(gameId)],
+              calldata: [gameId],
             },
             "pre_confirmed",
           ],
@@ -208,7 +208,7 @@ export const useStarknetApi = () => {
       // GameState { game_id, player, position.x, position.y, last_direction (Option), can_move, is_active }
       // Option<Direction> serializes as TWO felts: variant (0=Some, 1=None) + value if Some
       let idx = 0;
-      const parsedGameId = parseInt(data.result[idx++], 16);
+      const parsedGameId = data.result[idx++];  // token_id as hex string (packed felt252)
       const player = data.result[idx++];
 
       // Position (Vec2 with i32 values stored as felt252)

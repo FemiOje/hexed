@@ -145,8 +145,8 @@ export const GameDirectorProvider = ({ children }: PropsWithChildren) => {
       const savedGameId = localStorage.getItem(storageKey);
 
       if (savedGameId) {
-        const gameId = parseInt(savedGameId, 10);
-        if (!isNaN(gameId) && gameId > 0) {
+        const gameId = savedGameId;
+        if (gameId && gameId !== "0") {
           // debugLog("Loaded game_id from localStorage", gameId);
           setGameId(gameId);
 

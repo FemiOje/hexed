@@ -27,7 +27,7 @@ interface GameState {
   isDead: boolean;
   deathXp: number;
   deathReason: string | null;
-  gameId: number | null;  // Current active game_id
+  gameId: string | null;  // Current active token_id (packed felt252 hex)
 
   // Position state
   position: Position | null;
@@ -59,7 +59,7 @@ interface GameState {
   setPlayerAddress: (address: string | null) => void;
   setIsSpawned: (spawned: boolean) => void;
   setIsDead: (dead: boolean, xp?: number, reason?: string) => void;
-  setGameId: (gameId: number | null) => void;
+  setGameId: (gameId: string | null) => void;
 
   // Actions - Position Management
   setPosition: (position: Position | null) => void;
@@ -126,7 +126,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   setIsDead: (dead: boolean, xp?: number, reason?: string) =>
     set({ isDead: dead, deathXp: xp ?? 0, deathReason: reason ?? null }),
 
-  setGameId: (gameId: number | null) => set({ gameId }),
+  setGameId: (gameId: string | null) => set({ gameId }),
 
   // Position Management Actions
   setPosition: (position: Position | null) =>

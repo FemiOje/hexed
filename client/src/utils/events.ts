@@ -64,7 +64,7 @@ export function processGameEvent(event: any, manifest: any): GameEvent {
     // data[0] = number of keys
     const numKeys = parseInt(data[0] || "0", 16);
     // data[1..numKeys] = key values
-    const gameId = parseInt(data[1] || "0", 16); // First key is game_id
+    const gameId = data[1] || "0"; // First key is token_id (packed felt252 hex)
     // data[numKeys + 1] = number of values
     const valueOffset = numKeys + 2;
 
@@ -149,7 +149,7 @@ export function processGameEvent(event: any, manifest: any): GameEvent {
     // Key: attacker_game_id
     // Values: defender_game_id, attacker_won (0/1), attacker_position.x, attacker_position.y, defender_position.x, defender_position.y
     if (eventName === "combatresult") {
-      const defenderGameId = parseInt(data[valueOffset] || "0", 16);
+      const defenderGameId = data[valueOffset] || "0";
       const attackerWon = parseInt(data[valueOffset + 1] || "0", 16) !== 0;
       const attackerPos = parseVec2(data, valueOffset + 2);
       const defenderPos = parseVec2(data, valueOffset + 4);

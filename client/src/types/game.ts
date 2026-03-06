@@ -66,7 +66,7 @@ export interface PlayerState {
  * GameState - Return struct from get_game_state view function
  */
 export interface GameState {
-  game_id: number;       // u32
+  game_id: string;       // token_id (packed felt252 hex)
   player: string;        // ContractAddress as hex string
   position: Vec2;
   last_direction: Direction | null;
@@ -83,14 +83,14 @@ export interface GameState {
  */
 export interface GameEvent {
   type: 'spawned' | 'moved' | 'combat_result' | 'position_update' | 'neighbors_revealed' | 'encounter_occurred' | 'unknown';
-  gameId?: number;  // game_id from event (u32)
+  gameId?: string;  // token_id from event (packed felt252 hex)
   player?: string;
   position?: Position;
   direction?: Direction;
   moves?: Moves;
   // Combat fields (only present when type === 'combat_result')
   combatWon?: boolean;
-  defenderGameId?: number;
+  defenderGameId?: string;
   defenderPosition?: Vec2;
   // Neighbor occupancy (only present when type === 'neighbors_revealed')
   neighborsOccupied?: number;  // u8 bitmask
