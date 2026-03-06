@@ -1,8 +1,8 @@
 {
   "world": {
     "class_hash": "0x381899226c066a0262f45d6ab815f89818e0874ec3e66cdf72b5e92d8db4680",
-    "address": "0x1a8c69d89cd1833654f5061099256db624348e0dafa13dc5505924bab656f8a",
-    "seed": "hexedseed_3",
+    "address": "0x3f04a3a4f204c0f808df2e7ba0504fbf8be9bc575cff1289cc88aba6e29c8ae",
+    "seed": "hexedseed_4",
     "name": "hexed",
     "entrypoints": [
       "uuid",
@@ -33,8 +33,8 @@
   },
   "contracts": [
     {
-      "address": "0x3c5bef72bd99df88ae0a81b8284c2cae4e42da8b57874736ffdaf9dcb855d9f",
-      "class_hash": "0x3ca686204bcb4eb9850378757002f7ae785b79ce650e7478cf5d64503178915",
+      "address": "0x2907de47d5934305ee718920e965a7919d7cfafc619c2815a66451e1c80e8a6",
+      "class_hash": "0x7a9f92caffb1af78e7b58138cf8bcafc766f82bcb6a9e0e3925d10813b130e",
       "init_calldata": [],
       "tag": "hexed-game_systems",
       "selector": "0x3bb99aa127029bddf81f8e76230bdfdb13e05a56168222e21cd145b9f69f128",
@@ -44,6 +44,20 @@
         "register_score",
         "upgrade"
       ]
+    },
+    {
+      "address": "0x45b5c13e56e2aa6db10b02ae4abda238487eaf64ab395fef0a1210ea7b86055",
+      "class_hash": "0xee13ab33ededc0ffd7bf8b2f928c225b042256c426d7c1458eb17145e07fa7",
+      "init_calldata": [
+        "0x02CA2BAE77044D5646F0fc7Aaa0eDb75BDfA17a5F62635E8fddf930B26D4E764",
+        "0x0142712722e62a38f9c40fcc904610e1a14c70125876ecaaf25d803556734467"
+      ],
+      "tag": "hexed-game_token_systems",
+      "selector": "0x3a8e6afcbed4f8488034639bbd8a9b5fab95aaca277b7cfae16eed10a9103a8",
+      "systems": [
+        "dojo_init",
+        "upgrade"
+      ]
     }
   ],
   "libraries": [],
@@ -51,8 +65,8 @@
     {
       "members": [
         {
-          "name": "game_id",
-          "type": "core::integer::u32",
+          "name": "token_id",
+          "type": "core::felt252",
           "key": true
         },
         {
@@ -61,15 +75,15 @@
           "key": false
         }
       ],
-      "class_hash": "0x1a82c0ac0c8a419711858ed7867f849a095f72fad5a76f3b25757b1dfd05ffe",
+      "class_hash": "0x1a74ae467b481535f4d2b6b20f533c5f66f832ed7946acc78eff2deadfe0a5",
       "tag": "hexed-GameCounter",
       "selector": "0x66923d944c5969de958f09f7fe5160b187b060eaf051190ea307e620ab9379b"
     },
     {
       "members": [
         {
-          "name": "game_id",
-          "type": "core::integer::u32",
+          "name": "token_id",
+          "type": "core::felt252",
           "key": true
         },
         {
@@ -83,15 +97,15 @@
           "key": false
         }
       ],
-      "class_hash": "0x41204605d567bc67aec86f14b6b89ca4a685c39aa9acb7dff0a954013fa06ae",
+      "class_hash": "0x62361b7b8aa4c5bccf5a503ec51ac312cbee043e4e79de2c2b824e644582949",
       "tag": "hexed-GameSession",
       "selector": "0x2c0b0fabde796e9ce6cb695e57e380ca9323d7bbf315dbb89f0c32aa3d56444"
     },
     {
       "members": [
         {
-          "name": "game_id",
-          "type": "core::integer::u32",
+          "name": "token_id",
+          "type": "core::felt252",
           "key": true
         },
         {
@@ -110,15 +124,15 @@
           "key": false
         }
       ],
-      "class_hash": "0x1d8181daeb111b61533963a0ae5c6ade51ec62b7874a530b2ad61507ae58222",
+      "class_hash": "0x7d58e68670941758921d50834c47cd78911a587b7ff71a8e86957b98da9e90a",
       "tag": "hexed-HighestScore",
       "selector": "0x5c9c7f3f4f52784c9aa88e025f62db8a0146c2c1b386edd880f52a834fbb4b"
     },
     {
       "members": [
         {
-          "name": "game_id",
-          "type": "core::integer::u32",
+          "name": "token_id",
+          "type": "core::felt252",
           "key": true
         },
         {
@@ -137,15 +151,15 @@
           "key": false
         }
       ],
-      "class_hash": "0x6221a1b39955184649577e22741b960eb17294d7a1b7e1670ec132b13943be6",
+      "class_hash": "0x36e4f5f421d20f7049c61b188347a2f37d751187ef1922a01f61cc5b4030c9a",
       "tag": "hexed-PlayerState",
       "selector": "0xf4a3ecd1d15e1b588d4abce213a57decb4cbf3448c872bb8926ec692c94c1f"
     },
     {
       "members": [
         {
-          "name": "game_id",
-          "type": "core::integer::u32",
+          "name": "token_id",
+          "type": "core::felt252",
           "key": true
         },
         {
@@ -164,7 +178,7 @@
           "key": false
         }
       ],
-      "class_hash": "0x3bf0e3662d1280a1d12599e2b3e19004a2042db225238743d2073931d7dcdd7",
+      "class_hash": "0x6b37d4a7a259236afa8b0c939c29870b02ed1f89ba06c77732e853326b9addb",
       "tag": "hexed-PlayerStats",
       "selector": "0x472b85aced0f22b35e9f25dbd7bd96d666e0f840cf2f2b49a000ed1d8f3f958"
     },
@@ -181,12 +195,12 @@
           "key": true
         },
         {
-          "name": "game_id",
-          "type": "core::integer::u32",
+          "name": "token_id",
+          "type": "core::felt252",
           "key": false
         }
       ],
-      "class_hash": "0x657825b0b8d5f81b0122f13825850c4995b5f9231680b9feb09fde1c20f230f",
+      "class_hash": "0x23f760e3bc5037a695e36640d72d1553723a0d20e3a92e712d420fd340a0822",
       "tag": "hexed-TileOccupant",
       "selector": "0x261082bd584c6ae741849585292d3aea7b33867932b926b81ae84f7a5e7b7b5"
     }
@@ -195,13 +209,13 @@
     {
       "members": [
         {
-          "name": "attacker_game_id",
-          "type": "core::integer::u32",
+          "name": "attacker_token_id",
+          "type": "core::felt252",
           "key": true
         },
         {
-          "name": "defender_game_id",
-          "type": "core::integer::u32",
+          "name": "defender_token_id",
+          "type": "core::felt252",
           "key": false
         },
         {
@@ -250,15 +264,15 @@
           "key": false
         }
       ],
-      "class_hash": "0x39c0e33f8ab8ab0d5a6e5a5ac056e4cbea8e04fa6acf72c0a87903a77661aa5",
+      "class_hash": "0x1c3dfc1a09717ca5b7c621a66cc1282226e805670ce6c400bec654c90601cb4",
       "tag": "hexed-CombatResult",
       "selector": "0x10122a649422b626f4bd437c690e498c48ba089d9a8f03a0f51aebc6388f5cb"
     },
     {
       "members": [
         {
-          "name": "game_id",
-          "type": "core::integer::u32",
+          "name": "token_id",
+          "type": "core::felt252",
           "key": true
         },
         {
@@ -292,7 +306,7 @@
           "key": false
         }
       ],
-      "class_hash": "0x510bc4e31b2e76f27e29565c07a09643b251ca00abf310a053f2d90094ad713",
+      "class_hash": "0x7c161d8d796eacaf70d29708ba674be56cf6bb5a0f378e95f4687ac5374184",
       "tag": "hexed-EncounterOccurred",
       "selector": "0x614a3b36c54d27e5a6af94c4a7ecb977407620da98f14ec197a602a062e5721"
     },
@@ -321,8 +335,8 @@
     {
       "members": [
         {
-          "name": "game_id",
-          "type": "core::integer::u32",
+          "name": "token_id",
+          "type": "core::felt252",
           "key": true
         },
         {
@@ -336,15 +350,15 @@
           "key": false
         }
       ],
-      "class_hash": "0x4e3189c3d3e71425209780ea1e2d00949a0dbaf6229f62b54944a89f356019b",
+      "class_hash": "0x5b848b1e9537ec67bd4a244f94610b26acf139f1849582928f90ad44fba049",
       "tag": "hexed-Moved",
       "selector": "0x27114709c38c2c6bf66b388a12a725a1aa302402ecd8b67b01680052510f0e0"
     },
     {
       "members": [
         {
-          "name": "game_id",
-          "type": "core::integer::u32",
+          "name": "token_id",
+          "type": "core::felt252",
           "key": true
         },
         {
@@ -358,20 +372,20 @@
           "key": false
         }
       ],
-      "class_hash": "0x3c41dfc20b9fdc4e869274045fc302326075dc525e6e374414d8def41ee5943",
+      "class_hash": "0x2386d990d063e3ff4de921377fc380bb60d511d9fe50a88d91d048cdc0ce69e",
       "tag": "hexed-NeighborsRevealed",
       "selector": "0x4f9c2b16c04cd20e819f4935770a23560038f99f6d20012ed2858e2bdb5deff"
     },
     {
       "members": [
         {
-          "name": "game_id",
-          "type": "core::integer::u32",
+          "name": "token_id",
+          "type": "core::felt252",
           "key": true
         },
         {
           "name": "killed_by",
-          "type": "core::integer::u32",
+          "type": "core::felt252",
           "key": false
         },
         {
@@ -380,15 +394,15 @@
           "key": false
         }
       ],
-      "class_hash": "0x30d25ec85d660273623446914ab230a9c6e589accb4e6a3a8fec55f4d7b8320",
+      "class_hash": "0x732e9b1e0762624552e6d551a85da285d8fe8de100fa57bf2bf4dfe318a55a4",
       "tag": "hexed-PlayerDied",
       "selector": "0x384fcd8fe8911569f74b8df8726184097d5d608b91550e3562ce5d5eefb3cb7"
     },
     {
       "members": [
         {
-          "name": "game_id",
-          "type": "core::integer::u32",
+          "name": "token_id",
+          "type": "core::felt252",
           "key": true
         },
         {
@@ -402,7 +416,7 @@
           "key": false
         }
       ],
-      "class_hash": "0x1bca0c628fd79bd1702ab5b63d129fb619af7a116fc83d4b6363bed146d2ef1",
+      "class_hash": "0xb8758980eab549a7ebbae75e6a367f72b3befd41fc621b7582a876e9e55909",
       "tag": "hexed-Spawned",
       "selector": "0x1d304899557a569ac95fa06eac7b427c364f09a57d72e13522d622c88da4f94"
     }
@@ -505,6 +519,16 @@
       ]
     },
     {
+      "type": "struct",
+      "name": "core::array::Span::<game_components_interfaces::structs::metagame::GameContext>",
+      "members": [
+        {
+          "name": "snapshot",
+          "type": "@core::array::Array::<game_components_interfaces::structs::metagame::GameContext>"
+        }
+      ]
+    },
+    {
       "type": "enum",
       "name": "core::bool",
       "variants": [
@@ -538,11 +562,81 @@
     },
     {
       "type": "enum",
+      "name": "core::option::Option::<core::byte_array::ByteArray>",
+      "variants": [
+        {
+          "name": "Some",
+          "type": "core::byte_array::ByteArray"
+        },
+        {
+          "name": "None",
+          "type": "()"
+        }
+      ]
+    },
+    {
+      "type": "enum",
+      "name": "core::option::Option::<core::felt252>",
+      "variants": [
+        {
+          "name": "Some",
+          "type": "core::felt252"
+        },
+        {
+          "name": "None",
+          "type": "()"
+        }
+      ]
+    },
+    {
+      "type": "enum",
       "name": "core::option::Option::<core::integer::u32>",
       "variants": [
         {
           "name": "Some",
           "type": "core::integer::u32"
+        },
+        {
+          "name": "None",
+          "type": "()"
+        }
+      ]
+    },
+    {
+      "type": "enum",
+      "name": "core::option::Option::<core::integer::u64>",
+      "variants": [
+        {
+          "name": "Some",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "None",
+          "type": "()"
+        }
+      ]
+    },
+    {
+      "type": "enum",
+      "name": "core::option::Option::<core::starknet::contract_address::ContractAddress>",
+      "variants": [
+        {
+          "name": "Some",
+          "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "None",
+          "type": "()"
+        }
+      ]
+    },
+    {
+      "type": "enum",
+      "name": "core::option::Option::<game_components_interfaces::structs::metagame::GameContextDetails>",
+      "variants": [
+        {
+          "name": "Some",
+          "type": "game_components_interfaces::structs::metagame::GameContextDetails"
         },
         {
           "name": "None",
@@ -2234,9 +2328,18 @@
     {
       "type": "function",
       "name": "dojo_init",
-      "inputs": [],
+      "inputs": [
+        {
+          "name": "creator_address",
+          "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "token_address",
+          "type": "core::starknet::contract_address::ContractAddress"
+        }
+      ],
       "outputs": [],
-      "state_mutability": "view"
+      "state_mutability": "external"
     },
     {
       "type": "function",
@@ -2268,6 +2371,303 @@
       ],
       "outputs": [],
       "state_mutability": "view"
+    },
+    {
+      "type": "event",
+      "name": "game_components_embeddable_game_standard::minigame::minigame_component::MinigameComponent::Event",
+      "kind": "enum",
+      "variants": []
+    },
+    {
+      "type": "interface",
+      "name": "game_components_interfaces::minigame::core::IMinigame",
+      "items": [
+        {
+          "type": "function",
+          "name": "token_address",
+          "inputs": [],
+          "outputs": [
+            {
+              "type": "core::starknet::contract_address::ContractAddress"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "settings_address",
+          "inputs": [],
+          "outputs": [
+            {
+              "type": "core::starknet::contract_address::ContractAddress"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "objectives_address",
+          "inputs": [],
+          "outputs": [
+            {
+              "type": "core::starknet::contract_address::ContractAddress"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "mint_game",
+          "inputs": [
+            {
+              "name": "player_name",
+              "type": "core::option::Option::<core::felt252>"
+            },
+            {
+              "name": "settings_id",
+              "type": "core::option::Option::<core::integer::u32>"
+            },
+            {
+              "name": "start",
+              "type": "core::option::Option::<core::integer::u64>"
+            },
+            {
+              "name": "end",
+              "type": "core::option::Option::<core::integer::u64>"
+            },
+            {
+              "name": "objective_id",
+              "type": "core::option::Option::<core::integer::u32>"
+            },
+            {
+              "name": "context",
+              "type": "core::option::Option::<game_components_interfaces::structs::metagame::GameContextDetails>"
+            },
+            {
+              "name": "client_url",
+              "type": "core::option::Option::<core::byte_array::ByteArray>"
+            },
+            {
+              "name": "renderer_address",
+              "type": "core::option::Option::<core::starknet::contract_address::ContractAddress>"
+            },
+            {
+              "name": "skills_address",
+              "type": "core::option::Option::<core::starknet::contract_address::ContractAddress>"
+            },
+            {
+              "name": "to",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "soulbound",
+              "type": "core::bool"
+            },
+            {
+              "name": "paymaster",
+              "type": "core::bool"
+            },
+            {
+              "name": "salt",
+              "type": "core::integer::u16"
+            },
+            {
+              "name": "metadata",
+              "type": "core::integer::u16"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::felt252"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "mint_game_batch",
+          "inputs": [
+            {
+              "name": "mints",
+              "type": "core::array::Array::<game_components_interfaces::structs::minigame::MintGameParams>"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::array::Array::<core::felt252>"
+            }
+          ],
+          "state_mutability": "view"
+        }
+      ]
+    },
+    {
+      "type": "interface",
+      "name": "game_components_interfaces::minigame::core::IMinigameTokenData",
+      "items": [
+        {
+          "type": "function",
+          "name": "score",
+          "inputs": [
+            {
+              "name": "token_id",
+              "type": "core::felt252"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::integer::u64"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "game_over",
+          "inputs": [
+            {
+              "name": "token_id",
+              "type": "core::felt252"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::bool"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "score_batch",
+          "inputs": [
+            {
+              "name": "token_ids",
+              "type": "core::array::Span::<core::felt252>"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::array::Array::<core::integer::u64>"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "game_over_batch",
+          "inputs": [
+            {
+              "name": "token_ids",
+              "type": "core::array::Span::<core::felt252>"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::array::Array::<core::bool>"
+            }
+          ],
+          "state_mutability": "view"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "game_components_interfaces::structs::metagame::GameContext",
+      "members": [
+        {
+          "name": "name",
+          "type": "core::felt252"
+        },
+        {
+          "name": "value",
+          "type": "core::felt252"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "game_components_interfaces::structs::metagame::GameContextDetails",
+      "members": [
+        {
+          "name": "name",
+          "type": "core::byte_array::ByteArray"
+        },
+        {
+          "name": "description",
+          "type": "core::byte_array::ByteArray"
+        },
+        {
+          "name": "id",
+          "type": "core::option::Option::<core::integer::u32>"
+        },
+        {
+          "name": "context",
+          "type": "core::array::Span::<game_components_interfaces::structs::metagame::GameContext>"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "game_components_interfaces::structs::minigame::MintGameParams",
+      "members": [
+        {
+          "name": "player_name",
+          "type": "core::option::Option::<core::felt252>"
+        },
+        {
+          "name": "settings_id",
+          "type": "core::option::Option::<core::integer::u32>"
+        },
+        {
+          "name": "start",
+          "type": "core::option::Option::<core::integer::u64>"
+        },
+        {
+          "name": "end",
+          "type": "core::option::Option::<core::integer::u64>"
+        },
+        {
+          "name": "objective_id",
+          "type": "core::option::Option::<core::integer::u32>"
+        },
+        {
+          "name": "context",
+          "type": "core::option::Option::<game_components_interfaces::structs::metagame::GameContextDetails>"
+        },
+        {
+          "name": "client_url",
+          "type": "core::option::Option::<core::byte_array::ByteArray>"
+        },
+        {
+          "name": "renderer_address",
+          "type": "core::option::Option::<core::starknet::contract_address::ContractAddress>"
+        },
+        {
+          "name": "skills_address",
+          "type": "core::option::Option::<core::starknet::contract_address::ContractAddress>"
+        },
+        {
+          "name": "to",
+          "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "soulbound",
+          "type": "core::bool"
+        },
+        {
+          "name": "paymaster",
+          "type": "core::bool"
+        },
+        {
+          "name": "salt",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "metadata",
+          "type": "core::integer::u16"
+        }
+      ]
     },
     {
       "type": "enum",
@@ -2304,8 +2704,8 @@
       "name": "hexed::models::GameCounter",
       "members": [
         {
-          "name": "game_id",
-          "type": "core::integer::u32"
+          "name": "token_id",
+          "type": "core::felt252"
         },
         {
           "name": "active_games",
@@ -2328,8 +2728,8 @@
       "name": "hexed::models::GameSession",
       "members": [
         {
-          "name": "game_id",
-          "type": "core::integer::u32"
+          "name": "token_id",
+          "type": "core::felt252"
         },
         {
           "name": "player",
@@ -2360,8 +2760,8 @@
       "name": "hexed::models::GameState",
       "members": [
         {
-          "name": "game_id",
-          "type": "core::integer::u32"
+          "name": "token_id",
+          "type": "core::felt252"
         },
         {
           "name": "player",
@@ -2406,8 +2806,8 @@
       "name": "hexed::models::HighestScore",
       "members": [
         {
-          "name": "game_id",
-          "type": "core::integer::u32"
+          "name": "token_id",
+          "type": "core::felt252"
         },
         {
           "name": "player",
@@ -2446,8 +2846,8 @@
       "name": "hexed::models::PlayerState",
       "members": [
         {
-          "name": "game_id",
-          "type": "core::integer::u32"
+          "name": "token_id",
+          "type": "core::felt252"
         },
         {
           "name": "position",
@@ -2486,8 +2886,8 @@
       "name": "hexed::models::PlayerStats",
       "members": [
         {
-          "name": "game_id",
-          "type": "core::integer::u32"
+          "name": "token_id",
+          "type": "core::felt252"
         },
         {
           "name": "hp",
@@ -2534,8 +2934,8 @@
           "type": "core::integer::i32"
         },
         {
-          "name": "game_id",
-          "type": "core::integer::u32"
+          "name": "token_id",
+          "type": "core::felt252"
         }
       ]
     },
@@ -2544,8 +2944,8 @@
       "name": "hexed::models::TileOccupantValue",
       "members": [
         {
-          "name": "game_id",
-          "type": "core::integer::u32"
+          "name": "token_id",
+          "type": "core::felt252"
         }
       ]
     },
@@ -2606,7 +3006,12 @@
         {
           "type": "function",
           "name": "spawn",
-          "inputs": [],
+          "inputs": [
+            {
+              "name": "token_id",
+              "type": "core::felt252"
+            }
+          ],
           "outputs": [],
           "state_mutability": "external"
         },
@@ -2615,8 +3020,8 @@
           "name": "move",
           "inputs": [
             {
-              "name": "game_id",
-              "type": "core::integer::u32"
+              "name": "token_id",
+              "type": "core::felt252"
             },
             {
               "name": "direction",
@@ -2631,8 +3036,8 @@
           "name": "get_game_state",
           "inputs": [
             {
-              "name": "game_id",
-              "type": "core::integer::u32"
+              "name": "token_id",
+              "type": "core::felt252"
             }
           ],
           "outputs": [
@@ -2680,12 +3085,12 @@
       "name": "hexed::systems::game::contracts::game_systems::CombatResult",
       "members": [
         {
-          "name": "attacker_game_id",
-          "type": "core::integer::u32"
+          "name": "attacker_token_id",
+          "type": "core::felt252"
         },
         {
-          "name": "defender_game_id",
-          "type": "core::integer::u32"
+          "name": "defender_token_id",
+          "type": "core::felt252"
         },
         {
           "name": "attacker_won",
@@ -2730,8 +3135,8 @@
       "name": "hexed::systems::game::contracts::game_systems::CombatResultValue",
       "members": [
         {
-          "name": "defender_game_id",
-          "type": "core::integer::u32"
+          "name": "defender_token_id",
+          "type": "core::felt252"
         },
         {
           "name": "attacker_won",
@@ -2776,8 +3181,8 @@
       "name": "hexed::systems::game::contracts::game_systems::EncounterOccurred",
       "members": [
         {
-          "name": "game_id",
-          "type": "core::integer::u32"
+          "name": "token_id",
+          "type": "core::felt252"
         },
         {
           "name": "is_gift",
@@ -2889,8 +3294,8 @@
       "name": "hexed::systems::game::contracts::game_systems::Moved",
       "members": [
         {
-          "name": "game_id",
-          "type": "core::integer::u32"
+          "name": "token_id",
+          "type": "core::felt252"
         },
         {
           "name": "direction",
@@ -2921,8 +3326,8 @@
       "name": "hexed::systems::game::contracts::game_systems::NeighborsRevealed",
       "members": [
         {
-          "name": "game_id",
-          "type": "core::integer::u32"
+          "name": "token_id",
+          "type": "core::felt252"
         },
         {
           "name": "position",
@@ -2953,12 +3358,12 @@
       "name": "hexed::systems::game::contracts::game_systems::PlayerDied",
       "members": [
         {
-          "name": "game_id",
-          "type": "core::integer::u32"
+          "name": "token_id",
+          "type": "core::felt252"
         },
         {
           "name": "killed_by",
-          "type": "core::integer::u32"
+          "type": "core::felt252"
         },
         {
           "name": "position",
@@ -2972,7 +3377,7 @@
       "members": [
         {
           "name": "killed_by",
-          "type": "core::integer::u32"
+          "type": "core::felt252"
         },
         {
           "name": "position",
@@ -2985,8 +3390,8 @@
       "name": "hexed::systems::game::contracts::game_systems::Spawned",
       "members": [
         {
-          "name": "game_id",
-          "type": "core::integer::u32"
+          "name": "token_id",
+          "type": "core::felt252"
         },
         {
           "name": "player",
@@ -3051,6 +3456,61 @@
     {
       "type": "event",
       "name": "hexed::systems::game::contracts::game_systems::e_Spawned::Event",
+      "kind": "enum",
+      "variants": []
+    },
+    {
+      "type": "event",
+      "name": "hexed::systems::game_token::contracts::game_token_systems::Event",
+      "kind": "enum",
+      "variants": [
+        {
+          "name": "UpgradeableEvent",
+          "type": "dojo::contract::components::upgradeable::upgradeable_cpt::Event",
+          "kind": "nested"
+        },
+        {
+          "name": "WorldProviderEvent",
+          "type": "dojo::contract::components::world_provider::world_provider_cpt::Event",
+          "kind": "nested"
+        },
+        {
+          "name": "MinigameEvent",
+          "type": "game_components_embeddable_game_standard::minigame::minigame_component::MinigameComponent::Event",
+          "kind": "flat"
+        },
+        {
+          "name": "SRC5Event",
+          "type": "openzeppelin_introspection::src5::SRC5Component::Event",
+          "kind": "flat"
+        }
+      ]
+    },
+    {
+      "type": "interface",
+      "name": "openzeppelin_interfaces::introspection::ISRC5",
+      "items": [
+        {
+          "type": "function",
+          "name": "supports_interface",
+          "inputs": [
+            {
+              "name": "interface_id",
+              "type": "core::felt252"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::bool"
+            }
+          ],
+          "state_mutability": "view"
+        }
+      ]
+    },
+    {
+      "type": "event",
+      "name": "openzeppelin_introspection::src5::SRC5Component::Event",
       "kind": "enum",
       "variants": []
     }

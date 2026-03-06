@@ -4,7 +4,7 @@ description = "hexed"
 cover_uri = "file://assets/cover.png"
 icon_uri = "file://assets/icon.png"
 website = "https://github.com/dojoengine/dojo-starter"
-seed = "hexedseed_3"
+seed = "hexedseed_4"
 
 [world.socials]
 x = "https://x.com/0xjinius"
@@ -17,7 +17,7 @@ default = "hexed"
 
 [env]
 rpc_url = "https://api.cartridge.gg/x/starknet/sepolia"
-world_address = "0x01a8c69d89cd1833654f5061099256db624348e0dafa13dc5505924bab656f8a"
+world_address = "0x03f04a3a4f204c0f808df2e7ba0504fbf8be9bc575cff1289cc88aba6e29c8ae"
 account_address = "0x04033264fbcf087ee31b5940908e53956aa718a16fa1e6a51df778be45502c55"
 keystore_path = "./deployments/keystore.json"
 
@@ -37,5 +37,4 @@ order_inits = [
 "hexed-game_token_systems" = [
     "0x02CA2BAE77044D5646F0fc7Aaa0eDb75BDfA17a5F62635E8fddf930B26D4E764", # account address
     "0x0142712722e62a38f9c40fcc904610e1a14c70125876ecaaf25d803556734467", # Denshokan sepolia address
-    "1" # Option::None for renderer address
 ]
