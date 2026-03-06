@@ -1,12 +1,12 @@
 #[dojo::contract]
 pub mod game_token_systems {
-    use game_components_embeddable_game_standard::minigame::interface::IMinigameTokenData;
-    use game_components_embeddable_game_standard::minigame::minigame_component::MinigameComponent;
-    use openzeppelin_introspection::src5::SRC5Component;
-    use hexed::constants::constants::DEFAULT_NS;
-    use hexed::models::{GameSession, PlayerStats};
     use dojo::model::ModelStorage;
     use dojo::world::WorldStorage;
+    use game_components_embeddable_game_standard::minigame::interface::IMinigameTokenData;
+    use game_components_embeddable_game_standard::minigame::minigame_component::MinigameComponent;
+    use hexed::constants::constants::DEFAULT_NS;
+    use hexed::models::{GameSession, PlayerStats};
+    use openzeppelin_introspection::src5::SRC5Component;
     use starknet::ContractAddress;
 
     component!(path: MinigameComponent, storage: minigame, event: MinigameEvent);
@@ -37,9 +37,7 @@ pub mod game_token_systems {
     }
 
     fn dojo_init(
-        ref self: ContractState,
-        creator_address: ContractAddress,
-        token_address: ContractAddress,
+        ref self: ContractState, creator_address: ContractAddress, token_address: ContractAddress,
     ) {
         self
             .minigame
@@ -59,7 +57,7 @@ pub mod game_token_systems {
                 token_address,
                 Option::None, // royalty_fraction
                 Option::None, // skills_address
-                0, // version
+                0 // version
             );
     }
 
@@ -84,7 +82,7 @@ pub mod game_token_systems {
             for token_id in token_ids {
                 let stats: PlayerStats = world.read_model(*token_id);
                 results.append(stats.xp.into());
-            };
+            }
             results
         }
 
@@ -94,7 +92,7 @@ pub mod game_token_systems {
             for token_id in token_ids {
                 let session: GameSession = world.read_model(*token_id);
                 results.append(!session.is_active);
-            };
+            }
             results
         }
     }

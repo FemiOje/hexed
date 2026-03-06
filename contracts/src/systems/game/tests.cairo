@@ -294,7 +294,9 @@ mod tests {
 
         let player_id: felt252 = 10;
         world
-            .write_model_test(@GameSession { token_id: player_id, player: caller, is_active: true });
+            .write_model_test(
+                @GameSession { token_id: player_id, player: caller, is_active: true },
+            );
         world
             .write_model_test(
                 @PlayerState {
@@ -646,9 +648,7 @@ mod tests {
 
         let dead_id: felt252 = 42;
         world
-            .write_model_test(
-                @GameSession { token_id: dead_id, player: caller, is_active: false },
-            );
+            .write_model_test(@GameSession { token_id: dead_id, player: caller, is_active: false });
         world
             .write_model_test(
                 @PlayerState {
@@ -770,7 +770,9 @@ mod tests {
         // Player at (0, 0)
         let player_id: felt252 = 10;
         world
-            .write_model_test(@GameSession { token_id: player_id, player: caller, is_active: true });
+            .write_model_test(
+                @GameSession { token_id: player_id, player: caller, is_active: true },
+            );
         world
             .write_model_test(
                 @PlayerState {
@@ -818,7 +820,9 @@ mod tests {
         // Player at (0, 0)
         let player_id: felt252 = 10;
         world
-            .write_model_test(@GameSession { token_id: player_id, player: caller, is_active: true });
+            .write_model_test(
+                @GameSession { token_id: player_id, player: caller, is_active: true },
+            );
         world
             .write_model_test(
                 @PlayerState {
@@ -865,7 +869,9 @@ mod tests {
         // Player at (0, 0)
         let player_id: felt252 = 10;
         world
-            .write_model_test(@GameSession { token_id: player_id, player: caller, is_active: true });
+            .write_model_test(
+                @GameSession { token_id: player_id, player: caller, is_active: true },
+            );
         world
             .write_model_test(
                 @PlayerState {
@@ -903,7 +909,9 @@ mod tests {
         // Player at (0, 0)
         let player_id: felt252 = 10;
         world
-            .write_model_test(@GameSession { token_id: player_id, player: caller, is_active: true });
+            .write_model_test(
+                @GameSession { token_id: player_id, player: caller, is_active: true },
+            );
         world
             .write_model_test(
                 @PlayerState {
@@ -1306,7 +1314,7 @@ mod tests {
                 found_death = true;
             }
             gid += 1;
-        };
+        }
         assert(found_death, 'should find lethal encounter');
     }
 

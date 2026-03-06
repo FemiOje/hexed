@@ -85,12 +85,8 @@ pub fn resolve_combat(
 
             state.position = next_vec;
             state.last_direction = Option::Some(direction);
-            world
-                .write_model(@TileOccupant { x: next_vec.x, y: next_vec.y, token_id });
-            world
-                .write_model(
-                    @TileOccupant { x: old_position.x, y: old_position.y, token_id: 0 },
-                );
+            world.write_model(@TileOccupant { x: next_vec.x, y: next_vec.y, token_id });
+            world.write_model(@TileOccupant { x: old_position.x, y: old_position.y, token_id: 0 });
             world.write_model(@state);
         } else {
             let mut defender_state: PlayerState = world.read_model(defender_token_id);
@@ -99,8 +95,7 @@ pub fn resolve_combat(
             state.last_direction = Option::Some(direction);
             defender_state.position = old_position;
 
-            world
-                .write_model(@TileOccupant { x: next_vec.x, y: next_vec.y, token_id });
+            world.write_model(@TileOccupant { x: next_vec.x, y: next_vec.y, token_id });
             world
                 .write_model(
                     @TileOccupant {

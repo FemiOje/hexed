@@ -19,7 +19,7 @@ pub mod game_systems {
         IMinigameDispatcher, IMinigameDispatcherTrait,
     };
     use game_components_embeddable_game_standard::minigame::minigame::{
-        assert_token_ownership, pre_action, post_action,
+        assert_token_ownership, post_action, pre_action,
     };
     use hexed::constants::constants::DEFAULT_NS;
     use hexed::helpers::encounter::{EncounterOutcomeIntoU8, EncounterOutcomeTrait};
@@ -287,7 +287,8 @@ pub mod game_systems {
                 } else {
                     // Only reveal neighbors if player is alive
                     let neighbors = get_neighbor_occupancy(ref world, next_vec);
-                    world.emit_event(@NeighborsRevealed { token_id, position: next_vec, neighbors });
+                    world
+                        .emit_event(@NeighborsRevealed { token_id, position: next_vec, neighbors });
                 }
             }
 
@@ -358,7 +359,9 @@ pub mod game_systems {
         fn try_get_token_address(self: @ContractState) -> Option<ContractAddress> {
             let world = self.world_default();
             match world.dns(@"game_token_systems") {
-                Option::Some((game_token_addr, _)) => {
+                Option::Some((
+                    game_token_addr, _,
+                )) => {
                     let minigame = IMinigameDispatcher { contract_address: game_token_addr };
                     Option::Some(minigame.token_address())
                 },
