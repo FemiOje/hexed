@@ -5,6 +5,9 @@ pub mod systems {
         #[cfg(test)]
         pub mod tests;
     }
+    pub mod game_token {
+        pub mod contracts;
+    }
 }
 
 pub mod helpers {

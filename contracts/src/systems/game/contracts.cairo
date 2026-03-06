@@ -3,7 +3,7 @@ use hexed::models::{Direction, GameState};
 
 #[starknet::interface]
 pub trait IGameSystems<T> {
-    fn spawn(ref self: T);
+    fn spawn(ref self: T, token_id: felt252);
     fn move(ref self: T, token_id: felt252, direction: Direction);
     fn get_game_state(self: @T, token_id: felt252) -> GameState;
     fn register_score(ref self: T, player: starknet::ContractAddress, username: felt252, xp: u32);
@@ -14,7 +14,13 @@ pub trait IGameSystems<T> {
 pub mod game_systems {
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
-    use dojo::world::IWorldDispatcherTrait;
+    use dojo::world::WorldStorageTrait;
+    use game_components_embeddable_game_standard::minigame::interface::{
+        IMinigameDispatcher, IMinigameDispatcherTrait,
+    };
+    use game_components_embeddable_game_standard::minigame::minigame::{
+        assert_token_ownership, pre_action, post_action,
+    };
     use hexed::constants::constants::DEFAULT_NS;
     use hexed::helpers::encounter::{EncounterOutcomeIntoU8, EncounterOutcomeTrait};
     use hexed::helpers::{combat, encounter, movement, spawn};
@@ -112,7 +118,14 @@ pub mod game_systems {
 
     #[abi(embed_v0)]
     impl GameSystemsImpl of IGameSystems<ContractState> {
-        fn spawn(ref self: ContractState) {
+        fn spawn(ref self: ContractState, token_id: felt252) {
+            // EGS hooks: ownership + playability (if token contract is configured)
+            let token_address = self.try_get_token_address();
+            if let Option::Some(addr) = token_address {
+                assert_token_ownership(addr, token_id);
+                pre_action(addr, token_id);
+            }
+
             let mut world = self.world_default();
             let player = get_caller_address();
 
@@ -122,10 +135,7 @@ pub mod game_systems {
             counter.active_games += 1;
             world.write_model(@counter);
 
-            // Generate unique token_id (offset by 1 so 0 = "no game")
-            let token_id: felt252 = (world.dispatcher.uuid() + 1).into();
-
-            // Create session
+            // Create session (token_id provided by EGS minting)
             world.write_model(@GameSession { token_id, player, is_active: true });
 
             // Generate random spawn position
@@ -151,9 +161,21 @@ pub mod game_systems {
             // Reveal occupied neighbors
             let neighbors = get_neighbor_occupancy(ref world, position);
             world.emit_event(@NeighborsRevealed { token_id, position, neighbors });
+
+            // Sync state to token (if token contract is configured)
+            if let Option::Some(addr) = token_address {
+                post_action(addr, token_id);
+            }
         }
 
         fn move(ref self: ContractState, token_id: felt252, direction: Direction) {
+            // EGS hooks: ownership + playability (if token contract is configured)
+            let token_address = self.try_get_token_address();
+            if let Option::Some(addr) = token_address {
+                assert_token_ownership(addr, token_id);
+                pre_action(addr, token_id);
+            }
+
             let mut world = self.world_default();
             let player = get_caller_address();
 
@@ -268,6 +290,11 @@ pub mod game_systems {
                     world.emit_event(@NeighborsRevealed { token_id, position: next_vec, neighbors });
                 }
             }
+
+            // Sync state to token (if token contract is configured)
+            if let Option::Some(addr) = token_address {
+                post_action(addr, token_id);
+            }
         }
 
         fn get_game_state(self: @ContractState, token_id: felt252) -> GameState {
@@ -324,6 +351,19 @@ pub mod game_systems {
     impl InternalImpl of InternalTrait {
         fn world_default(self: @ContractState) -> dojo::world::WorldStorage {
             self.world(@DEFAULT_NS())
+        }
+
+        /// Resolve token address via game_token_systems → MinigameComponent → token_address.
+        /// Returns None if game_token_systems is not deployed (e.g., in test environment).
+        fn try_get_token_address(self: @ContractState) -> Option<ContractAddress> {
+            let world = self.world_default();
+            match world.dns(@"game_token_systems") {
+                Option::Some((game_token_addr, _)) => {
+                    let minigame = IMinigameDispatcher { contract_address: game_token_addr };
+                    Option::Some(minigame.token_address())
+                },
+                Option::None => Option::None,
+            }
         }
     }
 }

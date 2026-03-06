@@ -47,8 +47,8 @@ mod tests {
         let caller = PLAYER_ADDR();
         let (world, game) = deploy_world();
 
-        game.spawn();
         let token_id: felt252 = 1;
+        game.spawn(token_id);
 
         let session: GameSession = world.read_model(token_id);
         assert(session.player == caller, 'Session player wrong');
@@ -68,11 +68,13 @@ mod tests {
         let (world, game) = deploy_world();
 
         starknet::testing::set_contract_address(caller1);
-        game.spawn();
+        let token_id1: felt252 = 1;
+        game.spawn(token_id1);
         let state1: PlayerState = world.read_model(1);
 
         starknet::testing::set_contract_address(caller2);
-        game.spawn();
+        let token_id2: felt252 = 2;
+        game.spawn(token_id2);
         let state2: PlayerState = world.read_model(2);
 
         assert(is_within_bounds(state1.position), 'Player 1 out of bounds');
@@ -94,8 +96,8 @@ mod tests {
     fn test_spawn_writes_tile_occupant() {
         let (world, game) = deploy_world();
 
-        game.spawn();
         let token_id: felt252 = 1;
+        game.spawn(token_id);
 
         let state: PlayerState = world.read_model(token_id);
         let tile: TileOccupant = world.read_model((state.position.x, state.position.y));
@@ -107,8 +109,8 @@ mod tests {
     fn test_spawn_initializes_stats() {
         let (world, game) = deploy_world();
 
-        game.spawn();
         let token_id: felt252 = 1;
+        game.spawn(token_id);
 
         let stats: PlayerStats = world.read_model(token_id);
         assert(stats.hp == STARTING_HP, 'hp should be STARTING_HP');
@@ -126,8 +128,8 @@ mod tests {
     fn test_move_east() {
         let (world, game) = deploy_world();
 
-        game.spawn();
         let token_id: felt252 = 1;
+        game.spawn(token_id);
         let initial_state: PlayerState = world.read_model(token_id);
 
         game.move(token_id, Direction::East);
@@ -340,8 +342,8 @@ mod tests {
         let (world, game) = deploy_world();
 
         starknet::testing::set_contract_address(caller);
-        game.spawn();
         let token_id: felt252 = 1;
+        game.spawn(token_id);
 
         let state: PlayerState = world.read_model(token_id);
         let game_state = game.get_game_state(token_id);
@@ -361,7 +363,8 @@ mod tests {
         let (_, game) = deploy_world();
 
         starknet::testing::set_contract_address(caller);
-        game.spawn();
+        let token_id: felt252 = 1;
+        game.spawn(token_id);
 
         let game_state = game.get_game_state(1);
 
@@ -1414,7 +1417,8 @@ mod tests {
         assert(counter.active_games == 0, 'limit: start at 0');
 
         // Spawn a player
-        game.spawn();
+        let token_id: felt252 = 1;
+        game.spawn(token_id);
 
         // Counter should increment to 1
         let counter: GameCounter = world.read_model(0);
@@ -1431,12 +1435,14 @@ mod tests {
         assert(counter.active_games == 0, 'limit: start 0');
 
         // Spawn first player
-        game.spawn();
+        let token_id1: felt252 = 1;
+        game.spawn(token_id1);
         let counter: GameCounter = world.read_model(0);
         assert(counter.active_games == 1, 'limit: 1st spawn');
 
         // Spawn second player
-        game.spawn();
+        let token_id2: felt252 = 2;
+        game.spawn(token_id2);
         let counter: GameCounter = world.read_model(0);
         assert(counter.active_games == 2, 'limit: 2nd spawn');
     }
