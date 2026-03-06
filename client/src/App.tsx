@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
 import { Toaster } from "react-hot-toast";
+import { DenshokanProvider } from "@provable-games/denshokan-sdk/react";
 import "./App.css";
 import { ControllerProvider } from "./contexts/controller";
 import { GameDirectorProvider } from "./contexts/GameDirector";
@@ -25,6 +26,7 @@ function App() {
     return (
         <BrowserRouter>
             <ThemeProvider theme={theme}>
+                <DenshokanProvider config={{ chain: "sepolia" }}>
                 <ControllerProvider>
                     <SoundProvider>
                     <GameDirectorProvider>
@@ -49,6 +51,7 @@ function App() {
                     </GameDirectorProvider>
                     </SoundProvider>
                 </ControllerProvider>
+                </DenshokanProvider>
             </ThemeProvider>
         </BrowserRouter>
     );

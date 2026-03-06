@@ -1,19 +1,21 @@
+world_address = "0x03f04a3a4f204c0f808df2e7ba0504fbf8be9bc575cff1289cc88aba6e29c8ae"
 rpc = "https://api.cartridge.gg/x/starknet/sepolia"
-world_address = "0x01a8c69d89cd1833654f5061099256db624348e0dafa13dc5505924bab656f8a"
 
 [indexing]
+pending = true
+blocks_chunk_size = 100
 contracts = [
-  "erc20:0x49d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7", # ETH fee token
-  "erc20:0x4718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d", # STRK fee token
+  # "erc20:0x49d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7", # ETH fee token
+  # "erc20:0x4718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d", # STRK fee token
+  "erc721:0x0142712722e62a38f9c40fcc904610e1a14c70125876ecaaf25d803556734467", # Denshokan
 ]
 
 [sql]
 historical = [
-  "hexed-Moves", 
-  "hexed-DirectionsAvailable", 
-  "hexed-Position", 
-  "hexed-PositionCount",
-  "hexed-Moved", 
-  "hexed-Spawned", 
+  # "hexed-Moves", 
+  # "hexed-DirectionsAvailable", 
+  # "hexed-Position", 
+  # "hexed-PositionCount",
+  # "hexed-Moved", 
+  # "hexed-Spawned", 
 ]
-

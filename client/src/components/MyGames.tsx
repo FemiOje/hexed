@@ -1,30 +1,27 @@
 /**
  * MyGames Component
  *
- * Displays the player's active game status and provides Resume/Start options.
- * Game identity is a single hex token_id stored in localStorage and the Zustand store.
+ * Displays all of the player's game tokens in a tabbed list (Active / Dead).
+ * Uses the Denshokan SDK to discover tokens, following the death-mountain pattern.
  */
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Box,
   Button,
-  Card,
-  CardContent,
+  Tab,
+  Tabs,
   Typography,
   CircularProgress,
 } from "@mui/material";
+import { useTokens } from "@provable-games/denshokan-sdk/react";
 import { useController } from "../contexts/controller";
 import { useGameActions } from "../dojo/useGameActions";
-import {
-  useIsSpawned,
-  useCurrentPosition,
-  useGameId,
-  useGameStore,
-} from "../stores/gameStore";
-
-const STORAGE_KEY_PREFIX = "hexed_game_id_";
+import { useGameStore } from "../stores/gameStore";
+import { useDynamicConnector } from "../starknet-provider";
+import { getContractByName } from "../utils/networkConfig";
+import { addAddressPadding } from "starknet";
 
 /** Truncate a hex token_id for display: "0xfb40...0003" */
 function truncateTokenId(tokenId: string): string {
@@ -36,39 +33,42 @@ export default function MyGames() {
   const navigate = useNavigate();
   const { address } = useController();
   const { handleSpawn, isSpawning } = useGameActions();
-  const isSpawned = useIsSpawned();
-  const currentPosition = useCurrentPosition();
-  const gameId = useGameId();
+  const { currentNetworkConfig } = useDynamicConnector();
 
-  const [savedGameId, setSavedGameId] = useState<string | null>(null);
-  const [isLoadingSaved, setIsLoadingSaved] = useState(true);
+  const [activeTab, setActiveTab] = useState(0);
 
-  // Load saved game_id from store or localStorage
-  useEffect(() => {
-    if (address) {
-      if (gameId) {
-        setSavedGameId(gameId);
-        setIsLoadingSaved(false);
-        return;
-      }
+  // Get game_token_systems address from manifest
+  const gameAddress = getContractByName(
+    currentNetworkConfig.manifest,
+    currentNetworkConfig.namespace,
+    "game_token_systems",
+  )?.address;
 
-      const storageKey = `${STORAGE_KEY_PREFIX}${address}`;
-      const saved = localStorage.getItem(storageKey);
-      if (saved && saved !== "0") {
-        setSavedGameId(saved);
-      }
-    }
-    setIsLoadingSaved(false);
-  }, [address, gameId]);
+  // Fetch player's tokens from Denshokan
+  const { data: tokensData, isLoading } = useTokens(
+    address
+      ? {
+          owner: addAddressPadding(address),
+          gameAddress: gameAddress ? addAddressPadding(gameAddress) : undefined,
+        }
+      : undefined,
+  );
 
-  // Handle spawn and navigate
+  const tokens = tokensData?.data || [];
+
+  // Filter and sort by tab
+  const filteredTokens = tokens
+    .filter((token) => (activeTab === 0 ? !token.gameOver : token.gameOver))
+    .sort(
+      (a, b) =>
+        new Date(b.mintedAt).getTime() - new Date(a.mintedAt).getTime(),
+    );
+
+  // Handle start game
   const handleStartGame = useCallback(async () => {
     if (!address) return;
-
     try {
       await handleSpawn();
-
-      // Navigate once store is updated
       setTimeout(() => {
         const tokenId = useGameStore.getState().gameId;
         if (tokenId) {
@@ -81,143 +81,214 @@ export default function MyGames() {
   }, [handleSpawn, address, navigate]);
 
   // Handle resume
-  const handleResume = useCallback(() => {
-    if (savedGameId) {
-      navigate(`/game?id=${encodeURIComponent(savedGameId)}`);
-    }
-  }, [savedGameId, navigate]);
+  const handleResumeGame = useCallback(
+    (tokenId: string) => {
+      navigate(`/game?id=${encodeURIComponent(tokenId)}`);
+    },
+    [navigate],
+  );
 
-  if (isLoadingSaved) {
-    return (
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          p: 3,
-        }}
-      >
-        <CircularProgress size={24} />
-      </Box>
-    );
-  }
-
-  // Has saved game - show resume option
-  if (savedGameId && isSpawned) {
-    return (
-      <Card sx={styles.card}>
-        <CardContent>
-          <Typography sx={styles.cardTitle}>Active Game</Typography>
-
-          <Box sx={styles.gameInfo}>
-            <Typography sx={styles.infoLabel}>Token ID:</Typography>
-            <Typography sx={styles.infoValue}>
-              {truncateTokenId(savedGameId)}
-            </Typography>
-          </Box>
-
-          {currentPosition && (
-            <Box sx={styles.gameInfo}>
-              <Typography sx={styles.infoLabel}>Position:</Typography>
-              <Typography sx={styles.infoValue}>
-                ({currentPosition.x}, {currentPosition.y})
-              </Typography>
-            </Box>
-          )}
-
-          <Button
-            variant="contained"
-            size="large"
-            onClick={handleResume}
-            sx={styles.resumeButton}
-          >
-            Resume Game
-          </Button>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  // No active game - show start button
   return (
-    <Box sx={{ marginTop: 2, display: "flex", justifyContent: "center" }}>
-      <Button
-        variant="outlined"
-        size="large"
-        onClick={handleStartGame}
-        disabled={isSpawning}
-        sx={styles.startButton}
-      >
-        {isSpawning ? "Spawning Player..." : "Start Game"}
-      </Button>
+    <Box sx={{ width: "100%" }}>
+      {/* Tabs */}
+      <Box sx={styles.tabsContainer}>
+        <Tabs
+          value={activeTab}
+          onChange={(_, v) => setActiveTab(v)}
+          variant="fullWidth"
+          sx={styles.tabs}
+        >
+          <Tab label="Active" sx={styles.tab} />
+          <Tab label="Dead" sx={styles.tab} />
+        </Tabs>
+      </Box>
+
+      {/* List */}
+      <Box sx={styles.listContainer}>
+        {isLoading ? (
+          <Box sx={styles.centered}>
+            <CircularProgress size={24} sx={{ color: "rgba(68, 204, 68, 0.6)" }} />
+          </Box>
+        ) : filteredTokens.length === 0 ? (
+          <Typography sx={styles.emptyText}>
+            No {activeTab === 0 ? "active" : "dead"} games
+          </Typography>
+        ) : (
+          filteredTokens.map((token) => (
+            <Box key={token.tokenId} sx={styles.listItem}>
+              <Box sx={styles.tokenInfo}>
+                <Typography sx={styles.tokenName}>
+                  {token.playerName || truncateTokenId(token.tokenId)}
+                </Typography>
+                <Typography sx={styles.tokenId}>
+                  {truncateTokenId(token.tokenId)}
+                </Typography>
+              </Box>
+
+              <Typography sx={styles.score}>
+                XP: {token.score}
+              </Typography>
+
+              {activeTab === 0 ? (
+                <Button
+                  variant="contained"
+                  size="small"
+                  sx={styles.resumeButton}
+                  onClick={() => handleResumeGame(token.tokenId)}
+                >
+                  Resume
+                </Button>
+              ) : (
+                <Typography sx={styles.deadLabel}>
+                  Dead
+                </Typography>
+              )}
+            </Box>
+          ))
+        )}
+      </Box>
+
+      {/* Start Game button */}
+      <Box sx={styles.startContainer}>
+        <Button
+          variant="outlined"
+          size="large"
+          onClick={handleStartGame}
+          disabled={isSpawning}
+          sx={styles.startButton}
+        >
+          {isSpawning ? "Spawning..." : "Start New Game"}
+        </Button>
+      </Box>
     </Box>
   );
 }
 
 const styles = {
-  card: {
-    marginTop: 2,
-    backgroundColor: "rgba(10, 25, 15, 0.8)",
-    border: "1px solid rgba(68, 204, 68, 0.2)",
-    borderRadius: 0,
-    minWidth: "300px",
+  tabsContainer: {
+    width: "100%",
+    mb: 1,
   },
-  cardTitle: {
+  tabs: {
+    minHeight: "32px",
+    "& .MuiTabs-indicator": {
+      backgroundColor: "#44cc44",
+    },
+  },
+  tab: {
+    padding: "6px 0",
+    minHeight: "32px",
+    color: "rgba(255, 255, 255, 0.4)",
     fontSize: "0.75rem",
     fontWeight: 600,
-    color: "rgba(68, 204, 68, 0.7)",
-    letterSpacing: "3px",
-    textTransform: "uppercase",
-    marginBottom: 2,
-    textAlign: "center",
-  },
-  gameInfo: {
-    display: "flex",
-    justifyContent: "space-between",
-    marginBottom: 1,
-    padding: "8px 0",
-    borderBottom: "1px solid rgba(255, 255, 255, 0.06)",
-  },
-  infoLabel: {
-    fontSize: "0.8rem",
-    color: "rgba(255, 255, 255, 0.35)",
-    letterSpacing: "0.5px",
-  },
-  infoValue: {
-    fontSize: "0.8rem",
-    color: "rgba(255, 255, 255, 0.7)",
-    fontWeight: 500,
-    fontFamily: "monospace",
-  },
-  resumeButton: {
-    marginTop: 2,
-    width: "100%",
-    padding: "14px",
-    fontSize: "0.85rem",
-    fontWeight: 600,
-    letterSpacing: "3px",
-    background: "rgba(68, 204, 68, 0.15)",
-    color: "rgba(68, 204, 68, 0.9)",
-    border: "1px solid rgba(68, 204, 68, 0.3)",
-    borderRadius: 0,
-    textTransform: "uppercase",
-    transition: "color 0.2s, border-color 0.2s, background 0.2s",
-    "&:hover": {
-      background: "rgba(68, 204, 68, 0.25)",
-      borderColor: "rgba(68, 204, 68, 0.5)",
+    letterSpacing: "2px",
+    textTransform: "uppercase" as const,
+    "&.Mui-selected": {
       color: "#44cc44",
     },
   },
+  listContainer: {
+    width: "100%",
+    maxHeight: "240px",
+    display: "flex",
+    flexDirection: "column" as const,
+    gap: "4px",
+    overflowY: "auto" as const,
+    mb: 2,
+  },
+  centered: {
+    display: "flex",
+    justifyContent: "center",
+    py: 3,
+  },
+  emptyText: {
+    textAlign: "center",
+    py: 3,
+    fontSize: "0.8rem",
+    color: "rgba(255, 255, 255, 0.3)",
+    letterSpacing: "0.5px",
+  },
+  listItem: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 2,
+    padding: "8px 12px",
+    backgroundColor: "rgba(10, 25, 15, 0.6)",
+    border: "1px solid rgba(68, 204, 68, 0.12)",
+    transition: "border-color 0.2s",
+    "&:hover": {
+      borderColor: "rgba(68, 204, 68, 0.3)",
+    },
+  },
+  tokenInfo: {
+    display: "flex",
+    flexDirection: "column" as const,
+    flex: 1,
+    minWidth: 0,
+    overflow: "hidden",
+  },
+  tokenName: {
+    fontSize: "0.8rem",
+    fontWeight: 600,
+    color: "rgba(68, 204, 68, 0.9)",
+    lineHeight: 1.2,
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
+  },
+  tokenId: {
+    fontSize: "0.65rem",
+    color: "rgba(255, 255, 255, 0.3)",
+    fontFamily: "monospace",
+    lineHeight: 1.2,
+  },
+  score: {
+    fontSize: "0.75rem",
+    color: "rgba(255, 255, 255, 0.6)",
+    fontWeight: 500,
+    whiteSpace: "nowrap",
+  },
+  deadLabel: {
+    fontSize: "0.7rem",
+    color: "rgba(255, 80, 80, 0.7)",
+    fontWeight: 600,
+    letterSpacing: "1px",
+    textTransform: "uppercase" as const,
+  },
+  resumeButton: {
+    minWidth: "70px",
+    height: "28px",
+    fontSize: "0.7rem",
+    fontWeight: 600,
+    letterSpacing: "1px",
+    background: "rgba(68, 204, 68, 0.15)",
+    color: "rgba(68, 204, 68, 0.9)",
+    border: "1px solid rgba(68, 204, 68, 0.3)",
+    borderRadius: 0,
+    textTransform: "uppercase" as const,
+    boxShadow: "none",
+    "&:hover": {
+      background: "rgba(68, 204, 68, 0.25)",
+      borderColor: "rgba(68, 204, 68, 0.5)",
+      boxShadow: "none",
+    },
+  },
+  startContainer: {
+    display: "flex",
+    justifyContent: "center",
+  },
   startButton: {
-    padding: "16px 48px",
-    fontSize: "0.9rem",
+    width: "100%",
+    padding: "12px",
+    fontSize: "0.8rem",
     fontWeight: 600,
     letterSpacing: "3px",
     background: "rgba(68, 204, 68, 0.15)",
     color: "rgba(68, 204, 68, 0.9)",
     border: "1px solid rgba(68, 204, 68, 0.3)",
     borderRadius: 0,
-    textTransform: "uppercase",
+    textTransform: "uppercase" as const,
     boxShadow: "none",
     transition: "color 0.2s, border-color 0.2s, background 0.2s",
     "&:hover": {
