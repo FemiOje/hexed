@@ -7,7 +7,7 @@ use hexed::models::{Direction, EXPLORE_XP_REWARD, PlayerState, PlayerStats, Tile
 /// Does NOT emit Moved event — the caller is responsible for that.
 pub fn execute_move(
     ref world: dojo::world::WorldStorage,
-    game_id: u32,
+    token_id: felt252,
     ref state: PlayerState,
     next_position: Vec2,
     direction: Direction,
@@ -15,10 +15,10 @@ pub fn execute_move(
     let old_position = state.position;
 
     // Clear old tile
-    world.write_model(@TileOccupant { x: old_position.x, y: old_position.y, game_id: 0 });
+    world.write_model(@TileOccupant { x: old_position.x, y: old_position.y, token_id: 0 });
 
     // Claim new tile
-    world.write_model(@TileOccupant { x: next_position.x, y: next_position.y, game_id });
+    world.write_model(@TileOccupant { x: next_position.x, y: next_position.y, token_id });
 
     // Update player state
     state.position = next_position;
@@ -26,7 +26,7 @@ pub fn execute_move(
     world.write_model(@state);
 
     // Award exploration XP
-    let mut stats: PlayerStats = world.read_model(game_id);
+    let mut stats: PlayerStats = world.read_model(token_id);
     add_xp(ref stats, EXPLORE_XP_REWARD);
     world.write_model(@stats);
 }

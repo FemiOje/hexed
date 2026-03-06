@@ -33,12 +33,12 @@ pub const HEX_HP_AMOUNT: u32 = 10;
 pub const HEX_MAX_HP_AMOUNT: u32 = 5;
 pub const HEX_XP_AMOUNT: u32 = 10;
 
-// Maps game_id → player address and tracks active state
+// Maps token_id → player address and tracks active state
 #[derive(Copy, Drop, Serde, Debug)]
 #[dojo::model]
 pub struct GameSession {
     #[key]
-    pub game_id: u32,
+    pub token_id: felt252,
     pub player: ContractAddress,
     pub is_active: bool,
 }
@@ -48,7 +48,7 @@ pub struct GameSession {
 #[dojo::model]
 pub struct PlayerState {
     #[key]
-    pub game_id: u32,
+    pub token_id: felt252,
     pub position: Vec2,
     pub last_direction: Option<Direction>,
     pub can_move: bool,
@@ -62,7 +62,7 @@ pub struct TileOccupant {
     pub x: i32,
     #[key]
     pub y: i32,
-    pub game_id: u32,
+    pub token_id: felt252,
 }
 
 // Player combat stats (separate from spatial state for ECS cleanliness)
@@ -70,7 +70,7 @@ pub struct TileOccupant {
 #[dojo::model]
 pub struct PlayerStats {
     #[key]
-    pub game_id: u32,
+    pub token_id: felt252,
     pub hp: u32,
     pub max_hp: u32,
     pub xp: u32,
@@ -81,25 +81,25 @@ pub struct PlayerStats {
 #[dojo::model]
 pub struct HighestScore {
     #[key]
-    pub game_id: u32, // Always 0 for singleton
+    pub token_id: felt252, // Always 0 for singleton
     pub player: ContractAddress,
     pub username: felt252, // Cartridge username as felt252
     pub xp: u32,
 }
 
-// Tracks the count of active concurrent games (singleton with game_id = 0)
+// Tracks the count of active concurrent games (singleton with token_id = 0)
 #[derive(Copy, Drop, Serde, Debug)]
 #[dojo::model]
 pub struct GameCounter {
     #[key]
-    pub game_id: u32, // Always 0 for singleton
+    pub token_id: felt252, // Always 0 for singleton
     pub active_games: u32,
 }
 
 // Return struct for get_game_state view function (not a model)
 #[derive(Copy, Drop, Serde)]
 pub struct GameState {
-    pub game_id: u32,
+    pub token_id: felt252,
     pub player: ContractAddress,
     pub position: Vec2,
     pub last_direction: Option<Direction>,

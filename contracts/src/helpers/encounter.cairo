@@ -146,11 +146,11 @@ pub fn apply_encounter(ref stats: PlayerStats, outcome: EncounterOutcome) -> boo
 // ------------------------------------------ //
 
 /// Generates two random rolls (0-99) from game state using Poseidon hash.
-fn generate_rolls(game_id: u32, position: Vec2) -> (u8, u8) {
+fn generate_rolls(token_id: felt252, position: Vec2) -> (u8, u8) {
     let timestamp = get_block_timestamp();
 
     let mut state = PoseidonTrait::new();
-    state = state.update(game_id.into());
+    state = state.update(token_id);
     state = state.update(position.x.into());
     state = state.update(position.y.into());
     state = state.update(timestamp.into());
@@ -167,18 +167,18 @@ fn generate_rolls(game_id: u32, position: Vec2) -> (u8, u8) {
 /// Reads and writes PlayerStats. Handles death cleanup if HP reaches 0.
 /// Does NOT emit events — the caller is responsible for that.
 pub fn resolve_encounter(
-    ref world: dojo::world::WorldStorage, game_id: u32, position: Vec2,
+    ref world: dojo::world::WorldStorage, token_id: felt252, position: Vec2,
 ) -> EncounterResult {
-    let mut stats: PlayerStats = world.read_model(game_id);
+    let mut stats: PlayerStats = world.read_model(token_id);
 
-    let (encounter_roll, subtype_roll) = generate_rolls(game_id, position);
+    let (encounter_roll, subtype_roll) = generate_rolls(token_id, position);
     let outcome = determine_outcome(encounter_roll, subtype_roll);
     let player_died = apply_encounter(ref stats, outcome);
 
     world.write_model(@stats);
 
     if player_died {
-        handle_player_death(ref world, game_id, position, 0);
+        handle_player_death(ref world, token_id, position, 0);
     }
 
     EncounterResult {
@@ -197,12 +197,12 @@ mod tests {
     };
     use super::{EncounterOutcome, EncounterOutcomeTrait, apply_encounter, determine_outcome};
 
-    fn fresh_stats(game_id: u32) -> PlayerStats {
-        PlayerStats { game_id, hp: STARTING_HP, max_hp: MAX_HP, xp: 0 }
+    fn fresh_stats(token_id: felt252) -> PlayerStats {
+        PlayerStats { token_id, hp: STARTING_HP, max_hp: MAX_HP, xp: 0 }
     }
 
-    fn stats_with(game_id: u32, hp: u32, max_hp: u32, xp: u32) -> PlayerStats {
-        PlayerStats { game_id, hp, max_hp, xp }
+    fn stats_with(token_id: felt252, hp: u32, max_hp: u32, xp: u32) -> PlayerStats {
+        PlayerStats { token_id, hp, max_hp, xp }
     }
 
     // ------------------------------------------ //
