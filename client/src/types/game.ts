@@ -44,11 +44,10 @@ export interface Moves {
 }
 
 /**
- * GameSession model - Maps game_id to player and tracks active state
+ * GameSession model - Tracks active state for a game token
  */
 export interface GameSession {
   game_id: number;  // u32
-  player: string;   // ContractAddress as hex string
   is_active: boolean;
 }
 
@@ -67,7 +66,6 @@ export interface PlayerState {
  */
 export interface GameState {
   game_id: string;       // token_id (packed felt252 hex)
-  player: string;        // ContractAddress as hex string
   position: Vec2;
   last_direction: Direction | null;
   can_move: boolean;

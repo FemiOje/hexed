@@ -1,7 +1,7 @@
 use dojo::model::ModelStorage;
 use hexed::models::{
     COMBAT_DAMAGE, COMBAT_HP_REWARD, COMBAT_RETALIATION_DAMAGE, COMBAT_XP_REWARD, Direction,
-    GameCounter, GameSession, PlayerState, PlayerStats, TileOccupant, Vec2,
+    GameCounter, GameSession, HighestScore, PlayerState, PlayerStats, TileOccupant, Vec2,
 };
 use hexed::utils::hex::get_neighbor;
 
@@ -185,5 +185,15 @@ pub fn handle_player_death(
     if counter.active_games > 0 {
         counter.active_games -= 1;
         world.write_model(@counter);
+    }
+
+    // Auto-register score if this is a new highest
+    let stats: PlayerStats = world.read_model(token_id);
+    let current: HighestScore = world.read_model(0);
+    if stats.xp > current.xp {
+        world
+            .write_model(
+                @HighestScore { token_id: 0, scoring_token_id: token_id, xp: stats.xp },
+            );
     }
 }

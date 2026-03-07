@@ -11,15 +11,13 @@ export interface GameCounter {
 // Type definition for `hexed::models::GameSession` struct
 export interface GameSession {
 	token_id: BigNumberish;
-	player: string;
 	is_active: boolean;
 }
 
 // Type definition for `hexed::models::HighestScore` struct
 export interface HighestScore {
 	token_id: BigNumberish;
-	player: string;
-	username: BigNumberish;
+	scoring_token_id: BigNumberish;
 	xp: BigNumberish;
 }
 
@@ -76,13 +74,6 @@ export interface EncounterOccurred {
 	max_hp_after: BigNumberish;
 	xp_after: BigNumberish;
 	player_died: boolean;
-}
-
-// Type definition for `hexed::systems::game::contracts::game_systems::HighestScoreUpdated` struct
-export interface HighestScoreUpdated {
-	player: string;
-	username: BigNumberish;
-	xp: BigNumberish;
 }
 
 // Type definition for `hexed::systems::game::contracts::game_systems::Moved` struct
@@ -154,7 +145,6 @@ export interface MintGameParams {
 // Type definition for `hexed::models::GameState` struct
 export interface GameState {
 	token_id: BigNumberish;
-	player: string;
 	position: Vec2;
 	last_direction: CairoOption<DirectionEnum>;
 	can_move: boolean;
@@ -188,7 +178,6 @@ export interface SchemaType extends ISchemaType {
 		Vec2: Vec2,
 		CombatResult: CombatResult,
 		EncounterOccurred: EncounterOccurred,
-		HighestScoreUpdated: HighestScoreUpdated,
 		Moved: Moved,
 		NeighborsRevealed: NeighborsRevealed,
 		PlayerDied: PlayerDied,
@@ -208,13 +197,11 @@ export const schema: SchemaType = {
 		},
 		GameSession: {
 			token_id: 0,
-			player: "",
 			is_active: false,
 		},
 		HighestScore: {
 			token_id: 0,
-			player: "",
-			username: 0,
+			scoring_token_id: 0,
 			xp: 0,
 		},
 		PlayerState: {
@@ -259,11 +246,6 @@ export const schema: SchemaType = {
 			max_hp_after: 0,
 			xp_after: 0,
 			player_died: false,
-		},
-		HighestScoreUpdated: {
-			player: "",
-			username: 0,
-			xp: 0,
 		},
 		Moved: {
 			token_id: 0,
@@ -323,7 +305,6 @@ export const schema: SchemaType = {
 		},
 		GameState: {
 			token_id: 0,
-			player: "",
 		position: { x: 0, y: 0, },
 			last_direction: new CairoOption(CairoOptionVariant.None),
 			can_move: false,
@@ -346,7 +327,6 @@ export enum ModelsMapping {
 	Vec2 = 'hexed-Vec2',
 	CombatResult = 'hexed-CombatResult',
 	EncounterOccurred = 'hexed-EncounterOccurred',
-	HighestScoreUpdated = 'hexed-HighestScoreUpdated',
 	Moved = 'hexed-Moved',
 	NeighborsRevealed = 'hexed-NeighborsRevealed',
 	PlayerDied = 'hexed-PlayerDied',

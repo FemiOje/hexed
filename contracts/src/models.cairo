@@ -1,5 +1,3 @@
-use starknet::ContractAddress;
-
 // Combat & stat constants
 pub const STARTING_HP: u32 = 100;
 pub const MAX_HP: u32 = 110;
@@ -13,8 +11,8 @@ pub const EXPLORE_XP_REWARD: u32 = 10;
 pub const MIN_MAX_HP: u32 = 10;
 pub const GIFT_THRESHOLD: u8 = 50; // 0-49 = gift (50%), 50-99 = curse (50%)
 
-// Entry limit: ~80% of grid capacity (441 hexes, one player per hex)
-pub const MAX_CONCURRENT_GAMES: u32 = 350;
+// Entry limit: 400 / 441 hexes
+pub const MAX_CONCURRENT_GAMES: u32 = 400;
 
 // Gift amounts
 pub const HEAL_AMOUNT: u32 = 10;
@@ -75,14 +73,13 @@ pub struct PlayerStats {
     pub xp: u32,
 }
 
-// Global leaderboard - tracks the highest scoring player
+// Global leaderboard - tracks the highest scoring token (singleton with token_id = 0)
 #[derive(Copy, Drop, Serde, Debug)]
 #[dojo::model]
 pub struct HighestScore {
     #[key]
     pub token_id: felt252, // Always 0 for singleton
-    pub player: ContractAddress,
-    pub username: felt252, // Cartridge username as felt252
+    pub scoring_token_id: felt252, // Token that achieved the score
     pub xp: u32,
 }
 

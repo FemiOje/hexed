@@ -49,7 +49,6 @@ export const useGameActions = () => {
     mintGame,
     spawn,
     move,
-    registerScore,
     executeAction,
     setCurrentMoves,
   } = useSystemCalls();
@@ -243,29 +242,14 @@ export const useGameActions = () => {
               : "Killed by a deadly encounter";
           useGameStore.getState().setIsDead(true, newXp, reason);
 
-          // Register score on leaderboard if player died
+          // Refresh leaderboard — score was auto-registered by the contract on death
           try {
-            const scoreCall = registerScore(
-              address!,
-              playerName || address!,
-              newXp,
-            );
-
-            // Execute register_score without waiting for full confirmation
-            await executeAction(
-              [scoreCall],
-              () => {},
-              () => {},
-            );
-
-            // Fetch and update highest score in store
             const highestScore = await getHighestScore();
             if (highestScore) {
               useGameStore.getState().setHighestScore(highestScore);
             }
           } catch (scoreError) {
-            console.error("Error registering score:", scoreError);
-            // Don't fail the entire move if score registration fails
+            console.error("Error fetching highest score:", scoreError);
           }
         }
 
@@ -395,11 +379,9 @@ export const useGameActions = () => {
     },
     [
       address,
-      playerName,
       gameId,
       isMoving,
       move,
-      registerScore,
       executeAction,
       processEvent,
       refreshGameState,

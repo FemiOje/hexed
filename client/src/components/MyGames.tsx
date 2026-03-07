@@ -22,7 +22,7 @@ import { useGameActions } from "../dojo/useGameActions";
 import { useGameStore } from "../stores/gameStore";
 import { useDynamicConnector } from "../starknet-provider";
 import { getContractByName } from "../utils/networkConfig";
-import { addAddressPadding, num } from "starknet";
+import { addAddressPadding } from "starknet";
 import { useStarknetApi } from "../api/starknet";
 
 interface EnrichedGame {
@@ -92,19 +92,10 @@ export default function MyGames() {
 
         const state = await getGameState(token.tokenId);
 
-        if (!state || state.player === "0x0") {
-          // Token was minted but never spawned, or state unavailable — skip
+        if (!state) {
+          // State unavailable — skip
           continue;
         }
-
-        // Verify ownership
-        const normalizedPlayer = num
-          .toHex(num.toBigInt(state.player))
-          .toLowerCase();
-        const normalizedAddress = num
-          .toHex(num.toBigInt(address!))
-          .toLowerCase();
-        if (normalizedPlayer !== normalizedAddress) continue;
 
         enriched.push({
           tokenId: token.tokenId,

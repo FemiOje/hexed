@@ -6,8 +6,6 @@ pub trait IGameSystems<T> {
     fn spawn(ref self: T, token_id: felt252);
     fn move(ref self: T, token_id: felt252, direction: Direction);
     fn get_game_state(self: @T, token_id: felt252) -> GameState;
-    fn register_score(ref self: T, player: starknet::ContractAddress, username: felt252, xp: u32);
-    fn get_highest_score(self: @T) -> (starknet::ContractAddress, felt252, u32);
 }
 
 #[dojo::contract]
@@ -26,8 +24,8 @@ pub mod game_systems {
     use hexed::helpers::{combat, encounter, movement, spawn};
     use hexed::models::{
         COMBAT_DAMAGE, COMBAT_HP_REWARD, COMBAT_RETALIATION_DAMAGE, COMBAT_XP_REWARD, GameCounter,
-        GameSession, HighestScore, MAX_CONCURRENT_GAMES, MAX_HP, PlayerState, PlayerStats,
-        STARTING_HP, TileOccupant, Vec2,
+        GameSession, MAX_CONCURRENT_GAMES, MAX_HP, PlayerState, PlayerStats, STARTING_HP,
+        TileOccupant, Vec2,
     };
     use hexed::utils::hex::{get_neighbor, get_neighbor_occupancy, is_within_bounds};
     use starknet::{ContractAddress, get_caller_address};
@@ -101,15 +99,6 @@ pub mod game_systems {
         pub max_hp_after: u32,
         pub xp_after: u32,
         pub player_died: bool,
-    }
-
-    #[derive(Copy, Drop, Serde)]
-    #[dojo::event]
-    pub struct HighestScoreUpdated {
-        #[key]
-        pub player: ContractAddress,
-        pub username: felt252,
-        pub xp: u32,
     }
 
     // ------------------------------------------ //
@@ -316,29 +305,6 @@ pub mod game_systems {
             }
         }
 
-        fn register_score(
-            ref self: ContractState, player: ContractAddress, username: felt252, xp: u32,
-        ) {
-            let mut world = self.world_default();
-            let mut current: HighestScore = world.read_model(0);
-
-            // If this is the first score or higher than current, update
-            if xp > current.xp {
-                current.player = player;
-                current.username = username;
-                current.xp = xp;
-                current.token_id = 0; // Singleton key
-
-                world.write_model(@current);
-                world.emit_event(@HighestScoreUpdated { player, username, xp });
-            }
-        }
-
-        fn get_highest_score(self: @ContractState) -> (ContractAddress, felt252, u32) {
-            let mut world = self.world_default();
-            let score: HighestScore = world.read_model(0);
-            (score.player, score.username, score.xp)
-        }
     }
 
     // ------------------------------------------ //

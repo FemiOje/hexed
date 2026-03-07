@@ -55,7 +55,6 @@ export function getNetworkConfig(networkKey: ChainId): NetworkConfig {
         { target: gameContract, method: "spawn" },
         { target: gameContract, method: "move" },
         { target: gameContract, method: "get_game_state" },
-        { target: gameContract, method: "register_score" },
         ...(gameTokenSystemsAddress ? [{ target: gameTokenSystemsAddress, method: "mint_game" }] : []),
       ]
     : undefined;

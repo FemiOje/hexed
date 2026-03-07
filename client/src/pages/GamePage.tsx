@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { num } from "starknet";
 import HexGrid from "../components/HexGrid";
 import Header from "../components/Header";
 import type { HexPosition } from "../three/utils";
@@ -260,50 +259,30 @@ export default function GamePage() {
           return;
         }
 
-        // Check ownership - normalize addresses using starknet.js utilities
-        // This handles different padding/formatting of Starknet addresses
-        const normalizeAddress = (addr: string) => {
-          try {
-            // Convert to BigInt and back to hex to normalize
-            return num.toHex(num.toBigInt(addr));
-          } catch {
-            return addr.toLowerCase();
+        // Populate store with game state
+        // Ownership is enforced by the contract via ERC721 assert_token_ownership
+        if (isMounted) {
+          setGameId(gameId);
+          setPosition({
+            player: address,
+            vec: gameState.position,
+          });
+          setMoves({
+            player: address,
+            last_direction: gameState.last_direction,
+            can_move: gameState.can_move,
+          });
+          setStats(gameState.hp, gameState.max_hp, gameState.xp);
+          setOccupiedNeighbors(gameState.neighbor_occupancy);
+          setIsSpawned(gameState.is_active);
+
+          // Detect death
+          if (!gameState.is_active && gameState.hp === 0) {
+            setIsDead(true, gameState.xp);
           }
-        };
 
-        const gamePlayer = normalizeAddress(gameState.player);
-        const connectedAddress = normalizeAddress(address);
-
-        if (gamePlayer === connectedAddress) {
-          // Populate store with game state
-          if (isMounted) {
-            setGameId(gameId);
-            setPosition({
-              player: address,
-              vec: gameState.position,
-            });
-            setMoves({
-              player: address,
-              last_direction: gameState.last_direction,
-              can_move: gameState.can_move,
-            });
-            setStats(gameState.hp, gameState.max_hp, gameState.xp);
-            setOccupiedNeighbors(gameState.neighbor_occupancy);
-            setIsSpawned(gameState.is_active);
-
-            // Detect death
-            if (!gameState.is_active && gameState.hp === 0) {
-              setIsDead(true, gameState.xp);
-            }
-
-            setOwnershipValid(true);
-            setIsValidatingOwnership(false);
-          }
-        } else {
-          if (isMounted) {
-            setIsValidatingOwnership(false);
-            navigate("/");
-          }
+          setOwnershipValid(true);
+          setIsValidatingOwnership(false);
         }
       } catch (error) {
         console.error("Error validating ownership:", error);

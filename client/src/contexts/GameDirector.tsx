@@ -13,12 +13,10 @@ import {
   useState,
   useCallback,
 } from "react";
-import { num } from "starknet";
 import { useController } from "./controller";
 import { useGameStore, initializePlayerState } from "@/stores/gameStore";
 import { useUIStore } from "@/stores/uiStore";
 import { useStarknetApi } from "@/api/starknet";
-import { useSystemCalls } from "@/dojo/useSystemCalls";
 import { GameEvent } from "@/types/game";
 
 export interface GameDirectorContext {
@@ -33,25 +31,12 @@ const GameDirectorContext = createContext<GameDirectorContext>(
 );
 
 /**
- * Normalize Starknet address for comparison
- * Handles different padding/formatting
- */
-const normalizeAddress = (addr: string): string => {
-  try {
-    return num.toHex(num.toBigInt(addr));
-  } catch {
-    return addr.toLowerCase();
-  }
-};
-
-/**
  * Game Director Provider
  * Manages game initialization, state synchronization, and event processing
  */
 export const GameDirectorProvider = ({ children }: PropsWithChildren) => {
-  const { address, playerName } = useController();
+  const { address } = useController();
   const { getGameState, getHighestScore } = useStarknetApi();
-  const { registerScore, executeAction } = useSystemCalls();
 
   const {
     playerAddress,
@@ -72,41 +57,6 @@ export const GameDirectorProvider = ({ children }: PropsWithChildren) => {
   const { setError, clearError } = useUIStore();
 
   const [isInitialized, setIsInitialized] = useState(false);
-
-  /**
-   * Register player's final score when they die
-   * Called when death is detected from blockchain state
-   */
-  const registerDeathScore = useCallback(
-    async (finalXp: number) => {
-      if (!address) return;
-
-      try {
-        const scoreCall = registerScore(
-          address,
-          playerName || address,
-          finalXp
-        );
-
-        // Execute register_score without waiting for confirmation
-        await executeAction(
-          [scoreCall],
-          () => {},
-          () => {}
-        );
-
-        // Fetch and update highest score
-        const highestScore = await getHighestScore();
-        if (highestScore) {
-          setHighestScore(highestScore);
-        }
-      } catch (error) {
-        console.error("Error registering death score:", error);
-        // Don't fail death detection if score registration fails
-      }
-    },
-    [address, playerName, registerScore, executeAction, getHighestScore, setHighestScore]
-  );
 
   /**
    * Initialize game state when wallet connects
@@ -226,14 +176,6 @@ export const GameDirectorProvider = ({ children }: PropsWithChildren) => {
         return;
       }
 
-      const gamePlayer = normalizeAddress(gameState.player);
-      const connectedAddr = normalizeAddress(address);
-
-      if (gamePlayer !== connectedAddr) {
-        setError("Game ownership validation failed");
-        return;
-      }
-
       setPosition({ player: address, vec: gameState.position });
       setMoves({
         player: address,
@@ -246,7 +188,12 @@ export const GameDirectorProvider = ({ children }: PropsWithChildren) => {
 
       if (!gameState.is_active && gameState.hp === 0) {
         setIsDead(true, gameState.xp, "Slain by another player");
-        await registerDeathScore(gameState.xp);
+
+        // Refresh leaderboard — score was auto-registered by the contract on death
+        const highestScore = await getHighestScore();
+        if (highestScore) {
+          setHighestScore(highestScore);
+        }
       }
     } catch (error) {
       console.error("Error refreshing game state:", error);
@@ -256,13 +203,14 @@ export const GameDirectorProvider = ({ children }: PropsWithChildren) => {
     address,
     gameId,
     getGameState,
-    registerDeathScore,
+    getHighestScore,
     setPosition,
     setMoves,
     setIsSpawned,
     setIsDead,
     setStats,
     setOccupiedNeighbors,
+    setHighestScore,
     setError,
   ]);
 

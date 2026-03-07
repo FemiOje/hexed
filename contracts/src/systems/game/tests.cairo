@@ -4,8 +4,8 @@ mod tests {
     // use dojo::world::WorldStorageTrait;
     use hexed::models::{
         COMBAT_DAMAGE, COMBAT_HP_REWARD, COMBAT_RETALIATION_DAMAGE, COMBAT_XP_REWARD,
-        DRAIN_XP_AMOUNT, Direction, GameCounter, GameSession, MAX_HP, MIN_MAX_HP, PlayerState,
-        PlayerStats, STARTING_HP, TileOccupant, Vec2,
+        DRAIN_XP_AMOUNT, Direction, GameCounter, GameSession, HighestScore, MAX_HP, MIN_MAX_HP,
+        PlayerState, PlayerStats, STARTING_HP, TileOccupant, Vec2,
     };
     use hexed::systems::game::contracts::{ // IGameSystemsDispatcher,
     IGameSystemsDispatcherTrait};
@@ -1334,5 +1334,172 @@ mod tests {
 
         let decremented: GameCounter = world.read_model(0);
         assert(decremented.active_games == 99, 'limit: decrement');
+    }
+
+    // ------------------------------------------ //
+    // ----- Auto Score Registration Tests ----- //
+    // ------------------------------------------ //
+
+    #[test]
+    #[available_gas(60000000)]
+    fn test_score_registered_on_combat_death() {
+        let attacker_addr = ATTACKER_ADDR();
+        let (mut world, game) = deploy_world();
+
+        // Attacker with 0 XP at (0,0)
+        let attacker_id: felt252 = 10;
+        world.write_model_test(@GameSession { token_id: attacker_id, is_active: true });
+        world
+            .write_model_test(
+                @PlayerState {
+                    token_id: attacker_id,
+                    position: Vec2 { x: 0, y: 0 },
+                    last_direction: Option::None,
+                    can_move: true,
+                },
+            );
+        world
+            .write_model_test(
+                @PlayerStats { token_id: attacker_id, hp: STARTING_HP, max_hp: MAX_HP, xp: 0 },
+            );
+        world.write_model_test(@TileOccupant { x: 0, y: 0, token_id: attacker_id });
+
+        // Defender with high XP and low HP at (1,0) — will die on combat
+        let defender_id: felt252 = 20;
+        world.write_model_test(@GameSession { token_id: defender_id, is_active: true });
+        world
+            .write_model_test(
+                @PlayerState {
+                    token_id: defender_id,
+                    position: Vec2 { x: 1, y: 0 },
+                    last_direction: Option::None,
+                    can_move: true,
+                },
+            );
+        world
+            .write_model_test(
+                @PlayerStats { token_id: defender_id, hp: 5, max_hp: MAX_HP, xp: 200 },
+            );
+        world.write_model_test(@TileOccupant { x: 1, y: 0, token_id: defender_id });
+
+        // Verify no high score initially
+        let before: HighestScore = world.read_model(0);
+        assert(before.xp == 0, 'initial xp should be 0');
+
+        // Attacker wins (0 >= 200 is false, so defender wins... wait, xp: 0 vs 200 means defender wins)
+        // Let me fix: give attacker MORE XP so attacker wins and defender dies
+        world
+            .write_model_test(
+                @PlayerStats { token_id: attacker_id, hp: STARTING_HP, max_hp: MAX_HP, xp: 300 },
+            );
+
+        // Now attacker (xp:300) vs defender (xp:200) → attacker wins, defender (hp:5) dies
+        starknet::testing::set_contract_address(attacker_addr);
+        game.move(attacker_id, Direction::East);
+
+        // Defender died — their score (xp:200) should be auto-registered
+        let score: HighestScore = world.read_model(0);
+        assert(score.scoring_token_id == defender_id, 'should record defender token');
+        assert(score.xp == 200, 'should record defender xp');
+    }
+
+    #[test]
+    #[available_gas(60000000)]
+    fn test_score_not_updated_if_lower() {
+        let attacker_addr = ATTACKER_ADDR();
+        let (mut world, game) = deploy_world();
+
+        // Pre-set a high score
+        world
+            .write_model_test(
+                @HighestScore { token_id: 0, scoring_token_id: 99, xp: 500 },
+            );
+
+        // Attacker with high XP at (0,0)
+        let attacker_id: felt252 = 10;
+        world.write_model_test(@GameSession { token_id: attacker_id, is_active: true });
+        world
+            .write_model_test(
+                @PlayerState {
+                    token_id: attacker_id,
+                    position: Vec2 { x: 0, y: 0 },
+                    last_direction: Option::None,
+                    can_move: true,
+                },
+            );
+        world
+            .write_model_test(
+                @PlayerStats { token_id: attacker_id, hp: STARTING_HP, max_hp: MAX_HP, xp: 100 },
+            );
+        world.write_model_test(@TileOccupant { x: 0, y: 0, token_id: attacker_id });
+
+        // Defender with low XP and low HP at (1,0) — will die
+        let defender_id: felt252 = 20;
+        world.write_model_test(@GameSession { token_id: defender_id, is_active: true });
+        world
+            .write_model_test(
+                @PlayerState {
+                    token_id: defender_id,
+                    position: Vec2 { x: 1, y: 0 },
+                    last_direction: Option::None,
+                    can_move: true,
+                },
+            );
+        world
+            .write_model_test(
+                @PlayerStats { token_id: defender_id, hp: 5, max_hp: MAX_HP, xp: 50 },
+            );
+        world.write_model_test(@TileOccupant { x: 1, y: 0, token_id: defender_id });
+
+        // Attacker (xp:100) wins, defender (xp:50, hp:5) dies
+        starknet::testing::set_contract_address(attacker_addr);
+        game.move(attacker_id, Direction::East);
+
+        // Defender's score (50) is lower than existing record (500) — should NOT update
+        let score: HighestScore = world.read_model(0);
+        assert(score.scoring_token_id == 99, 'should keep old token');
+        assert(score.xp == 500, 'should keep old xp');
+    }
+
+    #[test]
+    #[available_gas(120000000)]
+    fn test_score_registered_on_encounter_death() {
+        let (mut world, game) = deploy_world();
+
+        // Set HP to 1 so a lethal encounter kills the player, triggering score registration.
+        // Loop over token IDs until we find one whose deterministic encounter is lethal.
+        let mut found_death = false;
+        let mut gid: u32 = 50;
+        while gid < 80 && !found_death {
+            let tid: felt252 = gid.into();
+            world.write_model_test(@GameSession { token_id: tid, is_active: true });
+            world
+                .write_model_test(
+                    @PlayerState {
+                        token_id: tid,
+                        position: Vec2 { x: 0, y: 0 },
+                        last_direction: Option::None,
+                        can_move: true,
+                    },
+                );
+            world
+                .write_model_test(@PlayerStats { token_id: tid, hp: 1, max_hp: MAX_HP, xp: 999 });
+            world.write_model_test(@TileOccupant { x: 0, y: 0, token_id: tid });
+            // Ensure destination is empty so encounter triggers (not combat with a survivor)
+            world.write_model_test(@TileOccupant { x: 1, y: 0, token_id: 0 });
+
+            game.move(tid, Direction::East);
+
+            let stats: PlayerStats = world.read_model(tid);
+            if stats.hp == 0 {
+                // Verify score was auto-registered (xp may differ from 999 if Hex drained it)
+                let score: HighestScore = world.read_model(0);
+                assert(score.scoring_token_id == tid, 'should record dead token');
+                assert(score.xp == stats.xp, 'should record xp at death');
+                found_death = true;
+            }
+            gid += 1;
+        }
+        assert(found_death, 'should find lethal encounter');
     }
 }

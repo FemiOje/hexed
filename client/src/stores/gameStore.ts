@@ -15,8 +15,8 @@ import {
 import { isVec2Equal } from "@/types/game";
 
 interface HighestScore {
-  player: string;
-  username: string;
+  scoringTokenId: string;
+  ownerAddress: string;
   xp: number;
 }
 
