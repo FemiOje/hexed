@@ -1,15 +1,21 @@
+import { useNavigate } from 'react-router-dom';
 import WalletConnect from "./WalletConnect";
 import { Box, Typography, IconButton } from '@mui/material';
 import { HelpCircle, Volume2, VolumeX } from 'lucide-react';
 import { useUIStore } from '../stores/uiStore';
 
 function Header() {
+  const navigate = useNavigate();
   const { setShowHelpModal, musicEnabled, toggleMusic } = useUIStore();
 
   return (
     <Box sx={styles.header}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-        <Typography variant="h6" sx={{ color: '#44cc44', fontWeight: 600 }}>
+        <Typography
+          variant="h6"
+          onClick={() => navigate('/')}
+          sx={{ color: '#44cc44', fontWeight: 600, cursor: 'pointer' }}
+        >
           HEX'D
         </Typography>
       </Box>
