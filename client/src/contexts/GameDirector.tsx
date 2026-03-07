@@ -60,7 +60,6 @@ export const GameDirectorProvider = ({ children }: PropsWithChildren) => {
     setPosition,
     setMoves,
     setIsSpawned,
-    setGameId,
     setIsInitializing,
     setStats,
     setIsDead,
@@ -125,8 +124,9 @@ export const GameDirectorProvider = ({ children }: PropsWithChildren) => {
   }, [address, playerAddress]);
 
   /**
-   * Initialize game state from blockchain.
-   * Loads saved token_id (hex) from localStorage and fetches game state.
+   * Initialize game state on wallet connect.
+   * Game discovery is handled by the Denshokan SDK on the start page;
+   * game state is loaded when the player navigates to /game?id={tokenId}.
    */
   const initializeGame = useCallback(async () => {
     if (!address) return;
@@ -136,48 +136,7 @@ export const GameDirectorProvider = ({ children }: PropsWithChildren) => {
       clearError();
 
       initializePlayerState(address);
-
-      // Load token_id from localStorage
-      const storageKey = `hexed_game_id_${address}`;
-      const savedTokenId = localStorage.getItem(storageKey);
-
-      if (savedTokenId && savedTokenId !== "0") {
-        setGameId(savedTokenId);
-
-        const gameState = await getGameState(savedTokenId);
-
-        if (gameState) {
-          const gamePlayer = normalizeAddress(gameState.player);
-          const connectedAddr = normalizeAddress(address);
-
-          if (gamePlayer === connectedAddr) {
-            setPosition({ player: address, vec: gameState.position });
-            setMoves({
-              player: address,
-              last_direction: gameState.last_direction,
-              can_move: gameState.can_move,
-            });
-            setStats(gameState.hp, gameState.max_hp, gameState.xp);
-            setOccupiedNeighbors(gameState.neighbor_occupancy);
-            setIsSpawned(gameState.is_active);
-
-            if (!gameState.is_active && gameState.hp === 0) {
-              setIsDead(true, gameState.xp, "Fell in a previous battle");
-              await registerDeathScore(gameState.xp);
-            }
-          } else {
-            // Ownership mismatch — stale localStorage entry
-            localStorage.removeItem(storageKey);
-            setGameId(null);
-            setIsSpawned(false);
-          }
-        } else {
-          setIsSpawned(false);
-        }
-      } else {
-        setIsSpawned(false);
-      }
-
+      setIsSpawned(false);
       setIsInitialized(true);
 
       // Always fetch leaderboard
@@ -193,17 +152,9 @@ export const GameDirectorProvider = ({ children }: PropsWithChildren) => {
     }
   }, [
     address,
-    setGameId,
-    getGameState,
     getHighestScore,
-    registerDeathScore,
-    setPosition,
-    setMoves,
     setIsSpawned,
-    setIsDead,
     setIsInitializing,
-    setStats,
-    setOccupiedNeighbors,
     setHighestScore,
     clearError,
     setError,
