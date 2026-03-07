@@ -48,9 +48,9 @@ pub mod game_token_systems {
                 "FemiOje",
                 "FemiOje",
                 "Battle Royale",
-                "",
-                Option::None, // color
-                Option::None, // client_url
+                "https://raw.githubusercontent.com/FemiOje/hexed/embeddable/client/public/favicon-no-text.png",
+                Option::Some("#2dee2d"), // color
+                Option::Some("https://hexed-silk.vercel.app"), // client_url
                 Option::None, // renderer_address
                 Option::None, // settings_address
                 Option::None, // objectives_address
