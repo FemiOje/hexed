@@ -167,8 +167,7 @@ pub fn handle_player_death(
     world.write_model(@TileOccupant { x: position.x, y: position.y, token_id: 0 });
 
     // Deactivate session
-    let session: GameSession = world.read_model(token_id);
-    world.write_model(@GameSession { token_id, player: session.player, is_active: false });
+    world.write_model(@GameSession { token_id, is_active: false });
 
     // Disable movement and zero out position
     world

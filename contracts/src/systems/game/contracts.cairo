@@ -136,7 +136,7 @@ pub mod game_systems {
             world.write_model(@counter);
 
             // Create session (token_id provided by EGS minting)
-            world.write_model(@GameSession { token_id, player, is_active: true });
+            world.write_model(@GameSession { token_id, is_active: true });
 
             // Generate random spawn position
             let position = spawn::generate_spawn_position(player);
@@ -177,11 +177,9 @@ pub mod game_systems {
             }
 
             let mut world = self.world_default();
-            let player = get_caller_address();
 
-            // Verify ownership
+            // Verify session is active (ownership verified by EGS assert_token_ownership above)
             let session: GameSession = world.read_model(token_id);
-            assert(session.player == player, 'not your game');
             assert(session.is_active, 'game not active');
 
             // Retrieve player state
@@ -307,7 +305,6 @@ pub mod game_systems {
 
             GameState {
                 token_id,
-                player: session.player,
                 position: state.position,
                 last_direction: state.last_direction,
                 can_move: state.can_move,

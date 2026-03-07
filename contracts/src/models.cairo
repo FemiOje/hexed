@@ -33,13 +33,12 @@ pub const HEX_HP_AMOUNT: u32 = 10;
 pub const HEX_MAX_HP_AMOUNT: u32 = 5;
 pub const HEX_XP_AMOUNT: u32 = 10;
 
-// Maps token_id → player address and tracks active state
+// Tracks whether a game session is active (ownership comes from ERC721 token)
 #[derive(Copy, Drop, Serde, Debug)]
 #[dojo::model]
 pub struct GameSession {
     #[key]
     pub token_id: felt252,
-    pub player: ContractAddress,
     pub is_active: bool,
 }
 
@@ -100,7 +99,6 @@ pub struct GameCounter {
 #[derive(Copy, Drop, Serde)]
 pub struct GameState {
     pub token_id: felt252,
-    pub player: ContractAddress,
     pub position: Vec2,
     pub last_direction: Option<Direction>,
     pub can_move: bool,
