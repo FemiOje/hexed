@@ -156,15 +156,16 @@ export const useSystemCalls = () => {
       const receipt: any = await waitForTransaction(tx.transaction_hash, 0);
 
       // Extract token_id from ERC721 Transfer event (from=0x0 → to=us)
+      // In OpenZeppelin Cairo v3, token_id is a #[key] field, so it appears
+      // in keys (not data): keys=[selector, from, to, token_id_low, token_id_high]
       const normalizedTo = num
         .toHex(num.toBigInt(account.address))
         .toLowerCase();
 
       for (const evt of receipt?.events || []) {
-        const data: string[] = evt?.data || [];
         const keys: string[] = evt?.keys || [];
 
-        if (keys.length >= 3) {
+        if (keys.length >= 5) {
           const isFromZero = num.toBigInt(keys[1]) === 0n;
           let isToUs = false;
           try {
@@ -174,10 +175,10 @@ export const useSystemCalls = () => {
             continue;
           }
 
-          if (isFromZero && isToUs && data.length >= 2) {
-            // Reconstruct felt252 from u256 (low, high)
-            const low = num.toBigInt(data[0]);
-            const high = num.toBigInt(data[1]);
+          if (isFromZero && isToUs) {
+            // Reconstruct felt252 from u256 (low, high) in keys[3], keys[4]
+            const low = num.toBigInt(keys[3]);
+            const high = num.toBigInt(keys[4]);
             const tokenId = high * (1n << 128n) + low;
             return num.toHex(tokenId);
           }

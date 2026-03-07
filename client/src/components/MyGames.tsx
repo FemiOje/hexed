@@ -2,10 +2,11 @@
  * MyGames Component
  *
  * Displays all of the player's game tokens in a tabbed list (Active / Dead).
- * Uses the Denshokan SDK to discover tokens, following the death-mountain pattern.
+ * Uses the Denshokan SDK to discover tokens, enriched with actual game state
+ * from the contract via getGameState().
  */
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Box,
@@ -21,7 +22,18 @@ import { useGameActions } from "../dojo/useGameActions";
 import { useGameStore } from "../stores/gameStore";
 import { useDynamicConnector } from "../starknet-provider";
 import { getContractByName } from "../utils/networkConfig";
-import { addAddressPadding } from "starknet";
+import { addAddressPadding, num } from "starknet";
+import { useStarknetApi } from "../api/starknet";
+
+interface EnrichedGame {
+  tokenId: string;
+  playerName: string;
+  hp: number;
+  maxHp: number;
+  xp: number;
+  isActive: boolean;
+  isDead: boolean;
+}
 
 /** Truncate a hex token_id for display: "0xfb40...0003" */
 function truncateTokenId(tokenId: string): string {
@@ -34,8 +46,11 @@ export default function MyGames() {
   const { address } = useController();
   const { handleSpawn, isSpawning } = useGameActions();
   const { currentNetworkConfig } = useDynamicConnector();
+  const { getGameState } = useStarknetApi();
 
   const [activeTab, setActiveTab] = useState(0);
+  const [games, setGames] = useState<EnrichedGame[]>([]);
+  const [loading, setLoading] = useState(true);
 
   // Get game_token_systems address from manifest
   const gameAddress = getContractByName(
@@ -45,24 +60,83 @@ export default function MyGames() {
   )?.address;
 
   // Fetch player's tokens from Denshokan
-  const { data: tokensData, isLoading } = useTokens(
+  const { data: tokensData, isLoading: isLoadingTokens } = useTokens(
     address
       ? {
           owner: addAddressPadding(address),
-          gameAddress: gameAddress ? addAddressPadding(gameAddress) : undefined,
+          gameAddress: gameAddress
+            ? addAddressPadding(gameAddress)
+            : undefined,
         }
       : undefined,
   );
 
-  const tokens = tokensData?.data || [];
+  // Enrich tokens with actual game state from contract
+  useEffect(() => {
+    if (!tokensData?.data) return;
+
+    const tokens = tokensData.data;
+    if (tokens.length === 0) {
+      setGames([]);
+      setLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+
+    async function enrichTokens() {
+      const enriched: EnrichedGame[] = [];
+
+      for (const token of tokens) {
+        if (cancelled) return;
+
+        const state = await getGameState(token.tokenId);
+
+        if (!state || state.player === "0x0") {
+          // Token was minted but never spawned, or state unavailable — skip
+          continue;
+        }
+
+        // Verify ownership
+        const normalizedPlayer = num
+          .toHex(num.toBigInt(state.player))
+          .toLowerCase();
+        const normalizedAddress = num
+          .toHex(num.toBigInt(address!))
+          .toLowerCase();
+        if (normalizedPlayer !== normalizedAddress) continue;
+
+        enriched.push({
+          tokenId: token.tokenId,
+          playerName: token.playerName || "",
+          hp: state.hp,
+          maxHp: state.max_hp,
+          xp: state.xp,
+          isActive: state.is_active,
+          isDead: !state.is_active && state.hp === 0,
+        });
+      }
+
+      if (!cancelled) {
+        setGames(enriched);
+        setLoading(false);
+      }
+    }
+
+    enrichTokens();
+
+    return () => {
+      cancelled = true;
+    };
+    // Intentionally omit getGameState from deps to avoid infinite loop
+    // (same pattern as death-mountain's fetchAdventurerData)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tokensData, address]);
 
   // Filter and sort by tab
-  const filteredTokens = tokens
-    .filter((token) => (activeTab === 0 ? !token.gameOver : token.gameOver))
-    .sort(
-      (a, b) =>
-        new Date(b.mintedAt).getTime() - new Date(a.mintedAt).getTime(),
-    );
+  const filteredGames = games
+    .filter((game) => (activeTab === 0 ? !game.isDead : game.isDead))
+    .sort((a, b) => b.xp - a.xp);
 
   // Handle start game
   const handleStartGame = useCallback(async () => {
@@ -88,6 +162,8 @@ export default function MyGames() {
     [navigate],
   );
 
+  const isLoading = isLoadingTokens || loading;
+
   return (
     <Box sx={{ width: "100%" }}>
       {/* Tabs */}
@@ -107,41 +183,51 @@ export default function MyGames() {
       <Box sx={styles.listContainer}>
         {isLoading ? (
           <Box sx={styles.centered}>
-            <CircularProgress size={24} sx={{ color: "rgba(68, 204, 68, 0.6)" }} />
+            <CircularProgress
+              size={24}
+              sx={{ color: "rgba(68, 204, 68, 0.6)" }}
+            />
           </Box>
-        ) : filteredTokens.length === 0 ? (
+        ) : filteredGames.length === 0 ? (
           <Typography sx={styles.emptyText}>
             No {activeTab === 0 ? "active" : "dead"} games
           </Typography>
         ) : (
-          filteredTokens.map((token) => (
-            <Box key={token.tokenId} sx={styles.listItem}>
+          filteredGames.map((game) => (
+            <Box key={game.tokenId} sx={styles.listItem}>
               <Box sx={styles.tokenInfo}>
                 <Typography sx={styles.tokenName}>
-                  {token.playerName || truncateTokenId(token.tokenId)}
+                  {game.playerName || truncateTokenId(game.tokenId)}
                 </Typography>
                 <Typography sx={styles.tokenId}>
-                  {truncateTokenId(token.tokenId)}
+                  {truncateTokenId(game.tokenId)}
                 </Typography>
               </Box>
 
-              <Typography sx={styles.score}>
-                XP: {token.score}
-              </Typography>
+              <Box sx={styles.statsContainer}>
+                {game.isDead ? (
+                  <Typography sx={styles.score}>XP: {game.xp}</Typography>
+                ) : (
+                  <>
+                    <Typography sx={styles.stat}>
+                      HP: {game.hp}/{game.maxHp}
+                    </Typography>
+                    <Typography sx={styles.score}>XP: {game.xp}</Typography>
+                  </>
+                )}
+              </Box>
 
               {activeTab === 0 ? (
                 <Button
                   variant="contained"
                   size="small"
                   sx={styles.resumeButton}
-                  onClick={() => handleResumeGame(token.tokenId)}
+                  onClick={() => handleResumeGame(game.tokenId)}
                 >
                   Resume
                 </Button>
               ) : (
-                <Typography sx={styles.deadLabel}>
-                  Dead
-                </Typography>
+                <Typography sx={styles.deadLabel}>Dead</Typography>
               )}
             </Box>
           ))
@@ -243,11 +329,22 @@ const styles = {
     fontFamily: "monospace",
     lineHeight: 1.2,
   },
+  statsContainer: {
+    display: "flex",
+    flexDirection: "column" as const,
+    alignItems: "flex-end",
+    minWidth: "70px",
+  },
+  stat: {
+    fontSize: "0.7rem",
+    color: "rgba(255, 255, 255, 0.5)",
+    lineHeight: 1.3,
+  },
   score: {
-    fontSize: "0.75rem",
+    fontSize: "0.7rem",
     color: "rgba(255, 255, 255, 0.6)",
     fontWeight: 500,
-    whiteSpace: "nowrap",
+    lineHeight: 1.3,
   },
   deadLabel: {
     fontSize: "0.7rem",
@@ -255,6 +352,8 @@ const styles = {
     fontWeight: 600,
     letterSpacing: "1px",
     textTransform: "uppercase" as const,
+    minWidth: "70px",
+    textAlign: "right" as const,
   },
   resumeButton: {
     minWidth: "70px",
