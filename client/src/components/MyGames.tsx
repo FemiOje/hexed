@@ -33,6 +33,7 @@ interface EnrichedGame {
   xp: number;
   isActive: boolean;
   isDead: boolean;
+  isUnspawned: boolean;
 }
 
 /** Truncate a hex token_id for display: "0xfb40...0003" */
@@ -44,13 +45,14 @@ function truncateTokenId(tokenId: string): string {
 export default function MyGames() {
   const navigate = useNavigate();
   const { address } = useController();
-  const { handleSpawn, isSpawning } = useGameActions();
+  const { handleSpawn, handleSpawnExisting, isSpawning } = useGameActions();
   const { currentNetworkConfig } = useDynamicConnector();
   const { getGameState } = useStarknetApi();
 
   const [activeTab, setActiveTab] = useState(0);
   const [games, setGames] = useState<EnrichedGame[]>([]);
   const [loading, setLoading] = useState(true);
+  const [spawningTokenId, setSpawningTokenId] = useState<string | null>(null);
 
   // Get game_token_systems address from manifest
   const gameAddress = getContractByName(
@@ -97,6 +99,10 @@ export default function MyGames() {
           continue;
         }
 
+        // Distinguish unspawned from dead: spawn sets max_hp to 110,
+        // so max_hp === 0 means spawn() was never called for this token.
+        const isUnspawned = !state.is_active && state.max_hp === 0;
+
         enriched.push({
           tokenId: token.tokenId,
           playerName: token.playerName || "",
@@ -104,7 +110,8 @@ export default function MyGames() {
           maxHp: state.max_hp,
           xp: state.xp,
           isActive: state.is_active,
-          isDead: !state.is_active && state.hp === 0,
+          isDead: !isUnspawned && !state.is_active && state.hp === 0,
+          isUnspawned,
         });
       }
 
@@ -129,7 +136,7 @@ export default function MyGames() {
     .filter((game) => (activeTab === 0 ? !game.isDead : game.isDead))
     .sort((a, b) => b.xp - a.xp);
 
-  // Handle start game
+  // Handle start game (mint + spawn)
   const handleStartGame = useCallback(async () => {
     if (!address) return;
     try {
@@ -144,6 +151,23 @@ export default function MyGames() {
       console.error("Start game failed:", error);
     }
   }, [handleSpawn, address, navigate]);
+
+  // Handle spawning an already-minted but unspawned game
+  const handleSpawnGame = useCallback(
+    async (tokenId: string) => {
+      if (!address) return;
+      try {
+        setSpawningTokenId(tokenId);
+        await handleSpawnExisting(tokenId);
+        navigate(`/game?id=${encodeURIComponent(tokenId)}`);
+      } catch (error) {
+        console.error("Spawn game failed:", error);
+      } finally {
+        setSpawningTokenId(null);
+      }
+    },
+    [handleSpawnExisting, address, navigate],
+  );
 
   // Handle resume
   const handleResumeGame = useCallback(
@@ -196,7 +220,11 @@ export default function MyGames() {
               </Box>
 
               <Box sx={styles.statsContainer}>
-                {game.isDead ? (
+                {game.isUnspawned ? (
+                  <Typography sx={styles.unspawnedLabel}>
+                    Not spawned
+                  </Typography>
+                ) : game.isDead ? (
                   <Typography sx={styles.score}>XP: {game.xp}</Typography>
                 ) : (
                   <>
@@ -209,14 +237,28 @@ export default function MyGames() {
               </Box>
 
               {activeTab === 0 ? (
-                <Button
-                  variant="contained"
-                  size="small"
-                  sx={styles.resumeButton}
-                  onClick={() => handleResumeGame(game.tokenId)}
-                >
-                  Resume
-                </Button>
+                game.isUnspawned ? (
+                  <Button
+                    variant="contained"
+                    size="small"
+                    sx={styles.spawnButton}
+                    onClick={() => handleSpawnGame(game.tokenId)}
+                    disabled={spawningTokenId === game.tokenId}
+                  >
+                    {spawningTokenId === game.tokenId
+                      ? "Spawning..."
+                      : "Spawn"}
+                  </Button>
+                ) : (
+                  <Button
+                    variant="contained"
+                    size="small"
+                    sx={styles.resumeButton}
+                    onClick={() => handleResumeGame(game.tokenId)}
+                  >
+                    Resume
+                  </Button>
+                )
               ) : (
                 <Typography sx={styles.deadLabel}>Dead</Typography>
               )}
@@ -337,6 +379,12 @@ const styles = {
     fontWeight: 500,
     lineHeight: 1.3,
   },
+  unspawnedLabel: {
+    fontSize: "0.7rem",
+    color: "rgba(251, 191, 36, 0.7)",
+    fontWeight: 500,
+    lineHeight: 1.3,
+  },
   deadLabel: {
     fontSize: "0.7rem",
     color: "rgba(255, 80, 80, 0.7)",
@@ -345,6 +393,30 @@ const styles = {
     textTransform: "uppercase" as const,
     minWidth: "70px",
     textAlign: "right" as const,
+  },
+  spawnButton: {
+    minWidth: "70px",
+    height: "28px",
+    fontSize: "0.7rem",
+    fontWeight: 600,
+    letterSpacing: "1px",
+    background: "rgba(251, 191, 36, 0.15)",
+    color: "rgba(251, 191, 36, 0.9)",
+    border: "1px solid rgba(251, 191, 36, 0.3)",
+    borderRadius: 0,
+    textTransform: "uppercase" as const,
+    boxShadow: "none",
+    "&:hover": {
+      background: "rgba(251, 191, 36, 0.25)",
+      borderColor: "rgba(251, 191, 36, 0.5)",
+      boxShadow: "none",
+    },
+    "&:disabled": {
+      background: "rgba(251, 191, 36, 0.05)",
+      color: "rgba(255, 255, 255, 0.3)",
+      borderColor: "rgba(255, 255, 255, 0.1)",
+      boxShadow: "none",
+    },
   },
   resumeButton: {
     minWidth: "70px",

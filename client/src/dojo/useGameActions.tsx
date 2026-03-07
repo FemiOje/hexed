@@ -145,6 +145,75 @@ export const useGameActions = () => {
   ]);
 
   /**
+   * Spawn an existing (already minted) game token.
+   * Used when a token was minted externally and needs spawn() called.
+   *
+   * @param tokenId - The hex token_id of the already-minted EGS token
+   */
+  const handleSpawnExisting = useCallback(
+    async (tokenId: string) => {
+      if (!address) {
+        toast.error("No account connected");
+        return;
+      }
+
+      try {
+        setIsSpawning(true);
+        setIsTransactionPending(true);
+
+        const spawnCall = spawn(tokenId);
+
+        const events = await executeAction(
+          [spawnCall],
+          () => {
+            setIsSpawning(false);
+            setIsTransactionPending(false);
+            toast.error("Spawn action failed");
+          },
+          () => {
+            setIsTransactionPending(false);
+          },
+        );
+
+        setGameId(tokenId);
+        localStorage.setItem(`hexed_game_id_${address}`, tokenId);
+
+        events.forEach((event) => {
+          processEvent(event);
+          if (event.type === "spawned") {
+            setIsSpawned(true);
+          }
+        });
+
+        toast.success("Player spawned!");
+
+        await refreshGameState();
+
+        setIsSpawning(false);
+      } catch (error) {
+        console.error("Spawn existing error:", error);
+        const errorMessage =
+          error instanceof Error ? error.message : "Unknown error";
+        setError(errorMessage);
+        toast.error(errorMessage);
+        setIsSpawning(false);
+        setIsTransactionPending(false);
+      }
+    },
+    [
+      address,
+      spawn,
+      executeAction,
+      processEvent,
+      refreshGameState,
+      setIsSpawned,
+      setGameId,
+      setIsTransactionPending,
+      setError,
+    ],
+  );
+
+  /**
    * Move player in specified direction
    * Waits for blockchain confirmation before updating UI
    * @param direction - Direction enum value
@@ -401,6 +470,7 @@ export const useGameActions = () => {
   return {
     // Actions
     handleSpawn,
+    handleSpawnExisting,
     handleMove,
 
     // Loading states
