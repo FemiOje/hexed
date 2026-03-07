@@ -1,7 +1,7 @@
 #[dojo::contract]
 pub mod game_token_systems {
     use dojo::model::ModelStorage;
-    use dojo::world::WorldStorage;
+    use dojo::world::{WorldStorage, WorldStorageTrait};
     use game_components_embeddable_game_standard::minigame::interface::IMinigameTokenData;
     use game_components_embeddable_game_standard::minigame::minigame_component::MinigameComponent;
     use hexed::constants::constants::DEFAULT_NS;
@@ -45,13 +45,13 @@ pub mod game_token_systems {
                 creator_address,
                 "Hex'd",
                 "Fully onchain async battle royale with fog of war on a hex grid",
-                "FemiOje",
-                "FemiOje",
+                "0xjinius",
+                "0xjinius",
                 "Battle Royale",
                 "https://raw.githubusercontent.com/FemiOje/hexed/embeddable/client/public/favicon-no-text.png",
                 Option::Some("#2dee2d"), // color
                 Option::Some("https://hexed-silk.vercel.app"), // client_url
-                Option::None, // renderer_address
+                self.try_get_renderer_address(), // renderer_address
                 Option::None, // settings_address
                 Option::None, // objectives_address
                 token_address,
@@ -94,6 +94,21 @@ pub mod game_token_systems {
                 results.append(!session.is_active);
             }
             results
+        }
+    }
+
+    #[generate_trait]
+    impl InternalImpl of InternalTrait {
+        fn world_default(self: @ContractState) -> dojo::world::WorldStorage {
+            self.world(@DEFAULT_NS())
+        }
+
+        fn try_get_renderer_address(self: @ContractState) -> Option<ContractAddress> {
+            let world = self.world_default();
+            match world.dns(@"renderer_systems") {
+                Option::Some((renderer_addr, _)) => Option::Some(renderer_addr),
+                Option::None => Option::None,
+            }
         }
     }
 }

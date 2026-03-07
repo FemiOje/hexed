@@ -127,6 +127,12 @@ export interface GameContextDetails {
 	context: Array<GameContext>;
 }
 
+// Type definition for `game_components_interfaces::structs::minigame::GameDetail` struct
+export interface GameDetail {
+	name: BigNumberish;
+	value: BigNumberish;
+}
+
 // Type definition for `game_components_interfaces::structs::minigame::MintGameParams` struct
 export interface MintGameParams {
 	player_name: CairoOption<BigNumberish>;
@@ -189,6 +195,7 @@ export interface SchemaType extends ISchemaType {
 		Spawned: Spawned,
 		GameContext: GameContext,
 		GameContextDetails: GameContextDetails,
+		GameDetail: GameDetail,
 		MintGameParams: MintGameParams,
 		GameState: GameState,
 	},
@@ -294,6 +301,10 @@ export const schema: SchemaType = {
 			id: new CairoOption(CairoOptionVariant.None),
 			context: [{ name: 0, value: 0, }],
 		},
+		GameDetail: {
+			name: 0,
+			value: 0,
+		},
 		MintGameParams: {
 			player_name: new CairoOption(CairoOptionVariant.None),
 			settings_id: new CairoOption(CairoOptionVariant.None),
@@ -342,6 +353,7 @@ export enum ModelsMapping {
 	Spawned = 'hexed-Spawned',
 	GameContext = 'game_components_interfaces-GameContext',
 	GameContextDetails = 'game_components_interfaces-GameContextDetails',
+	GameDetail = 'game_components_interfaces-GameDetail',
 	MintGameParams = 'game_components_interfaces-MintGameParams',
 	GameState = 'hexed-GameState',
 }

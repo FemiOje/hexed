@@ -271,6 +271,108 @@ export function setupWorld(provider: DojoProvider) {
 		}
 	};
 
+	const build_renderer_systems_gameDetails_calldata = (tokenId: BigNumberish): DojoCall => {
+		return {
+			contractName: "renderer_systems",
+			entrypoint: "game_details",
+			calldata: [tokenId],
+		};
+	};
+
+	const renderer_systems_gameDetails = async (tokenId: BigNumberish) => {
+		try {
+			return await provider.call("hexed", build_renderer_systems_gameDetails_calldata(tokenId));
+		} catch (error) {
+			console.error(error);
+			throw error;
+		}
+	};
+
+	const build_renderer_systems_gameDetailsBatch_calldata = (tokenIds: Array<BigNumberish>): DojoCall => {
+		return {
+			contractName: "renderer_systems",
+			entrypoint: "game_details_batch",
+			calldata: [tokenIds],
+		};
+	};
+
+	const renderer_systems_gameDetailsBatch = async (tokenIds: Array<BigNumberish>) => {
+		try {
+			return await provider.call("hexed", build_renderer_systems_gameDetailsBatch_calldata(tokenIds));
+		} catch (error) {
+			console.error(error);
+			throw error;
+		}
+	};
+
+	const build_renderer_systems_tokenDescription_calldata = (tokenId: BigNumberish): DojoCall => {
+		return {
+			contractName: "renderer_systems",
+			entrypoint: "token_description",
+			calldata: [tokenId],
+		};
+	};
+
+	const renderer_systems_tokenDescription = async (tokenId: BigNumberish) => {
+		try {
+			return await provider.call("hexed", build_renderer_systems_tokenDescription_calldata(tokenId));
+		} catch (error) {
+			console.error(error);
+			throw error;
+		}
+	};
+
+	const build_renderer_systems_tokenDescriptionBatch_calldata = (tokenIds: Array<BigNumberish>): DojoCall => {
+		return {
+			contractName: "renderer_systems",
+			entrypoint: "token_description_batch",
+			calldata: [tokenIds],
+		};
+	};
+
+	const renderer_systems_tokenDescriptionBatch = async (tokenIds: Array<BigNumberish>) => {
+		try {
+			return await provider.call("hexed", build_renderer_systems_tokenDescriptionBatch_calldata(tokenIds));
+		} catch (error) {
+			console.error(error);
+			throw error;
+		}
+	};
+
+	const build_renderer_systems_tokenName_calldata = (tokenId: BigNumberish): DojoCall => {
+		return {
+			contractName: "renderer_systems",
+			entrypoint: "token_name",
+			calldata: [tokenId],
+		};
+	};
+
+	const renderer_systems_tokenName = async (tokenId: BigNumberish) => {
+		try {
+			return await provider.call("hexed", build_renderer_systems_tokenName_calldata(tokenId));
+		} catch (error) {
+			console.error(error);
+			throw error;
+		}
+	};
+
+	const build_renderer_systems_tokenNameBatch_calldata = (tokenIds: Array<BigNumberish>): DojoCall => {
+		return {
+			contractName: "renderer_systems",
+			entrypoint: "token_name_batch",
+			calldata: [tokenIds],
+		};
+	};
+
+	const renderer_systems_tokenNameBatch = async (tokenIds: Array<BigNumberish>) => {
+		try {
+			return await provider.call("hexed", build_renderer_systems_tokenNameBatch_calldata(tokenIds));
+		} catch (error) {
+			console.error(error);
+			throw error;
+		}
+	};
+
 
 
 	return {
@@ -307,6 +409,20 @@ export function setupWorld(provider: DojoProvider) {
 			buildSupportsInterfaceCalldata: build_game_token_systems_supportsInterface_calldata,
 			tokenAddress: game_token_systems_tokenAddress,
 			buildTokenAddressCalldata: build_game_token_systems_tokenAddress_calldata,
+		},
+		renderer_systems: {
+			gameDetails: renderer_systems_gameDetails,
+			buildGameDetailsCalldata: build_renderer_systems_gameDetails_calldata,
+			gameDetailsBatch: renderer_systems_gameDetailsBatch,
+			buildGameDetailsBatchCalldata: build_renderer_systems_gameDetailsBatch_calldata,
+			tokenDescription: renderer_systems_tokenDescription,
+			buildTokenDescriptionCalldata: build_renderer_systems_tokenDescription_calldata,
+			tokenDescriptionBatch: renderer_systems_tokenDescriptionBatch,
+			buildTokenDescriptionBatchCalldata: build_renderer_systems_tokenDescriptionBatch_calldata,
+			tokenName: renderer_systems_tokenName,
+			buildTokenNameCalldata: build_renderer_systems_tokenName_calldata,
+			tokenNameBatch: renderer_systems_tokenNameBatch,
+			buildTokenNameBatchCalldata: build_renderer_systems_tokenNameBatch_calldata,
 		},
 	};
 }

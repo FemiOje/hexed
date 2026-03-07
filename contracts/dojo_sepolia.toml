@@ -4,7 +4,7 @@ description = "hexed"
 cover_uri = "file://assets/cover.png"
 icon_uri = "file://assets/icon.png"
 website = "https://github.com/dojoengine/dojo-starter"
-seed = "hexedseed_4"
+seed = "hexedseed_6"
 
 [world.socials]
 x = "https://x.com/0xjinius"
@@ -17,19 +17,21 @@ default = "hexed"
 
 [env]
 rpc_url = "https://api.cartridge.gg/x/starknet/sepolia"
-world_address = "0x03f04a3a4f204c0f808df2e7ba0504fbf8be9bc575cff1289cc88aba6e29c8ae"
+world_address = "0x0203ccb9dcc21b5a1ec62aafde4180345291747333d819f14649f35d302315ad"
 account_address = "0x04033264fbcf087ee31b5940908e53956aa718a16fa1e6a51df778be45502c55"
 keystore_path = "./deployments/keystore.json"
 
 [writers]
 "hexed" = [
     "hexed-game_systems", 
-    "hexed-game_token_systems"
+    "hexed-game_token_systems",
+    "hexed-renderer_systems"
 ]
 
 [migration]
 order_inits = [
     "hexed-game_systems",
+    "hexed-renderer_systems",
     "hexed-game_token_systems"
 ]
 

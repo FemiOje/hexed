@@ -1,8 +1,8 @@
 {
   "world": {
     "class_hash": "0x381899226c066a0262f45d6ab815f89818e0874ec3e66cdf72b5e92d8db4680",
-    "address": "0x3f04a3a4f204c0f808df2e7ba0504fbf8be9bc575cff1289cc88aba6e29c8ae",
-    "seed": "hexedseed_4",
+    "address": "0x203ccb9dcc21b5a1ec62aafde4180345291747333d819f14649f35d302315ad",
+    "seed": "hexedseed_6",
     "name": "hexed",
     "entrypoints": [
       "uuid",
@@ -33,7 +33,7 @@
   },
   "contracts": [
     {
-      "address": "0x2907de47d5934305ee718920e965a7919d7cfafc619c2815a66451e1c80e8a6",
+      "address": "0x4120fc4e3239f620bf84ae8bf8e5e40d99d2f15f73689b8e8c52d1561fdf12f",
       "class_hash": "0x7a9f92caffb1af78e7b58138cf8bcafc766f82bcb6a9e0e3925d10813b130e",
       "init_calldata": [],
       "tag": "hexed-game_systems",
@@ -46,8 +46,8 @@
       ]
     },
     {
-      "address": "0x45b5c13e56e2aa6db10b02ae4abda238487eaf64ab395fef0a1210ea7b86055",
-      "class_hash": "0x7109f3ed8bc193b1dac677da8e99f4c758f79e1957cc63a7141cb26ef173bb0",
+      "address": "0x26edbb44e3b511e2aa529a487e5bc8c5b9fbe38398305185cdf7bdcc1653e1d",
+      "class_hash": "0x754c9b7ef49c3211f5c03f55b7ac1950ef4efddb75beb77348e61a1b6bebb42",
       "init_calldata": [
         "0x02CA2BAE77044D5646F0fc7Aaa0eDb75BDfA17a5F62635E8fddf930B26D4E764",
         "0x0142712722e62a38f9c40fcc904610e1a14c70125876ecaaf25d803556734467"
@@ -56,6 +56,16 @@
       "selector": "0x3a8e6afcbed4f8488034639bbd8a9b5fab95aaca277b7cfae16eed10a9103a8",
       "systems": [
         "dojo_init",
+        "upgrade"
+      ]
+    },
+    {
+      "address": "0x9534c3d6cbbc1ab2850cef6f156f44e8308d73d6eb911c632ab5b973759389",
+      "class_hash": "0x706d756352e2afe2a10774fc4f235d061dc0446f748f5fb19952313b0982cd4",
+      "init_calldata": [],
+      "tag": "hexed-renderer_systems",
+      "selector": "0x4d8d6e4e5c010c2606e3e65681bbc5e44ecb9470d2ed3d0820d07f80bb3c214",
+      "systems": [
         "upgrade"
       ]
     }
@@ -525,6 +535,16 @@
         {
           "name": "snapshot",
           "type": "@core::array::Array::<game_components_interfaces::structs::metagame::GameContext>"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "core::array::Span::<game_components_interfaces::structs::minigame::GameDetail>",
+      "members": [
+        {
+          "name": "snapshot",
+          "type": "@core::array::Array::<game_components_interfaces::structs::minigame::GameDetail>"
         }
       ]
     },
@@ -2328,18 +2348,9 @@
     {
       "type": "function",
       "name": "dojo_init",
-      "inputs": [
-        {
-          "name": "creator_address",
-          "type": "core::starknet::contract_address::ContractAddress"
-        },
-        {
-          "name": "token_address",
-          "type": "core::starknet::contract_address::ContractAddress"
-        }
-      ],
+      "inputs": [],
       "outputs": [],
-      "state_mutability": "external"
+      "state_mutability": "view"
     },
     {
       "type": "function",
@@ -2503,6 +2514,108 @@
     },
     {
       "type": "interface",
+      "name": "game_components_interfaces::minigame::core::IMinigameDetails",
+      "items": [
+        {
+          "type": "function",
+          "name": "token_name",
+          "inputs": [
+            {
+              "name": "token_id",
+              "type": "core::felt252"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::byte_array::ByteArray"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "token_description",
+          "inputs": [
+            {
+              "name": "token_id",
+              "type": "core::felt252"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::byte_array::ByteArray"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "game_details",
+          "inputs": [
+            {
+              "name": "token_id",
+              "type": "core::felt252"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::array::Span::<game_components_interfaces::structs::minigame::GameDetail>"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "token_name_batch",
+          "inputs": [
+            {
+              "name": "token_ids",
+              "type": "core::array::Span::<core::felt252>"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::array::Array::<core::byte_array::ByteArray>"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "token_description_batch",
+          "inputs": [
+            {
+              "name": "token_ids",
+              "type": "core::array::Span::<core::felt252>"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::array::Array::<core::byte_array::ByteArray>"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "game_details_batch",
+          "inputs": [
+            {
+              "name": "token_ids",
+              "type": "core::array::Span::<core::felt252>"
+            }
+          ],
+          "outputs": [
+            {
+              "type": "core::array::Array::<core::array::Span::<game_components_interfaces::structs::minigame::GameDetail>>"
+            }
+          ],
+          "state_mutability": "view"
+        }
+      ]
+    },
+    {
+      "type": "interface",
       "name": "game_components_interfaces::minigame::core::IMinigameTokenData",
       "items": [
         {
@@ -2604,6 +2717,20 @@
         {
           "name": "context",
           "type": "core::array::Span::<game_components_interfaces::structs::metagame::GameContext>"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "game_components_interfaces::structs::minigame::GameDetail",
+      "members": [
+        {
+          "name": "name",
+          "type": "core::felt252"
+        },
+        {
+          "name": "value",
+          "type": "core::felt252"
         }
       ]
     },
@@ -3483,6 +3610,23 @@
           "name": "SRC5Event",
           "type": "openzeppelin_introspection::src5::SRC5Component::Event",
           "kind": "flat"
+        }
+      ]
+    },
+    {
+      "type": "event",
+      "name": "hexed::systems::renderer::contracts::renderer_systems::Event",
+      "kind": "enum",
+      "variants": [
+        {
+          "name": "UpgradeableEvent",
+          "type": "dojo::contract::components::upgradeable::upgradeable_cpt::Event",
+          "kind": "nested"
+        },
+        {
+          "name": "WorldProviderEvent",
+          "type": "dojo::contract::components::world_provider::world_provider_cpt::Event",
+          "kind": "nested"
         }
       ]
     },
