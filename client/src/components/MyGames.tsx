@@ -66,9 +66,7 @@ export default function MyGames() {
     address
       ? {
           owner: addAddressPadding(address),
-          gameAddress: gameAddress
-            ? addAddressPadding(gameAddress)
-            : undefined,
+          gameAddress: gameAddress ? addAddressPadding(gameAddress) : undefined,
         }
       : undefined,
   );
@@ -245,9 +243,7 @@ export default function MyGames() {
                     onClick={() => handleSpawnGame(game.tokenId)}
                     disabled={spawningTokenId === game.tokenId}
                   >
-                    {spawningTokenId === game.tokenId
-                      ? "Spawning..."
-                      : "Spawn"}
+                    {spawningTokenId === game.tokenId ? "Spawning..." : "Spawn"}
                   </Button>
                 ) : (
                   <Button
@@ -262,6 +258,22 @@ export default function MyGames() {
               ) : (
                 <Typography sx={styles.deadLabel}>Dead</Typography>
               )}
+              <span>
+                <Button
+                  variant="contained"
+                  size="small"
+                  sx={styles.viewTokenButton}
+                  onClick={() =>
+                    window.open(
+                      "https://funfactory.gg/portfolio",
+                      "_blank",
+                      "noopener noreferrer",
+                    )
+                  }
+                >
+                  View Token
+                </Button>
+              </span>
             </Box>
           ))
         )}
@@ -419,6 +431,24 @@ const styles = {
     },
   },
   resumeButton: {
+    minWidth: "70px",
+    height: "28px",
+    fontSize: "0.7rem",
+    fontWeight: 600,
+    letterSpacing: "1px",
+    background: "rgba(68, 204, 68, 0.15)",
+    color: "rgba(68, 204, 68, 0.9)",
+    border: "1px solid rgba(68, 204, 68, 0.3)",
+    borderRadius: 0,
+    textTransform: "uppercase" as const,
+    boxShadow: "none",
+    "&:hover": {
+      background: "rgba(68, 204, 68, 0.25)",
+      borderColor: "rgba(68, 204, 68, 0.5)",
+      boxShadow: "none",
+    },
+  },
+  viewTokenButton: {
     minWidth: "70px",
     height: "28px",
     fontSize: "0.7rem",
