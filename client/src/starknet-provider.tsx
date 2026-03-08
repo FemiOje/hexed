@@ -147,8 +147,8 @@ const cartridgeController =
         url: "https://x.cartridge.gg",
         signupOptions,
         namespace: controllerConfig.namespace,
-        // slot: controllerConfig.slot,
-        // preset: controllerConfig.preset,
+        slot: controllerConfig.slot,
+        preset: controllerConfig.preset,
         tokens: {
           erc20: ["eth", "strk"],
         },
