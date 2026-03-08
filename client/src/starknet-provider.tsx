@@ -40,16 +40,20 @@ const buildPolicies = (networkConfig: NetworkConfig) => {
     contracts: {},
   };
 
-  // Add game contract policies if they exist
+  // Add contract policies (grouped by contract address)
   if (networkConfig.policies && networkConfig.policies.length > 0) {
-    const gameContractAddress = networkConfig.policies[0].target;
-    if (gameContractAddress && gameContractAddress !== "") {
-      policies.contracts[gameContractAddress] = {
-        methods: networkConfig.policies.map((policy) => ({
-          name: policy.method,
-          entrypoint: policy.method,
-        })),
-      };
+    for (const policy of networkConfig.policies) {
+      const target = policy.target;
+      if (!target || target === "") continue;
+
+      if (!policies.contracts[target]) {
+        policies.contracts[target] = { methods: [] };
+      }
+
+      policies.contracts[target].methods.push({
+        name: policy.method,
+        entrypoint: policy.method,
+      });
     }
   }
 

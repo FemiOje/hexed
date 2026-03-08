@@ -1,7 +1,7 @@
 use dojo::model::ModelStorage;
 use hexed::models::{
     COMBAT_DAMAGE, COMBAT_HP_REWARD, COMBAT_RETALIATION_DAMAGE, COMBAT_XP_REWARD, Direction,
-    GameCounter, GameSession, PlayerState, PlayerStats, TileOccupant, Vec2,
+    GameCounter, GameSession, HighestScore, PlayerState, PlayerStats, TileOccupant, Vec2,
 };
 use hexed::utils::hex::get_neighbor;
 
@@ -16,9 +16,11 @@ pub struct CombatOutcome {
 }
 
 /// Checks whether the tile's occupant is an active player.
-pub fn has_active_defender(ref world: dojo::world::WorldStorage, defender_game_id: u32) -> bool {
-    if defender_game_id != 0 {
-        let defender_session: GameSession = world.read_model(defender_game_id);
+pub fn has_active_defender(
+    ref world: dojo::world::WorldStorage, defender_token_id: felt252,
+) -> bool {
+    if defender_token_id != 0 {
+        let defender_session: GameSession = world.read_model(defender_token_id);
         defender_session.is_active
     } else {
         false
@@ -41,16 +43,16 @@ pub fn add_xp(ref stats: PlayerStats, amount: u32) {
 /// Returns outcome data for the caller to emit events.
 pub fn resolve_combat(
     ref world: dojo::world::WorldStorage,
-    game_id: u32,
-    defender_game_id: u32,
+    token_id: felt252,
+    defender_token_id: felt252,
     ref state: PlayerState,
     direction: Direction,
 ) -> CombatOutcome {
     let old_position = state.position;
     let next_vec = get_neighbor(old_position, direction);
 
-    let mut attacker_stats: PlayerStats = world.read_model(game_id);
-    let mut defender_stats: PlayerStats = world.read_model(defender_game_id);
+    let mut attacker_stats: PlayerStats = world.read_model(token_id);
+    let mut defender_stats: PlayerStats = world.read_model(defender_token_id);
 
     // Higher XP wins. Equal XP penalises defender (attacker wins).
     let attacker_won = attacker_stats.xp >= defender_stats.xp;
@@ -79,25 +81,25 @@ pub fn resolve_combat(
         world.write_model(@defender_stats);
 
         if defender_died {
-            handle_player_death(ref world, defender_game_id, next_vec, game_id);
+            handle_player_death(ref world, defender_token_id, next_vec, token_id);
 
             state.position = next_vec;
             state.last_direction = Option::Some(direction);
-            world.write_model(@TileOccupant { x: next_vec.x, y: next_vec.y, game_id });
-            world.write_model(@TileOccupant { x: old_position.x, y: old_position.y, game_id: 0 });
+            world.write_model(@TileOccupant { x: next_vec.x, y: next_vec.y, token_id });
+            world.write_model(@TileOccupant { x: old_position.x, y: old_position.y, token_id: 0 });
             world.write_model(@state);
         } else {
-            let mut defender_state: PlayerState = world.read_model(defender_game_id);
+            let mut defender_state: PlayerState = world.read_model(defender_token_id);
 
             state.position = next_vec;
             state.last_direction = Option::Some(direction);
             defender_state.position = old_position;
 
-            world.write_model(@TileOccupant { x: next_vec.x, y: next_vec.y, game_id });
+            world.write_model(@TileOccupant { x: next_vec.x, y: next_vec.y, token_id });
             world
                 .write_model(
                     @TileOccupant {
-                        x: old_position.x, y: old_position.y, game_id: defender_game_id,
+                        x: old_position.x, y: old_position.y, token_id: defender_token_id,
                     },
                 );
 
@@ -127,14 +129,14 @@ pub fn resolve_combat(
         world.write_model(@defender_stats);
 
         if attacker_died {
-            handle_player_death(ref world, game_id, old_position, defender_game_id);
+            handle_player_death(ref world, token_id, old_position, defender_token_id);
         } else {
             state.last_direction = Option::Some(direction);
             world.write_model(@state);
         }
 
         if defender_died {
-            handle_player_death(ref world, defender_game_id, next_vec, game_id);
+            handle_player_death(ref world, defender_token_id, next_vec, token_id);
         }
     }
 
@@ -159,20 +161,19 @@ pub fn resolve_combat(
 /// counter.
 /// Does NOT emit PlayerDied event — the caller is responsible for that.
 pub fn handle_player_death(
-    ref world: dojo::world::WorldStorage, game_id: u32, position: Vec2, killed_by: u32,
+    ref world: dojo::world::WorldStorage, token_id: felt252, position: Vec2, killed_by: felt252,
 ) {
     // Clear tile occupancy
-    world.write_model(@TileOccupant { x: position.x, y: position.y, game_id: 0 });
+    world.write_model(@TileOccupant { x: position.x, y: position.y, token_id: 0 });
 
     // Deactivate session
-    let session: GameSession = world.read_model(game_id);
-    world.write_model(@GameSession { game_id, player: session.player, is_active: false });
+    world.write_model(@GameSession { token_id, is_active: false });
 
     // Disable movement and zero out position
     world
         .write_model(
             @PlayerState {
-                game_id,
+                token_id,
                 position: Vec2 { x: 0, y: 0 },
                 last_direction: Option::None,
                 can_move: false,
@@ -180,10 +181,19 @@ pub fn handle_player_death(
         );
 
     // Decrement active game counter
-    let mut counter: GameCounter = world.read_model(0_u32);
+    let mut counter: GameCounter = world.read_model(0);
     if counter.active_games > 0 {
         counter.active_games -= 1;
         world.write_model(@counter);
     }
-}
 
+    // Auto-register score if this is a new highest
+    let stats: PlayerStats = world.read_model(token_id);
+    let current: HighestScore = world.read_model(0);
+    if stats.xp > current.xp {
+        world
+            .write_model(
+                @HighestScore { token_id: 0, scoring_token_id: token_id, xp: stats.xp },
+            );
+    }
+}

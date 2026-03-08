@@ -1,59 +1,21 @@
-import { useCallback, useState } from "react";
+import { useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { Box, Button, Typography, CircularProgress, Link } from "@mui/material";
+import { Box, Button, Typography, Link } from "@mui/material";
 import { useDeathXp, useDeathReason, useGameStore } from "../stores/gameStore";
-import { useController } from "../contexts/controller";
-import { useSystemCalls } from "../dojo/useSystemCalls";
 import { HighestScoreDisplay } from "./HighestScoreDisplay";
-import toast, { Toaster } from "react-hot-toast";
+import { Toaster } from "react-hot-toast";
 
 export default function DeathPage() {
   const navigate = useNavigate();
   const deathXp = useDeathXp();
   const deathReason = useDeathReason();
   const { setIsDead, resetGameState } = useGameStore();
-  const { address, playerName } = useController();
-  const { registerScore, executeAction } = useSystemCalls();
-  const [isRegisteringScore, setIsRegisteringScore] = useState(false);
 
   const handleBackToLobby = useCallback(() => {
     setIsDead(false);
     resetGameState();
     navigate("/");
   }, [setIsDead, resetGameState, navigate]);
-
-  const handleRegisterScore = useCallback(async () => {
-    if (!address) {
-      toast.error("No account connected");
-      return;
-    }
-
-    try {
-      setIsRegisteringScore(true);
-
-      const scoreCall = registerScore(
-        address,
-        playerName || address,
-        deathXp
-      );
-
-      await executeAction(
-        [scoreCall],
-        () => {
-          setIsRegisteringScore(false);
-          toast.error("Failed to register score");
-        },
-        () => {
-          setIsRegisteringScore(false);
-          toast.success("Score registered on leaderboard!");
-        }
-      );
-    } catch (error) {
-      console.error("Error registering score:", error);
-      setIsRegisteringScore(false);
-      toast.error("Error registering score");
-    }
-  }, [address, playerName, deathXp, registerScore, executeAction]);
 
   return (
     <Box sx={styles.container}>
@@ -101,23 +63,6 @@ export default function DeathPage() {
         <Box sx={styles.divider} />
 
         <Box sx={styles.buttonsContainer}>
-          <Button
-            variant="outlined"
-            size="large"
-            onClick={handleRegisterScore}
-            disabled={isRegisteringScore}
-            sx={styles.registerScoreButton}
-          >
-            {isRegisteringScore ? (
-              <>
-                <CircularProgress size={20} sx={styles.buttonSpinner} />
-                Registering...
-              </>
-            ) : (
-              "Register Score"
-            )}
-          </Button>
-
           <Button
             variant="outlined"
             size="large"
@@ -341,35 +286,6 @@ const styles = {
     width: "100%",
     maxWidth: "350px",
     marginTop: "24px",
-  },
-  registerScoreButton: {
-    padding: "14px 40px",
-    fontSize: "0.85rem",
-    fontWeight: 600,
-    letterSpacing: "3px",
-    color: "rgba(59, 130, 246, 0.8)",
-    borderColor: "rgba(59, 130, 246, 0.3)",
-    borderWidth: "1px",
-    borderRadius: "0",
-    textTransform: "uppercase" as const,
-    transition: "color 0.2s, border-color 0.2s, background-color 0.2s",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: "8px",
-    "&:hover": {
-      borderColor: "rgba(59, 130, 246, 0.7)",
-      color: "#3b82f6",
-      backgroundColor: "rgba(59, 130, 246, 0.05)",
-    },
-    "&:disabled": {
-      opacity: 0.6,
-      cursor: "not-allowed",
-    },
-  },
-  buttonSpinner: {
-    color: "rgba(59, 130, 246, 0.8)",
-    marginRight: "4px",
   },
   musicCredit: {
     marginTop: "16px",

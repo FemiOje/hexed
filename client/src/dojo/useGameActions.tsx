@@ -10,22 +10,28 @@ import { useSystemCalls } from "./useSystemCalls";
 import { useGameDirector } from "@/contexts/GameDirector";
 import { useGameStore } from "@/stores/gameStore";
 import { useUIStore } from "@/stores/uiStore";
-import { Direction, directionToString, EncounterOutcome, GameEvent } from "@/types/game";
+import {
+  Direction,
+  directionToString,
+  EncounterOutcome,
+  GameEvent,
+} from "@/types/game";
 import { useController } from "@/contexts/controller";
 import { useStarknetApi } from "@/api/starknet";
 import toast from "react-hot-toast";
 
 /**
  * Format encounter event into a display string
+ * Values match Cairo constants in contracts/src/models.cairo
  */
 function formatEncounterText(event: GameEvent): string {
   switch (event.encounterOutcome) {
     case EncounterOutcome.Heal:
-      return "HEAL! +20 HP";
+      return "HEAL! +10 HP";
     case EncounterOutcome.Empower:
-      return "EMPOWER! +25 XP";
+      return "EMPOWER! +20 XP";
     case EncounterOutcome.Blessing:
-      return "BLESSING! +10 HP, +15 XP";
+      return "BLESSING! +5 HP, +10 XP";
     case EncounterOutcome.Poison:
       return "POISON!! -15 HP";
     case EncounterOutcome.Drain:
@@ -39,17 +45,19 @@ function formatEncounterText(event: GameEvent): string {
 
 export const useGameActions = () => {
   const { address, playerName } = useController();
-  const { spawn, move, registerScore, executeAction, setCurrentMoves } = useSystemCalls();
+  const {
+    mintGame,
+    spawn,
+    move,
+    executeAction,
+    setCurrentMoves,
+  } = useSystemCalls();
   const { processEvent, refreshGameState } = useGameDirector();
   const { getHighestScore } = useStarknetApi();
 
   // Get store state and actions
-  const {
-    setIsSpawned,
-    setGameId,
-    getCurrentPosition,
-    canPlayerMove,
-  } = useGameStore();
+  const { setIsSpawned, setGameId, getCurrentPosition, canPlayerMove } =
+    useGameStore();
 
   // Get current game_id from store
   const gameId = useGameStore((state) => state.gameId);
@@ -61,7 +69,8 @@ export const useGameActions = () => {
 
   /**
    * Spawn a new player
-   * Creates player at spawn point and initializes game state
+   * Mints an EGS token, then calls spawn(token_id) on game_systems.
+   * Stores the hex token_id in store + localStorage as the single game identifier.
    */
   const handleSpawn = useCallback(async () => {
     if (!address) {
@@ -73,47 +82,40 @@ export const useGameActions = () => {
       setIsSpawning(true);
       setIsTransactionPending(true);
 
+      // Mint a new EGS game token (returns hex token_id)
+      const nameForMint =
+        playerName && playerName.trim().length > 0 ? playerName : address;
+      const tokenId = await mintGame(nameForMint);
 
-      // Create spawn call
-      const spawnCall = spawn();
+      // Create spawn call with token_id
+      const spawnCall = spawn(tokenId);
 
-      // Execute with callbacks
+      // Execute spawn
       const events = await executeAction(
         [spawnCall],
         () => {
-          // Rollback on failure
           setIsSpawning(false);
           setIsTransactionPending(false);
           toast.error("Spawn action failed");
         },
         () => {
-          // Success callback
           setIsTransactionPending(false);
-        }
+        },
       );
 
+      // Save token_id to store + localStorage
+      setGameId(tokenId);
+      localStorage.setItem(`hexed_game_id_${address}`, tokenId);
 
       // Process events through GameDirector
       events.forEach((event) => {
         processEvent(event);
-
         if (event.type === "spawned") {
           setIsSpawned(true);
-
-          // Capture and save game_id
-          if (event.gameId) {
-            setGameId(event.gameId);
-
-            // Save to localStorage for persistence
-            if (address) {
-              const storageKey = `hexed_game_id_${address}`;
-              localStorage.setItem(storageKey, event.gameId.toString());
-            }
-          }
-
-          toast.success("Player spawned!");
         }
       });
+
+      toast.success("Player spawned!");
 
       // Refresh state from blockchain to ensure accuracy
       await refreshGameState();
@@ -121,7 +123,8 @@ export const useGameActions = () => {
       setIsSpawning(false);
     } catch (error) {
       console.error("Spawn error:", error);
-      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
       setError(errorMessage);
       toast.error(errorMessage);
       setIsSpawning(false);
@@ -129,6 +132,8 @@ export const useGameActions = () => {
     }
   }, [
     address,
+    playerName,
+    mintGame,
     spawn,
     executeAction,
     processEvent,
@@ -138,6 +143,75 @@ export const useGameActions = () => {
     setIsTransactionPending,
     setError,
   ]);
+
+  /**
+   * Spawn an existing (already minted) game token.
+   * Used when a token was minted externally and needs spawn() called.
+   *
+   * @param tokenId - The hex token_id of the already-minted EGS token
+   */
+  const handleSpawnExisting = useCallback(
+    async (tokenId: string) => {
+      if (!address) {
+        toast.error("No account connected");
+        return;
+      }
+
+      try {
+        setIsSpawning(true);
+        setIsTransactionPending(true);
+
+        const spawnCall = spawn(tokenId);
+
+        const events = await executeAction(
+          [spawnCall],
+          () => {
+            setIsSpawning(false);
+            setIsTransactionPending(false);
+            toast.error("Spawn action failed");
+          },
+          () => {
+            setIsTransactionPending(false);
+          },
+        );
+
+        setGameId(tokenId);
+        localStorage.setItem(`hexed_game_id_${address}`, tokenId);
+
+        events.forEach((event) => {
+          processEvent(event);
+          if (event.type === "spawned") {
+            setIsSpawned(true);
+          }
+        });
+
+        toast.success("Player spawned!");
+
+        await refreshGameState();
+
+        setIsSpawning(false);
+      } catch (error) {
+        console.error("Spawn existing error:", error);
+        const errorMessage =
+          error instanceof Error ? error.message : "Unknown error";
+        setError(errorMessage);
+        toast.error(errorMessage);
+        setIsSpawning(false);
+        setIsTransactionPending(false);
+      }
+    },
+    [
+      address,
+      spawn,
+      executeAction,
+      processEvent,
+      refreshGameState,
+      setIsSpawned,
+      setGameId,
+      setIsTransactionPending,
+      setError,
+    ],
+  );
 
   /**
    * Move player in specified direction
@@ -192,7 +266,7 @@ export const useGameActions = () => {
           },
           () => {
             setIsTransactionPending(false);
-          }
+          },
         );
 
         // Detect move outcome and capture encounter event
@@ -231,36 +305,20 @@ export const useGameActions = () => {
 
         // Override death reason with specific cause from move outcome
         if (playerDied) {
-          const reason = moveOutcome === "combat_lost"
-            ? "Defeated in combat with another player"
-            : "Killed by a deadly encounter";
+          const reason =
+            moveOutcome === "combat_lost"
+              ? "Defeated in combat with another player"
+              : "Killed by a deadly encounter";
           useGameStore.getState().setIsDead(true, newXp, reason);
 
-          // Register score on leaderboard if player died
+          // Refresh leaderboard — score was auto-registered by the contract on death
           try {
-            const scoreCall = registerScore(
-              address!,
-              playerName || address!,
-              newXp
-            );
-
-            // Execute register_score without waiting for full confirmation
-            await executeAction(
-              [scoreCall],
-              () => {
-              },
-              () => {
-              }
-            );
-
-            // Fetch and update highest score in store
             const highestScore = await getHighestScore();
             if (highestScore) {
               useGameStore.getState().setHighestScore(highestScore);
             }
           } catch (scoreError) {
-            console.error("Error registering score:", scoreError);
-            // Don't fail the entire move if score registration fails
+            console.error("Error fetching highest score:", scoreError);
           }
         }
 
@@ -290,17 +348,25 @@ export const useGameActions = () => {
                   maxWidth: 280,
                 }}
               >
-                <div style={{ fontWeight: 600, marginBottom: 6, color: combatColor }}>
+                <div
+                  style={{
+                    fontWeight: 600,
+                    marginBottom: 6,
+                    color: combatColor,
+                  }}
+                >
                   {combatTitle}
                 </div>
                 {xpGained !== 0 && (
                   <div style={{ color: xpGained > 0 ? "#4caf50" : "#f44336" }}>
-                    {xpGained > 0 ? "+" : ""}{xpGained} XP
+                    {xpGained > 0 ? "+" : ""}
+                    {xpGained} XP
                   </div>
                 )}
                 {hpDelta !== 0 && (
                   <div style={{ color: hpDelta > 0 ? "#4caf50" : "#f44336" }}>
-                    {hpDelta > 0 ? "+" : ""}{hpDelta} HP
+                    {hpDelta > 0 ? "+" : ""}
+                    {hpDelta} HP
                   </div>
                 )}
                 <div style={{ color: "#aaa", fontSize: 11, marginTop: 4 }}>
@@ -308,7 +374,7 @@ export const useGameActions = () => {
                 </div>
               </div>
             ),
-            { duration: 3000 }
+            { duration: 3000 },
           );
         } else if (moveOutcome === "moved") {
           // Toast 1: Movement toast (always shown)
@@ -333,7 +399,7 @@ export const useGameActions = () => {
                 </div>
               </div>
             ),
-            { duration: 4500, position: "bottom-center" }
+            { duration: 4500, position: "bottom-center" },
           );
 
           // Toast 2: Encounter toast (if encounter event was received)
@@ -364,14 +430,15 @@ export const useGameActions = () => {
                     </div>
                   </div>
                 ),
-                { duration: 4500 }
+                { duration: 4500 },
               );
             }, 400);
           }
         }
       } catch (error) {
         console.error("Move error:", error);
-        const errorMessage = error instanceof Error ? error.message : "Unknown error";
+        const errorMessage =
+          error instanceof Error ? error.message : "Unknown error";
         setError(errorMessage);
         toast.error(errorMessage);
       } finally {
@@ -381,11 +448,9 @@ export const useGameActions = () => {
     },
     [
       address,
-      playerName,
       gameId,
       isMoving,
       move,
-      registerScore,
       executeAction,
       processEvent,
       refreshGameState,
@@ -395,7 +460,7 @@ export const useGameActions = () => {
       getHighestScore,
       setIsTransactionPending,
       setError,
-    ]
+    ],
   );
 
   // Get error state from UI store
@@ -405,6 +470,7 @@ export const useGameActions = () => {
   return {
     // Actions
     handleSpawn,
+    handleSpawnExisting,
     handleMove,
 
     // Loading states

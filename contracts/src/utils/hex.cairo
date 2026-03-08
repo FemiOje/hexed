@@ -33,8 +33,8 @@ pub fn get_neighbor_occupancy(ref world: dojo::world::WorldStorage, position: Ve
         let neighbor = get_neighbor(position, dir);
         if is_within_bounds(neighbor) {
             let tile: TileOccupant = world.read_model((neighbor.x, neighbor.y));
-            if tile.game_id != 0 {
-                let session: GameSession = world.read_model(tile.game_id);
+            if tile.token_id != 0 {
+                let session: GameSession = world.read_model(tile.token_id);
                 if session.is_active {
                     mask = mask | pow2(i);
                 }

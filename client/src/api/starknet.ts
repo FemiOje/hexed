@@ -8,7 +8,7 @@
 import { useDynamicConnector } from "@/starknet-provider";
 import { getContractByName } from "@/utils/networkConfig";
 import { Position, Moves, GameState } from "@/types/game";
-import { num, hash } from "starknet";
+import { hash } from "starknet";
 import { feltHexToI32 } from "@/utils/helpers";
 
 /**
@@ -154,10 +154,10 @@ export const useStarknetApi = () => {
    * Single RPC call to actions.get_game_state(game_id)
    * Following death-mountain pattern for efficient state restoration
    *
-   * @param gameId - The game ID (u32)
+   * @param gameId - The token_id (packed felt252 hex string)
    * @returns GameState object or null
    */
-  const getGameState = async (gameId: number): Promise<GameState | null> => {
+  const getGameState = async (gameId: string): Promise<GameState | null> => {
     try {
       // Get actions contract address from manifest
       const gameSystemsContract = getContractByName(
@@ -189,7 +189,7 @@ export const useStarknetApi = () => {
             {
               contract_address: gameSystemsContract.address,
               entry_point_selector: selector,
-              calldata: [num.toHex(gameId)],
+              calldata: [gameId],
             },
             "pre_confirmed",
           ],
@@ -205,11 +205,10 @@ export const useStarknetApi = () => {
       }
 
       // Parse GameState struct:
-      // GameState { game_id, player, position.x, position.y, last_direction (Option), can_move, is_active }
+      // GameState { token_id, position.x, position.y, last_direction (Option), can_move, is_active, hp, max_hp, xp, neighbor_occupancy }
       // Option<Direction> serializes as TWO felts: variant (0=Some, 1=None) + value if Some
       let idx = 0;
-      const parsedGameId = parseInt(data.result[idx++], 16);
-      const player = data.result[idx++];
+      const parsedGameId = data.result[idx++];  // token_id as hex string (packed felt252)
 
       // Position (Vec2 with i32 values stored as felt252)
       // Negative i32 values are stored as STARK_PRIME - |value|, so use BigInt
@@ -238,7 +237,6 @@ export const useStarknetApi = () => {
 
       return {
         game_id: parsedGameId,
-        player,
         position: { x: posX, y: posY },
         last_direction: lastDirection,
         can_move: canMove,
@@ -255,81 +253,83 @@ export const useStarknetApi = () => {
   };
 
   /**
-   * Get highest score from leaderboard
-   * Calls get_highest_score view function on game_systems contract
+   * Resolve the current owner of an ERC721 token via Torii SQL.
+   * Torii indexes all ERC721 transfers, so token_balances contains ownership data.
    *
-   * @returns Object with player, username, xp or null
+   * @param tokenId - The token ID as a hex string (felt252)
+   * @returns Owner address as hex string, or "0x0" on failure
+   */
+  const resolveTokenOwner = async (tokenId: string): Promise<string> => {
+    try {
+      // Torii stores token_id as "{contract}:{padded_token_hex}" in token_balances.
+      // Search by suffix since we know the token ID but the padding may vary.
+      const tokenIdClean = tokenId.replace(/^0x0*/, "");
+      const query = `SELECT account_address FROM token_balances WHERE token_id LIKE '%${tokenIdClean}' AND balance != '0x0000000000000000000000000000000000000000000000000000000000000000' LIMIT 1`;
+      const response = await fetch(
+        `${currentNetworkConfig.toriiUrl}/sql?q=${encodeURIComponent(query)}`
+      );
+      const rows = await response.json();
+      if (Array.isArray(rows) && rows.length > 0) {
+        return rows[0].account_address || "0x0";
+      }
+      return "0x0";
+    } catch (error) {
+      console.error("Error resolving token owner:", error);
+      return "0x0";
+    }
+  };
+
+  /**
+   * Get highest score from leaderboard via Torii GraphQL query.
+   * Reads the HighestScore model (singleton key=0) and resolves the
+   * current owner of the scoring token via ERC721 owner_of.
+   *
+   * @returns Object with scoringTokenId, ownerAddress, xp or null
    */
   const getHighestScore = async () => {
     try {
-      // Get game_systems contract address from manifest
-      const gameSystemsContract = getContractByName(
-        currentNetworkConfig.manifest,
-        currentNetworkConfig.namespace,
-        "game_systems"
+      // Query Torii for the HighestScore model
+      const toriiResponse = await fetch(
+        `${currentNetworkConfig.toriiUrl}/graphql`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            query: `{
+              hexedHighestScoreModels {
+                edges {
+                  node {
+                    scoring_token_id
+                    xp
+                  }
+                }
+              }
+            }`,
+          }),
+        }
       );
 
-      if (!gameSystemsContract) {
-        console.error("game_systems contract not found in manifest");
+      const toriiData = await toriiResponse.json();
+      const edges =
+        toriiData?.data?.hexedHighestScoreModels?.edges;
+      if (!edges?.length) return null;
+
+      const { scoring_token_id, xp } = edges[0].node;
+      const scoringTokenId = String(scoring_token_id);
+      const xpValue = Number(xp);
+
+      // No score recorded yet
+      if (!scoringTokenId || scoringTokenId === "0" || scoringTokenId === "0x0" || xpValue === 0) {
         return null;
       }
 
-      // Call get_highest_score view function (takes no parameters)
-      const selector = hash.getSelectorFromName("get_highest_score");
-
-      const response = await fetch(currentNetworkConfig.rpcUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          jsonrpc: "2.0",
-          method: "starknet_call",
-          params: [
-            {
-              contract_address: gameSystemsContract.address,
-              entry_point_selector: selector,
-              calldata: [], // get_highest_score takes no parameters
-            },
-            "pre_confirmed",
-          ],
-          id: 0,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!data?.result || data.result.length < 3) {
-        // No highest score yet
-        return null;
-      }
-
-      // Parse HighestScore struct: player, username (felt252), xp
-      const player = data.result[0];
-      const usernameFelt = data.result[1];
-      const xp = parseInt(data.result[2], 16);
-
-      // Convert felt252 username back to string (simple ASCII decoding)
-      let username = "";
-      try {
-        if (usernameFelt !== "0x0") {
-          const usernameBigInt = BigInt(usernameFelt);
-          let temp = usernameBigInt;
-          const chars: string[] = [];
-          while (temp > 0n) {
-            chars.unshift(String.fromCharCode(Number(temp & 0xffn)));
-            temp = temp >> 8n;
-          }
-          username = chars.join("");
-        }
-      } catch {
-        username = usernameFelt; // Fallback to felt value
-      }
+      // Resolve current owner of the scoring token
+      const ownerAddress = await resolveTokenOwner(scoringTokenId);
 
       return {
-        player,
-        username: username || player, // Fallback to player address if no username
-        xp,
+        scoringTokenId,
+        ownerAddress,
+        xp: xpValue,
       };
     } catch (error) {
       console.error("Error fetching highest score:", error);

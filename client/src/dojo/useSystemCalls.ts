@@ -6,6 +6,7 @@ import { extractGameEvents } from "@/utils/events";
 import { GameEvent, Moves } from "@/types/game";
 import { useCallback, useRef } from "react";
 import { useStarknetApi } from "@/api/starknet";
+import { CallData, num } from "starknet";
 
 /**
  * useSystemCalls Hook
@@ -36,8 +37,14 @@ export const useSystemCalls = () => {
   const GAME_SYSTEMS_ADDRESS = getContractByName(
     manifest,
     namespace,
-    "game_systems"
+    "game_systems",
   )?.address;
+
+  // Read game_token_systems directly from manifest to preserve init_calldata
+  const gameTokenEntry = manifest?.contracts?.find(
+    (c: any) => c.tag === `${namespace}-game_token_systems`,
+  );
+  const GAME_TOKEN_SYSTEMS_ADDRESS = gameTokenEntry?.address;
 
   if (!GAME_SYSTEMS_ADDRESS) {
     // Game systems contract not found in manifest
@@ -49,54 +56,154 @@ export const useSystemCalls = () => {
    *
    * @returns Contract call object
    */
-  const spawn = () => {
+  const spawn = (tokenId: string) => {
     return {
       contractAddress: GAME_SYSTEMS_ADDRESS,
       entrypoint: "spawn",
-      calldata: [],
+      calldata: [tokenId],
     };
   };
 
+  const encodeNameToFelt = useCallback((name: string): string => {
+    // Match the registerScore encoding so "player name" is a felt252 (not a shortstring)
+    // Keep within 31 bytes to fit in a felt.
+    const trimmed = (name || "").trim();
+    if (!trimmed) return "0";
+    return BigInt(
+      trimmed
+        .slice(0, 31)
+        .split("")
+        .reduce((acc, char) => acc * 256n + BigInt(char.charCodeAt(0)), 0n),
+    ).toString();
+  }, []);
+
+  /**
+   * Wait for full transaction confirmation
+   * More reliable but slower than pre-confirmed
+   *
+   * @param txHash - Transaction hash
+   * @param retries - Current retry count
+   * @returns Transaction receipt
+   */
+  const waitForTransaction = useCallback(
+    async (txHash: string, retries: number): Promise<any> => {
+      if (retries > 9) {
+        throw new Error("Transaction confirmation timeout");
+      }
+
+      try {
+        const receipt: any = await account!.waitForTransaction(txHash, {
+          retryInterval: 350,
+        });
+
+        return receipt;
+      } catch (error) {
+        console.error("Error waiting for transaction:", error);
+        await delay(500);
+        return waitForTransaction(txHash, retries + 1);
+      }
+    },
+    [account],
+  );
+
+  /**
+   * Mint a new game token (EGS flow) and return the token_id as a hex string.
+   *
+   * Extracts token_id from the ERC721 Transfer event (from=0x0, to=caller).
+   * The hex string is used as-is for contract calls, localStorage, and URL params.
+   */
+  const mintGame = useCallback(
+    async (playerName?: string): Promise<string> => {
+      if (!GAME_TOKEN_SYSTEMS_ADDRESS) {
+        throw new Error("game_token_systems not found in manifest");
+      }
+
+      if (!account) {
+        throw new Error("No account connected");
+      }
+
+      // player_name Option<felt252>
+      const encodedName = playerName ? encodeNameToFelt(playerName) : "0";
+      const playerNameOpt =
+        encodedName && encodedName !== "0" ? [0, encodedName] : [1];
+
+      // Build calldata matching the deployed mint_game ABI
+      const calldata = CallData.compile([
+        ...playerNameOpt, // player_name: Option<felt252>
+        1, // settings_id: None
+        1, // start: None
+        1, // end: None
+        1, // objective_id: None
+        1, // context: None
+        1, // client_url: None
+        1, // renderer_address: None
+        1, // skills_address: None
+        account.address, // to: ContractAddress
+        0, // soulbound: false
+        0, // paymaster: false
+        0, // salt: 0
+        0, // metadata: 0
+      ]);
+
+      const tx = await account.execute([
+        {
+          contractAddress: GAME_TOKEN_SYSTEMS_ADDRESS,
+          entrypoint: "mint_game",
+          calldata,
+        },
+      ]);
+
+      const receipt: any = await waitForTransaction(tx.transaction_hash, 0);
+
+      // Extract token_id from ERC721 Transfer event (from=0x0 → to=us)
+      // In OpenZeppelin Cairo v3, token_id is a #[key] field, so it appears
+      // in keys (not data): keys=[selector, from, to, token_id_low, token_id_high]
+      const normalizedTo = num
+        .toHex(num.toBigInt(account.address))
+        .toLowerCase();
+
+      for (const evt of receipt?.events || []) {
+        const keys: string[] = evt?.keys || [];
+
+        if (keys.length >= 5) {
+          const isFromZero = num.toBigInt(keys[1]) === 0n;
+          let isToUs = false;
+          try {
+            isToUs =
+              num.toHex(num.toBigInt(keys[2])).toLowerCase() === normalizedTo;
+          } catch {
+            continue;
+          }
+
+          if (isFromZero && isToUs) {
+            // Reconstruct felt252 from u256 (low, high) in keys[3], keys[4]
+            const low = num.toBigInt(keys[3]);
+            const high = num.toBigInt(keys[4]);
+            const tokenId = high * (1n << 128n) + low;
+            return num.toHex(tokenId);
+          }
+        }
+      }
+
+      throw new Error(
+        "Mint succeeded but could not extract token_id from events",
+      );
+    },
+    [GAME_TOKEN_SYSTEMS_ADDRESS, account, encodeNameToFelt, waitForTransaction],
+  );
+
   /**
    * Factory function for move action
-   * Moves the player in a specified direction
    *
-   * @param gameId - The game ID (u32)
+   * @param gameId - The token_id hex string (e.g. "0xfb40...")
    * @param direction - Direction enum value (0-5 for hex directions)
    * @returns Contract call object
    */
-  const move = (gameId: number, direction: number) => {
+  const move = (gameId: string, direction: number) => {
     return {
       contractAddress: GAME_SYSTEMS_ADDRESS,
       entrypoint: "move",
       calldata: [gameId, direction],
-    };
-  };
-
-  /**
-   * Factory function for register_score action
-   * Registers the player's score on the leaderboard
-   *
-   * @param player - Player contract address
-   * @param username - Player username (felt252)
-   * @param xp - Player XP score (u32)
-   * @returns Contract call object
-   */
-  const registerScore = (player: string, username: string, xp: number) => {
-    // Convert username string to felt252 (simple ASCII encoding)
-    const usernameFelt = BigInt(
-      username === address
-        ? 0
-        : username
-            .slice(0, 31)
-            .split("")
-            .reduce((acc, char) => acc * 256n + BigInt(char.charCodeAt(0)), 0n)
-    ).toString();
-
-    return {
-      contractAddress: GAME_SYSTEMS_ADDRESS,
-      entrypoint: "register_score",
-      calldata: [player, usernameFelt, xp],
     };
   };
 
@@ -131,7 +238,6 @@ export const useSystemCalls = () => {
 
         // Check if player can move
         if (!latestMoves.can_move) {
-
           if (retries > 9) {
             return true;
           }
@@ -145,7 +251,7 @@ export const useSystemCalls = () => {
 
       return true;
     },
-    [address, getPlayerMoves]
+    [address, getPlayerMoves],
   );
 
   /**
@@ -185,36 +291,7 @@ export const useSystemCalls = () => {
         return waitForPreConfirmedTransaction(txHash, retries + 1);
       }
     },
-    [account]
-  );
-
-  /**
-   * Wait for full transaction confirmation
-   * More reliable but slower than pre-confirmed
-   *
-   * @param txHash - Transaction hash
-   * @param retries - Current retry count
-   * @returns Transaction receipt
-   */
-  const waitForTransaction = useCallback(
-    async (txHash: string, retries: number): Promise<any> => {
-      if (retries > 9) {
-        throw new Error("Transaction confirmation timeout");
-      }
-
-      try {
-        const receipt: any = await account!.waitForTransaction(txHash, {
-          retryInterval: 350,
-        });
-
-        return receipt;
-      } catch (error) {
-        console.error("Error waiting for transaction:", error);
-        await delay(500);
-        return waitForTransaction(txHash, retries + 1);
-      }
-    },
-    [account]
+    [account],
   );
 
   /**
@@ -238,7 +315,7 @@ export const useSystemCalls = () => {
     async (
       calls: any[],
       forceResetAction: () => void,
-      successCallback: () => void
+      successCallback: () => void,
     ): Promise<GameEvent[]> => {
       try {
         if (!account) {
@@ -258,7 +335,7 @@ export const useSystemCalls = () => {
         // Wait for pre-confirmed receipt (fast UX)
         const receipt: any = await waitForPreConfirmedTransaction(
           tx.transaction_hash,
-          0
+          0,
         );
 
         // Check for revert
@@ -282,14 +359,14 @@ export const useSystemCalls = () => {
         throw error;
       }
     },
-    [account, manifest, waitForPreConfirmedTransaction, waitForGlobalState]
+    [account, manifest, waitForPreConfirmedTransaction, waitForGlobalState],
   );
 
   return {
     // Contract call factories
     spawn,
     move,
-    registerScore,
+    mintGame,
 
     // Transaction execution
     executeAction,

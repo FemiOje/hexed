@@ -44,11 +44,10 @@ export interface Moves {
 }
 
 /**
- * GameSession model - Maps game_id to player and tracks active state
+ * GameSession model - Tracks active state for a game token
  */
 export interface GameSession {
   game_id: number;  // u32
-  player: string;   // ContractAddress as hex string
   is_active: boolean;
 }
 
@@ -66,8 +65,7 @@ export interface PlayerState {
  * GameState - Return struct from get_game_state view function
  */
 export interface GameState {
-  game_id: number;       // u32
-  player: string;        // ContractAddress as hex string
+  game_id: string;       // token_id (packed felt252 hex)
   position: Vec2;
   last_direction: Direction | null;
   can_move: boolean;
@@ -83,14 +81,14 @@ export interface GameState {
  */
 export interface GameEvent {
   type: 'spawned' | 'moved' | 'combat_result' | 'position_update' | 'neighbors_revealed' | 'encounter_occurred' | 'unknown';
-  gameId?: number;  // game_id from event (u32)
+  gameId?: string;  // token_id from event (packed felt252 hex)
   player?: string;
   position?: Position;
   direction?: Direction;
   moves?: Moves;
   // Combat fields (only present when type === 'combat_result')
   combatWon?: boolean;
-  defenderGameId?: number;
+  defenderGameId?: string;
   defenderPosition?: Vec2;
   // Neighbor occupancy (only present when type === 'neighbors_revealed')
   neighborsOccupied?: number;  // u8 bitmask

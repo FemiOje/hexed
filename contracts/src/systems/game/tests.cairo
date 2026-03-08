@@ -4,13 +4,13 @@ mod tests {
     // use dojo::world::WorldStorageTrait;
     use hexed::models::{
         COMBAT_DAMAGE, COMBAT_HP_REWARD, COMBAT_RETALIATION_DAMAGE, COMBAT_XP_REWARD,
-        DRAIN_XP_AMOUNT, Direction, GameCounter, GameSession, MAX_HP, MIN_MAX_HP, PlayerState,
-        PlayerStats, STARTING_HP, TileOccupant, Vec2,
+        DRAIN_XP_AMOUNT, Direction, GameCounter, GameSession, HighestScore, MAX_HP, MIN_MAX_HP,
+        PlayerState, PlayerStats, STARTING_HP, TileOccupant, Vec2,
     };
     use hexed::systems::game::contracts::{ // IGameSystemsDispatcher,
     IGameSystemsDispatcherTrait};
     use hexed::utils::hex::is_within_bounds;
-    use hexed::utils::setup::{ATTACKER_ADDR, DEFENDER_ADDR, PLAYER_ADDR, deploy_world};
+    use hexed::utils::setup::{ATTACKER_ADDR, DEFENDER_ADDR, deploy_world};
     // use starknet::ContractAddress;
 
     // ------------------------------------------ //
@@ -19,21 +19,21 @@ mod tests {
 
     #[test]
     fn test_world_test_set() {
-        let test_game_id: u32 = 999;
+        let test_token_id: felt252 = 999;
         let (mut world, _) = deploy_world();
 
-        let mut state: PlayerState = world.read_model(test_game_id);
+        let mut state: PlayerState = world.read_model(test_token_id);
         assert(state.position.x == 0 && state.position.y == 0, 'initial position wrong');
 
         state.position.x = 122;
         state.position.y = 88;
         world.write_model_test(@state);
 
-        let mut state: PlayerState = world.read_model(test_game_id);
+        let mut state: PlayerState = world.read_model(test_token_id);
         assert(state.position.y == 88, 'write_value_from_id failed');
 
         world.erase_model(@state);
-        let state: PlayerState = world.read_model(test_game_id);
+        let state: PlayerState = world.read_model(test_token_id);
         assert(state.position.x == 0 && state.position.y == 0, 'erase_model failed');
     }
 
@@ -44,17 +44,15 @@ mod tests {
     #[test]
     #[available_gas(30000000)]
     fn test_spawn() {
-        let caller = PLAYER_ADDR();
         let (world, game) = deploy_world();
 
-        game.spawn();
-        let game_id: u32 = 1;
+        let token_id: felt252 = 1;
+        game.spawn(token_id);
 
-        let session: GameSession = world.read_model(game_id);
-        assert(session.player == caller, 'Session player wrong');
+        let session: GameSession = world.read_model(token_id);
         assert(session.is_active, 'Session should be active');
 
-        let state: PlayerState = world.read_model(game_id);
+        let state: PlayerState = world.read_model(token_id);
         assert(is_within_bounds(state.position), 'Spawn out of bounds');
         assert(state.can_move, 'Cannot move');
         assert(state.last_direction.is_none(), 'Last direction should be None');
@@ -68,12 +66,14 @@ mod tests {
         let (world, game) = deploy_world();
 
         starknet::testing::set_contract_address(caller1);
-        game.spawn();
-        let state1: PlayerState = world.read_model(1_u32);
+        let token_id1: felt252 = 1;
+        game.spawn(token_id1);
+        let state1: PlayerState = world.read_model(1);
 
         starknet::testing::set_contract_address(caller2);
-        game.spawn();
-        let state2: PlayerState = world.read_model(2_u32);
+        let token_id2: felt252 = 2;
+        game.spawn(token_id2);
+        let state2: PlayerState = world.read_model(2);
 
         assert(is_within_bounds(state1.position), 'Player 1 out of bounds');
         assert(is_within_bounds(state2.position), 'Player 2 out of bounds');
@@ -82,11 +82,11 @@ mod tests {
             && state1.position.y == state2.position.y;
         assert(!same_position, 'Positions should differ');
 
-        let session1: GameSession = world.read_model(1_u32);
-        assert(session1.player == caller1, 'Session1 player wrong');
+        let session1: GameSession = world.read_model(1);
+        assert(session1.is_active, 'Session1 should be active');
 
-        let session2: GameSession = world.read_model(2_u32);
-        assert(session2.player == caller2, 'Session2 player wrong');
+        let session2: GameSession = world.read_model(2);
+        assert(session2.is_active, 'Session2 should be active');
     }
 
     #[test]
@@ -94,12 +94,12 @@ mod tests {
     fn test_spawn_writes_tile_occupant() {
         let (world, game) = deploy_world();
 
-        game.spawn();
-        let game_id: u32 = 1;
+        let token_id: felt252 = 1;
+        game.spawn(token_id);
 
-        let state: PlayerState = world.read_model(game_id);
+        let state: PlayerState = world.read_model(token_id);
         let tile: TileOccupant = world.read_model((state.position.x, state.position.y));
-        assert(tile.game_id == game_id, 'tile should have game_id');
+        assert(tile.token_id == token_id, 'tile should have token_id');
     }
 
     #[test]
@@ -107,10 +107,10 @@ mod tests {
     fn test_spawn_initializes_stats() {
         let (world, game) = deploy_world();
 
-        game.spawn();
-        let game_id: u32 = 1;
+        let token_id: felt252 = 1;
+        game.spawn(token_id);
 
-        let stats: PlayerStats = world.read_model(game_id);
+        let stats: PlayerStats = world.read_model(token_id);
         assert(stats.hp == STARTING_HP, 'hp should be STARTING_HP');
         assert(stats.max_hp == MAX_HP, 'max_hp should be MAX_HP');
         assert(stats.xp == 0, 'xp should be 0');
@@ -126,13 +126,13 @@ mod tests {
     fn test_move_east() {
         let (world, game) = deploy_world();
 
-        game.spawn();
-        let game_id: u32 = 1;
-        let initial_state: PlayerState = world.read_model(game_id);
+        let token_id: felt252 = 1;
+        game.spawn(token_id);
+        let initial_state: PlayerState = world.read_model(token_id);
 
-        game.move(game_id, Direction::East);
+        game.move(token_id, Direction::East);
 
-        let new_state: PlayerState = world.read_model(game_id);
+        let new_state: PlayerState = world.read_model(token_id);
         let east_dir_felt: felt252 = Direction::East.into();
 
         assert(
@@ -145,18 +145,14 @@ mod tests {
     #[test]
     #[available_gas(30000000)]
     fn test_move_northeast() {
-        let caller = PLAYER_ADDR();
         let (mut world, game) = deploy_world();
 
-        let test_game_id: u32 = 999;
-        world
-            .write_model_test(
-                @GameSession { game_id: test_game_id, player: caller, is_active: true },
-            );
+        let test_token_id: felt252 = 999;
+        world.write_model_test(@GameSession { token_id: test_token_id, is_active: true });
         world
             .write_model_test(
                 @PlayerState {
-                    game_id: test_game_id,
+                    token_id: test_token_id,
                     position: Vec2 { x: 0, y: 0 },
                     last_direction: Option::None,
                     can_move: true,
@@ -164,12 +160,12 @@ mod tests {
             );
         world
             .write_model_test(
-                @PlayerStats { game_id: test_game_id, hp: STARTING_HP, max_hp: MAX_HP, xp: 0 },
+                @PlayerStats { token_id: test_token_id, hp: STARTING_HP, max_hp: MAX_HP, xp: 0 },
             );
 
-        game.move(test_game_id, Direction::NorthEast);
+        game.move(test_token_id, Direction::NorthEast);
 
-        let new_state: PlayerState = world.read_model(test_game_id);
+        let new_state: PlayerState = world.read_model(test_token_id);
         assert(new_state.position.x == 1, 'position q is wrong');
         assert(new_state.position.y == -1, 'position r is wrong');
     }
@@ -178,92 +174,76 @@ mod tests {
     #[available_gas(30000000)]
     #[should_panic(expected: ('Move is out of bounds', 'ENTRYPOINT_FAILED'))]
     fn test_move_out_of_bounds() {
-        let caller = PLAYER_ADDR();
         let (mut world, game) = deploy_world();
 
-        let test_game_id: u32 = 999;
-        world
-            .write_model_test(
-                @GameSession { game_id: test_game_id, player: caller, is_active: true },
-            );
+        let test_token_id: felt252 = 999;
+        world.write_model_test(@GameSession { token_id: test_token_id, is_active: true });
         world
             .write_model_test(
                 @PlayerState {
-                    game_id: test_game_id,
+                    token_id: test_token_id,
                     position: Vec2 { x: 10, y: 0 },
                     last_direction: Option::None,
                     can_move: true,
                 },
             );
 
-        game.move(test_game_id, Direction::East);
+        game.move(test_token_id, Direction::East);
     }
 
     #[test]
     #[available_gas(30000000)]
     #[should_panic(expected: ('Move is out of bounds', 'ENTRYPOINT_FAILED'))]
     fn test_move_west_from_edge() {
-        let caller = PLAYER_ADDR();
         let (mut world, game) = deploy_world();
 
-        let test_game_id: u32 = 999;
-        world
-            .write_model_test(
-                @GameSession { game_id: test_game_id, player: caller, is_active: true },
-            );
+        let test_token_id: felt252 = 999;
+        world.write_model_test(@GameSession { token_id: test_token_id, is_active: true });
         world
             .write_model_test(
                 @PlayerState {
-                    game_id: test_game_id,
+                    token_id: test_token_id,
                     position: Vec2 { x: -10, y: 0 },
                     last_direction: Option::None,
                     can_move: true,
                 },
             );
 
-        game.move(test_game_id, Direction::West);
+        game.move(test_token_id, Direction::West);
     }
 
     #[test]
     #[available_gas(30000000)]
     #[should_panic(expected: ('Move is out of bounds', 'ENTRYPOINT_FAILED'))]
     fn test_move_north_from_edge() {
-        let caller = PLAYER_ADDR();
         let (mut world, game) = deploy_world();
 
-        let test_game_id: u32 = 999;
-        world
-            .write_model_test(
-                @GameSession { game_id: test_game_id, player: caller, is_active: true },
-            );
+        let test_token_id: felt252 = 999;
+        world.write_model_test(@GameSession { token_id: test_token_id, is_active: true });
         world
             .write_model_test(
                 @PlayerState {
-                    game_id: test_game_id,
+                    token_id: test_token_id,
                     position: Vec2 { x: 0, y: -10 },
                     last_direction: Option::None,
                     can_move: true,
                 },
             );
 
-        game.move(test_game_id, Direction::NorthWest);
+        game.move(test_token_id, Direction::NorthWest);
     }
 
     #[test]
     #[available_gas(30000000)]
     fn test_move_updates_tile_occupants() {
-        let caller = PLAYER_ADDR();
         let (mut world, game) = deploy_world();
 
-        let test_game_id: u32 = 999;
-        world
-            .write_model_test(
-                @GameSession { game_id: test_game_id, player: caller, is_active: true },
-            );
+        let test_token_id: felt252 = 999;
+        world.write_model_test(@GameSession { token_id: test_token_id, is_active: true });
         world
             .write_model_test(
                 @PlayerState {
-                    game_id: test_game_id,
+                    token_id: test_token_id,
                     position: Vec2 { x: 0, y: 0 },
                     last_direction: Option::None,
                     can_move: true,
@@ -271,32 +251,30 @@ mod tests {
             );
         world
             .write_model_test(
-                @PlayerStats { game_id: test_game_id, hp: STARTING_HP, max_hp: MAX_HP, xp: 0 },
+                @PlayerStats { token_id: test_token_id, hp: STARTING_HP, max_hp: MAX_HP, xp: 0 },
             );
-        world.write_model_test(@TileOccupant { x: 0, y: 0, game_id: test_game_id });
+        world.write_model_test(@TileOccupant { x: 0, y: 0, token_id: test_token_id });
 
-        game.move(test_game_id, Direction::East);
+        game.move(test_token_id, Direction::East);
 
         let old_tile: TileOccupant = world.read_model((0, 0));
-        assert(old_tile.game_id == 0, 'old tile not cleared');
+        assert(old_tile.token_id == 0, 'old tile not cleared');
 
         let new_tile: TileOccupant = world.read_model((1, 0));
-        assert(new_tile.game_id == test_game_id, 'new tile not set');
+        assert(new_tile.token_id == test_token_id, 'new tile not set');
     }
 
     #[test]
     #[available_gas(30000000)]
     fn test_move_to_inactive_defender_tile() {
-        let caller = PLAYER_ADDR();
         let (mut world, game) = deploy_world();
 
-        let player_id: u32 = 10;
-        world
-            .write_model_test(@GameSession { game_id: player_id, player: caller, is_active: true });
+        let player_id: felt252 = 10;
+        world.write_model_test(@GameSession { token_id: player_id, is_active: true });
         world
             .write_model_test(
                 @PlayerState {
-                    game_id: player_id,
+                    token_id: player_id,
                     position: Vec2 { x: 0, y: 0 },
                     last_direction: Option::None,
                     can_move: true,
@@ -304,18 +282,13 @@ mod tests {
             );
         world
             .write_model_test(
-                @PlayerStats { game_id: player_id, hp: STARTING_HP, max_hp: MAX_HP, xp: 0 },
+                @PlayerStats { token_id: player_id, hp: STARTING_HP, max_hp: MAX_HP, xp: 0 },
             );
-        world.write_model_test(@TileOccupant { x: 0, y: 0, game_id: player_id });
+        world.write_model_test(@TileOccupant { x: 0, y: 0, token_id: player_id });
 
-        let stale_id: u32 = 99;
-        world
-            .write_model_test(
-                @GameSession {
-                    game_id: stale_id, player: 0xdead.try_into().unwrap(), is_active: false,
-                },
-            );
-        world.write_model_test(@TileOccupant { x: 1, y: 0, game_id: stale_id });
+        let stale_id: felt252 = 99;
+        world.write_model_test(@GameSession { token_id: stale_id, is_active: false });
+        world.write_model_test(@TileOccupant { x: 1, y: 0, token_id: stale_id });
 
         game.move(player_id, Direction::East);
 
@@ -323,10 +296,10 @@ mod tests {
         assert(state.position.x == 1 && state.position.y == 0, 'should move to dest');
 
         let old_tile: TileOccupant = world.read_model((0, 0));
-        assert(old_tile.game_id == 0, 'old tile not cleared');
+        assert(old_tile.token_id == 0, 'old tile not cleared');
 
         let new_tile: TileOccupant = world.read_model((1, 0));
-        assert(new_tile.game_id == player_id, 'new tile not claimed');
+        assert(new_tile.token_id == player_id, 'new tile not claimed');
     }
 
     // ------------------------------------------ //
@@ -340,14 +313,13 @@ mod tests {
         let (world, game) = deploy_world();
 
         starknet::testing::set_contract_address(caller);
-        game.spawn();
-        let game_id: u32 = 1;
+        let token_id: felt252 = 1;
+        game.spawn(token_id);
 
-        let state: PlayerState = world.read_model(game_id);
-        let game_state = game.get_game_state(game_id);
+        let state: PlayerState = world.read_model(token_id);
+        let game_state = game.get_game_state(token_id);
 
-        assert(game_state.game_id == game_id, 'game_id wrong');
-        assert(game_state.player == caller, 'player wrong');
+        assert(game_state.token_id == token_id, 'token_id wrong');
         assert(game_state.position.x == state.position.x, 'position x wrong');
         assert(game_state.position.y == state.position.y, 'position y wrong');
         assert(game_state.can_move, 'can_move wrong');
@@ -361,7 +333,8 @@ mod tests {
         let (_, game) = deploy_world();
 
         starknet::testing::set_contract_address(caller);
-        game.spawn();
+        let token_id: felt252 = 1;
+        game.spawn(token_id);
 
         let game_state = game.get_game_state(1);
 
@@ -379,47 +352,40 @@ mod tests {
     #[available_gas(60000000)]
     fn test_combat_on_occupied_tile() {
         let attacker_addr = ATTACKER_ADDR();
-        let defender_addr = DEFENDER_ADDR();
         let (mut world, game) = deploy_world();
 
-        let attacker_id: u32 = 10;
-        world
-            .write_model_test(
-                @GameSession { game_id: attacker_id, player: attacker_addr, is_active: true },
-            );
+        let attacker_id: felt252 = 10;
+        world.write_model_test(@GameSession { token_id: attacker_id, is_active: true });
         world
             .write_model_test(
                 @PlayerState {
-                    game_id: attacker_id,
+                    token_id: attacker_id,
                     position: Vec2 { x: 0, y: 0 },
                     last_direction: Option::None,
                     can_move: true,
                 },
             );
-        world.write_model_test(@TileOccupant { x: 0, y: 0, game_id: attacker_id });
+        world.write_model_test(@TileOccupant { x: 0, y: 0, token_id: attacker_id });
         world
             .write_model_test(
-                @PlayerStats { game_id: attacker_id, hp: STARTING_HP, max_hp: MAX_HP, xp: 0 },
+                @PlayerStats { token_id: attacker_id, hp: STARTING_HP, max_hp: MAX_HP, xp: 0 },
             );
 
-        let defender_id: u32 = 20;
-        world
-            .write_model_test(
-                @GameSession { game_id: defender_id, player: defender_addr, is_active: true },
-            );
+        let defender_id: felt252 = 20;
+        world.write_model_test(@GameSession { token_id: defender_id, is_active: true });
         world
             .write_model_test(
                 @PlayerState {
-                    game_id: defender_id,
+                    token_id: defender_id,
                     position: Vec2 { x: 1, y: 0 },
                     last_direction: Option::None,
                     can_move: true,
                 },
             );
-        world.write_model_test(@TileOccupant { x: 1, y: 0, game_id: defender_id });
+        world.write_model_test(@TileOccupant { x: 1, y: 0, token_id: defender_id });
         world
             .write_model_test(
-                @PlayerStats { game_id: defender_id, hp: STARTING_HP, max_hp: MAX_HP, xp: 0 },
+                @PlayerStats { token_id: defender_id, hp: STARTING_HP, max_hp: MAX_HP, xp: 0 },
             );
 
         // Both players have xp: 0, so attacker wins (equal XP penalises defender).
@@ -443,26 +409,22 @@ mod tests {
             defender_state.position.x == 0 && defender_state.position.y == 0,
             'defender not swapped',
         );
-        assert(tile_1_0.game_id == attacker_id, 'tile(1,0) wrong after win');
-        assert(tile_0_0.game_id == defender_id, 'tile(0,0) wrong after win');
+        assert(tile_1_0.token_id == attacker_id, 'tile(1,0) wrong after win');
+        assert(tile_0_0.token_id == defender_id, 'tile(0,0) wrong after win');
     }
 
     #[test]
     #[available_gas(60000000)]
     fn test_combat_stats_update() {
         let attacker_addr = ATTACKER_ADDR();
-        let defender_addr = DEFENDER_ADDR();
         let (mut world, game) = deploy_world();
 
-        let attacker_id: u32 = 10;
-        world
-            .write_model_test(
-                @GameSession { game_id: attacker_id, player: attacker_addr, is_active: true },
-            );
+        let attacker_id: felt252 = 10;
+        world.write_model_test(@GameSession { token_id: attacker_id, is_active: true });
         world
             .write_model_test(
                 @PlayerState {
-                    game_id: attacker_id,
+                    token_id: attacker_id,
                     position: Vec2 { x: 0, y: 0 },
                     last_direction: Option::None,
                     can_move: true,
@@ -470,19 +432,16 @@ mod tests {
             );
         world
             .write_model_test(
-                @PlayerStats { game_id: attacker_id, hp: STARTING_HP, max_hp: MAX_HP, xp: 0 },
+                @PlayerStats { token_id: attacker_id, hp: STARTING_HP, max_hp: MAX_HP, xp: 0 },
             );
-        world.write_model_test(@TileOccupant { x: 0, y: 0, game_id: attacker_id });
+        world.write_model_test(@TileOccupant { x: 0, y: 0, token_id: attacker_id });
 
-        let defender_id: u32 = 20;
-        world
-            .write_model_test(
-                @GameSession { game_id: defender_id, player: defender_addr, is_active: true },
-            );
+        let defender_id: felt252 = 20;
+        world.write_model_test(@GameSession { token_id: defender_id, is_active: true });
         world
             .write_model_test(
                 @PlayerState {
-                    game_id: defender_id,
+                    token_id: defender_id,
                     position: Vec2 { x: 1, y: 0 },
                     last_direction: Option::None,
                     can_move: true,
@@ -490,9 +449,9 @@ mod tests {
             );
         world
             .write_model_test(
-                @PlayerStats { game_id: defender_id, hp: STARTING_HP, max_hp: MAX_HP, xp: 0 },
+                @PlayerStats { token_id: defender_id, hp: STARTING_HP, max_hp: MAX_HP, xp: 0 },
             );
-        world.write_model_test(@TileOccupant { x: 1, y: 0, game_id: defender_id });
+        world.write_model_test(@TileOccupant { x: 1, y: 0, token_id: defender_id });
 
         // Both xp: 0, so attacker wins (equal XP penalises defender).
         starknet::testing::set_contract_address(attacker_addr);
@@ -516,20 +475,16 @@ mod tests {
     #[available_gas(60000000)]
     fn test_combat_causes_death() {
         let attacker_addr = ATTACKER_ADDR();
-        let defender_addr = DEFENDER_ADDR();
         let (mut world, game) = deploy_world();
 
         let low_hp: u32 = 5;
 
-        let attacker_id: u32 = 10;
-        world
-            .write_model_test(
-                @GameSession { game_id: attacker_id, player: attacker_addr, is_active: true },
-            );
+        let attacker_id: felt252 = 10;
+        world.write_model_test(@GameSession { token_id: attacker_id, is_active: true });
         world
             .write_model_test(
                 @PlayerState {
-                    game_id: attacker_id,
+                    token_id: attacker_id,
                     position: Vec2 { x: 0, y: 0 },
                     last_direction: Option::None,
                     can_move: true,
@@ -537,19 +492,16 @@ mod tests {
             );
         world
             .write_model_test(
-                @PlayerStats { game_id: attacker_id, hp: low_hp, max_hp: MAX_HP, xp: 0 },
+                @PlayerStats { token_id: attacker_id, hp: low_hp, max_hp: MAX_HP, xp: 0 },
             );
-        world.write_model_test(@TileOccupant { x: 0, y: 0, game_id: attacker_id });
+        world.write_model_test(@TileOccupant { x: 0, y: 0, token_id: attacker_id });
 
-        let defender_id: u32 = 20;
-        world
-            .write_model_test(
-                @GameSession { game_id: defender_id, player: defender_addr, is_active: true },
-            );
+        let defender_id: felt252 = 20;
+        world.write_model_test(@GameSession { token_id: defender_id, is_active: true });
         world
             .write_model_test(
                 @PlayerState {
-                    game_id: defender_id,
+                    token_id: defender_id,
                     position: Vec2 { x: 1, y: 0 },
                     last_direction: Option::None,
                     can_move: true,
@@ -557,9 +509,9 @@ mod tests {
             );
         world
             .write_model_test(
-                @PlayerStats { game_id: defender_id, hp: low_hp, max_hp: MAX_HP, xp: 0 },
+                @PlayerStats { token_id: defender_id, hp: low_hp, max_hp: MAX_HP, xp: 0 },
             );
-        world.write_model_test(@TileOccupant { x: 1, y: 0, game_id: defender_id });
+        world.write_model_test(@TileOccupant { x: 1, y: 0, token_id: defender_id });
 
         // Both xp: 0 with low HP → attacker wins, defender dies.
         starknet::testing::set_contract_address(attacker_addr);
@@ -572,27 +524,23 @@ mod tests {
         let def_state: PlayerState = world.read_model(defender_id);
         assert(!def_state.can_move, 'dead player cannot move');
         let dest_tile: TileOccupant = world.read_model((1, 0));
-        assert(dest_tile.game_id == attacker_id, 'attacker should claim tile');
+        assert(dest_tile.token_id == attacker_id, 'attacker should claim tile');
         let old_tile: TileOccupant = world.read_model((0, 0));
-        assert(old_tile.game_id == 0, 'old tile should be clear');
+        assert(old_tile.token_id == 0, 'old tile should be clear');
     }
 
     #[test]
     #[available_gas(60000000)]
     fn test_combat_exact_hp_death() {
         let attacker_addr = ATTACKER_ADDR();
-        let defender_addr = DEFENDER_ADDR();
         let (mut world, game) = deploy_world();
 
-        let attacker_id: u32 = 10;
-        world
-            .write_model_test(
-                @GameSession { game_id: attacker_id, player: attacker_addr, is_active: true },
-            );
+        let attacker_id: felt252 = 10;
+        world.write_model_test(@GameSession { token_id: attacker_id, is_active: true });
         world
             .write_model_test(
                 @PlayerState {
-                    game_id: attacker_id,
+                    token_id: attacker_id,
                     position: Vec2 { x: 0, y: 0 },
                     last_direction: Option::None,
                     can_move: true,
@@ -600,19 +548,16 @@ mod tests {
             );
         world
             .write_model_test(
-                @PlayerStats { game_id: attacker_id, hp: COMBAT_DAMAGE, max_hp: MAX_HP, xp: 0 },
+                @PlayerStats { token_id: attacker_id, hp: COMBAT_DAMAGE, max_hp: MAX_HP, xp: 0 },
             );
-        world.write_model_test(@TileOccupant { x: 0, y: 0, game_id: attacker_id });
+        world.write_model_test(@TileOccupant { x: 0, y: 0, token_id: attacker_id });
 
-        let defender_id: u32 = 20;
-        world
-            .write_model_test(
-                @GameSession { game_id: defender_id, player: defender_addr, is_active: true },
-            );
+        let defender_id: felt252 = 20;
+        world.write_model_test(@GameSession { token_id: defender_id, is_active: true });
         world
             .write_model_test(
                 @PlayerState {
-                    game_id: defender_id,
+                    token_id: defender_id,
                     position: Vec2 { x: 1, y: 0 },
                     last_direction: Option::None,
                     can_move: true,
@@ -620,9 +565,9 @@ mod tests {
             );
         world
             .write_model_test(
-                @PlayerStats { game_id: defender_id, hp: COMBAT_DAMAGE, max_hp: MAX_HP, xp: 0 },
+                @PlayerStats { token_id: defender_id, hp: COMBAT_DAMAGE, max_hp: MAX_HP, xp: 0 },
             );
-        world.write_model_test(@TileOccupant { x: 1, y: 0, game_id: defender_id });
+        world.write_model_test(@TileOccupant { x: 1, y: 0, token_id: defender_id });
 
         // Both xp: 0 → attacker wins. HP == COMBAT_DAMAGE → exact death.
         starknet::testing::set_contract_address(attacker_addr);
@@ -638,21 +583,20 @@ mod tests {
     #[available_gas(30000000)]
     #[should_panic(expected: ('game not active', 'ENTRYPOINT_FAILED'))]
     fn test_dead_player_cannot_move() {
-        let caller = PLAYER_ADDR();
         let (mut world, game) = deploy_world();
 
-        let dead_id: u32 = 42;
-        world.write_model_test(@GameSession { game_id: dead_id, player: caller, is_active: false });
+        let dead_id: felt252 = 42;
+        world.write_model_test(@GameSession { token_id: dead_id, is_active: false });
         world
             .write_model_test(
                 @PlayerState {
-                    game_id: dead_id,
+                    token_id: dead_id,
                     position: Vec2 { x: 0, y: 0 },
                     last_direction: Option::None,
                     can_move: false,
                 },
             );
-        world.write_model_test(@PlayerStats { game_id: dead_id, hp: 0, max_hp: MAX_HP, xp: 0 });
+        world.write_model_test(@PlayerStats { token_id: dead_id, hp: 0, max_hp: MAX_HP, xp: 0 });
 
         game.move(dead_id, Direction::East);
     }
@@ -661,18 +605,14 @@ mod tests {
     #[available_gas(60000000)]
     fn test_winner_hp_not_inflated() {
         let attacker_addr = ATTACKER_ADDR();
-        let defender_addr = DEFENDER_ADDR();
         let (mut world, game) = deploy_world();
 
-        let attacker_id: u32 = 10;
-        world
-            .write_model_test(
-                @GameSession { game_id: attacker_id, player: attacker_addr, is_active: true },
-            );
+        let attacker_id: felt252 = 10;
+        world.write_model_test(@GameSession { token_id: attacker_id, is_active: true });
         world
             .write_model_test(
                 @PlayerState {
-                    game_id: attacker_id,
+                    token_id: attacker_id,
                     position: Vec2 { x: 0, y: 0 },
                     last_direction: Option::None,
                     can_move: true,
@@ -680,19 +620,16 @@ mod tests {
             );
         world
             .write_model_test(
-                @PlayerStats { game_id: attacker_id, hp: MAX_HP, max_hp: MAX_HP, xp: 0 },
+                @PlayerStats { token_id: attacker_id, hp: MAX_HP, max_hp: MAX_HP, xp: 0 },
             );
-        world.write_model_test(@TileOccupant { x: 0, y: 0, game_id: attacker_id });
+        world.write_model_test(@TileOccupant { x: 0, y: 0, token_id: attacker_id });
 
-        let defender_id: u32 = 20;
-        world
-            .write_model_test(
-                @GameSession { game_id: defender_id, player: defender_addr, is_active: true },
-            );
+        let defender_id: felt252 = 20;
+        world.write_model_test(@GameSession { token_id: defender_id, is_active: true });
         world
             .write_model_test(
                 @PlayerState {
-                    game_id: defender_id,
+                    token_id: defender_id,
                     position: Vec2 { x: 1, y: 0 },
                     last_direction: Option::None,
                     can_move: true,
@@ -700,9 +637,9 @@ mod tests {
             );
         world
             .write_model_test(
-                @PlayerStats { game_id: defender_id, hp: MAX_HP, max_hp: MAX_HP, xp: 0 },
+                @PlayerStats { token_id: defender_id, hp: MAX_HP, max_hp: MAX_HP, xp: 0 },
             );
-        world.write_model_test(@TileOccupant { x: 1, y: 0, game_id: defender_id });
+        world.write_model_test(@TileOccupant { x: 1, y: 0, token_id: defender_id });
 
         // Both xp: 0 → attacker wins. Both at MAX_HP so defender survives.
         starknet::testing::set_contract_address(attacker_addr);
@@ -727,18 +664,14 @@ mod tests {
     #[test]
     #[available_gas(30000000)]
     fn test_neighbor_occupancy_no_neighbors() {
-        let caller = PLAYER_ADDR();
         let (mut world, game) = deploy_world();
 
-        let test_game_id: u32 = 999;
-        world
-            .write_model_test(
-                @GameSession { game_id: test_game_id, player: caller, is_active: true },
-            );
+        let test_token_id: felt252 = 999;
+        world.write_model_test(@GameSession { token_id: test_token_id, is_active: true });
         world
             .write_model_test(
                 @PlayerState {
-                    game_id: test_game_id,
+                    token_id: test_token_id,
                     position: Vec2 { x: 0, y: 0 },
                     last_direction: Option::None,
                     can_move: true,
@@ -746,29 +679,26 @@ mod tests {
             );
         world
             .write_model_test(
-                @PlayerStats { game_id: test_game_id, hp: STARTING_HP, max_hp: MAX_HP, xp: 0 },
+                @PlayerStats { token_id: test_token_id, hp: STARTING_HP, max_hp: MAX_HP, xp: 0 },
             );
-        world.write_model_test(@TileOccupant { x: 0, y: 0, game_id: test_game_id });
+        world.write_model_test(@TileOccupant { x: 0, y: 0, token_id: test_token_id });
 
-        let game_state = game.get_game_state(test_game_id);
+        let game_state = game.get_game_state(test_token_id);
         assert(game_state.neighbor_occupancy == 0, 'no neighbors should be 0');
     }
 
     #[test]
     #[available_gas(30000000)]
     fn test_neighbor_occupancy_east() {
-        let caller = PLAYER_ADDR();
-        let defender_addr = DEFENDER_ADDR();
         let (mut world, game) = deploy_world();
 
         // Player at (0, 0)
-        let player_id: u32 = 10;
-        world
-            .write_model_test(@GameSession { game_id: player_id, player: caller, is_active: true });
+        let player_id: felt252 = 10;
+        world.write_model_test(@GameSession { token_id: player_id, is_active: true });
         world
             .write_model_test(
                 @PlayerState {
-                    game_id: player_id,
+                    token_id: player_id,
                     position: Vec2 { x: 0, y: 0 },
                     last_direction: Option::None,
                     can_move: true,
@@ -776,26 +706,23 @@ mod tests {
             );
         world
             .write_model_test(
-                @PlayerStats { game_id: player_id, hp: STARTING_HP, max_hp: MAX_HP, xp: 0 },
+                @PlayerStats { token_id: player_id, hp: STARTING_HP, max_hp: MAX_HP, xp: 0 },
             );
-        world.write_model_test(@TileOccupant { x: 0, y: 0, game_id: player_id });
+        world.write_model_test(@TileOccupant { x: 0, y: 0, token_id: player_id });
 
         // Active neighbor to the East at (1, 0)
-        let neighbor_id: u32 = 20;
-        world
-            .write_model_test(
-                @GameSession { game_id: neighbor_id, player: defender_addr, is_active: true },
-            );
+        let neighbor_id: felt252 = 20;
+        world.write_model_test(@GameSession { token_id: neighbor_id, is_active: true });
         world
             .write_model_test(
                 @PlayerState {
-                    game_id: neighbor_id,
+                    token_id: neighbor_id,
                     position: Vec2 { x: 1, y: 0 },
                     last_direction: Option::None,
                     can_move: true,
                 },
             );
-        world.write_model_test(@TileOccupant { x: 1, y: 0, game_id: neighbor_id });
+        world.write_model_test(@TileOccupant { x: 1, y: 0, token_id: neighbor_id });
 
         let game_state = game.get_game_state(player_id);
         // East = direction 0 = bit 0 = value 1
@@ -805,18 +732,15 @@ mod tests {
     #[test]
     #[available_gas(30000000)]
     fn test_neighbor_occupancy_multiple() {
-        let caller = PLAYER_ADDR();
-        let defender_addr = DEFENDER_ADDR();
         let (mut world, game) = deploy_world();
 
         // Player at (0, 0)
-        let player_id: u32 = 10;
-        world
-            .write_model_test(@GameSession { game_id: player_id, player: caller, is_active: true });
+        let player_id: felt252 = 10;
+        world.write_model_test(@GameSession { token_id: player_id, is_active: true });
         world
             .write_model_test(
                 @PlayerState {
-                    game_id: player_id,
+                    token_id: player_id,
                     position: Vec2 { x: 0, y: 0 },
                     last_direction: Option::None,
                     can_move: true,
@@ -824,25 +748,19 @@ mod tests {
             );
         world
             .write_model_test(
-                @PlayerStats { game_id: player_id, hp: STARTING_HP, max_hp: MAX_HP, xp: 0 },
+                @PlayerStats { token_id: player_id, hp: STARTING_HP, max_hp: MAX_HP, xp: 0 },
             );
-        world.write_model_test(@TileOccupant { x: 0, y: 0, game_id: player_id });
+        world.write_model_test(@TileOccupant { x: 0, y: 0, token_id: player_id });
 
         // Active neighbor to the East at (1, 0)
-        let east_id: u32 = 20;
-        world
-            .write_model_test(
-                @GameSession { game_id: east_id, player: defender_addr, is_active: true },
-            );
-        world.write_model_test(@TileOccupant { x: 1, y: 0, game_id: east_id });
+        let east_id: felt252 = 20;
+        world.write_model_test(@GameSession { token_id: east_id, is_active: true });
+        world.write_model_test(@TileOccupant { x: 1, y: 0, token_id: east_id });
 
         // Active neighbor to the West at (-1, 0)
-        let west_id: u32 = 30;
-        world
-            .write_model_test(
-                @GameSession { game_id: west_id, player: defender_addr, is_active: true },
-            );
-        world.write_model_test(@TileOccupant { x: -1, y: 0, game_id: west_id });
+        let west_id: felt252 = 30;
+        world.write_model_test(@GameSession { token_id: west_id, is_active: true });
+        world.write_model_test(@TileOccupant { x: -1, y: 0, token_id: west_id });
 
         let game_state = game.get_game_state(player_id);
         // East = bit 0 = 1, West = bit 3 = 8 => total = 9
@@ -852,18 +770,15 @@ mod tests {
     #[test]
     #[available_gas(30000000)]
     fn test_neighbor_occupancy_inactive_ignored() {
-        let caller = PLAYER_ADDR();
-        let defender_addr = DEFENDER_ADDR();
         let (mut world, game) = deploy_world();
 
         // Player at (0, 0)
-        let player_id: u32 = 10;
-        world
-            .write_model_test(@GameSession { game_id: player_id, player: caller, is_active: true });
+        let player_id: felt252 = 10;
+        world.write_model_test(@GameSession { token_id: player_id, is_active: true });
         world
             .write_model_test(
                 @PlayerState {
-                    game_id: player_id,
+                    token_id: player_id,
                     position: Vec2 { x: 0, y: 0 },
                     last_direction: Option::None,
                     can_move: true,
@@ -871,17 +786,14 @@ mod tests {
             );
         world
             .write_model_test(
-                @PlayerStats { game_id: player_id, hp: STARTING_HP, max_hp: MAX_HP, xp: 0 },
+                @PlayerStats { token_id: player_id, hp: STARTING_HP, max_hp: MAX_HP, xp: 0 },
             );
-        world.write_model_test(@TileOccupant { x: 0, y: 0, game_id: player_id });
+        world.write_model_test(@TileOccupant { x: 0, y: 0, token_id: player_id });
 
         // Inactive neighbor to the East at (1, 0)
-        let stale_id: u32 = 99;
-        world
-            .write_model_test(
-                @GameSession { game_id: stale_id, player: defender_addr, is_active: false },
-            );
-        world.write_model_test(@TileOccupant { x: 1, y: 0, game_id: stale_id });
+        let stale_id: felt252 = 99;
+        world.write_model_test(@GameSession { token_id: stale_id, is_active: false });
+        world.write_model_test(@TileOccupant { x: 1, y: 0, token_id: stale_id });
 
         let game_state = game.get_game_state(player_id);
         assert(game_state.neighbor_occupancy == 0, 'inactive should not count');
@@ -890,18 +802,15 @@ mod tests {
     #[test]
     #[available_gas(60000000)]
     fn test_neighbor_occupancy_after_move() {
-        let caller = PLAYER_ADDR();
-        let defender_addr = DEFENDER_ADDR();
         let (mut world, game) = deploy_world();
 
         // Player at (0, 0)
-        let player_id: u32 = 10;
-        world
-            .write_model_test(@GameSession { game_id: player_id, player: caller, is_active: true });
+        let player_id: felt252 = 10;
+        world.write_model_test(@GameSession { token_id: player_id, is_active: true });
         world
             .write_model_test(
                 @PlayerState {
-                    game_id: player_id,
+                    token_id: player_id,
                     position: Vec2 { x: 0, y: 0 },
                     last_direction: Option::None,
                     can_move: true,
@@ -909,26 +818,23 @@ mod tests {
             );
         world
             .write_model_test(
-                @PlayerStats { game_id: player_id, hp: STARTING_HP, max_hp: MAX_HP, xp: 0 },
+                @PlayerStats { token_id: player_id, hp: STARTING_HP, max_hp: MAX_HP, xp: 0 },
             );
-        world.write_model_test(@TileOccupant { x: 0, y: 0, game_id: player_id });
+        world.write_model_test(@TileOccupant { x: 0, y: 0, token_id: player_id });
 
         // Place active neighbor at (2, 0) - not adjacent to (0,0) but adjacent to (1,0)
-        let neighbor_id: u32 = 20;
-        world
-            .write_model_test(
-                @GameSession { game_id: neighbor_id, player: defender_addr, is_active: true },
-            );
+        let neighbor_id: felt252 = 20;
+        world.write_model_test(@GameSession { token_id: neighbor_id, is_active: true });
         world
             .write_model_test(
                 @PlayerState {
-                    game_id: neighbor_id,
+                    token_id: neighbor_id,
                     position: Vec2 { x: 2, y: 0 },
                     last_direction: Option::None,
                     can_move: true,
                 },
             );
-        world.write_model_test(@TileOccupant { x: 2, y: 0, game_id: neighbor_id });
+        world.write_model_test(@TileOccupant { x: 2, y: 0, token_id: neighbor_id });
 
         // Before move: no occupied neighbors at (0,0)
         let state_before = game.get_game_state(player_id);
@@ -949,18 +855,14 @@ mod tests {
     #[test]
     #[available_gas(60000000)]
     fn test_move_to_empty_tile_grants_xp() {
-        let caller = PLAYER_ADDR();
         let (mut world, game) = deploy_world();
 
-        let test_game_id: u32 = 999;
-        world
-            .write_model_test(
-                @GameSession { game_id: test_game_id, player: caller, is_active: true },
-            );
+        let test_token_id: felt252 = 999;
+        world.write_model_test(@GameSession { token_id: test_token_id, is_active: true });
         world
             .write_model_test(
                 @PlayerState {
-                    game_id: test_game_id,
+                    token_id: test_token_id,
                     position: Vec2 { x: 0, y: 0 },
                     last_direction: Option::None,
                     can_move: true,
@@ -968,22 +870,22 @@ mod tests {
             );
         world
             .write_model_test(
-                @PlayerStats { game_id: test_game_id, hp: STARTING_HP, max_hp: MAX_HP, xp: 0 },
+                @PlayerStats { token_id: test_token_id, hp: STARTING_HP, max_hp: MAX_HP, xp: 0 },
             );
-        world.write_model_test(@TileOccupant { x: 0, y: 0, game_id: test_game_id });
+        world.write_model_test(@TileOccupant { x: 0, y: 0, token_id: test_token_id });
 
         // After a move, player receives exploration XP (10) plus encounter effects.
         // Encounter may add or subtract XP, so we test invariants rather than exact values.
-        game.move(test_game_id, Direction::East);
-        let stats: PlayerStats = world.read_model(test_game_id);
+        game.move(test_token_id, Direction::East);
+        let stats: PlayerStats = world.read_model(test_token_id);
         assert(stats.hp > 0, 'player should survive');
         assert(stats.hp <= stats.max_hp, 'hp must not exceed max');
         assert(stats.max_hp >= MIN_MAX_HP, 'max_hp must be >= floor');
 
         let first_xp = stats.xp;
 
-        game.move(test_game_id, Direction::East);
-        let stats2: PlayerStats = world.read_model(test_game_id);
+        game.move(test_token_id, Direction::East);
+        let stats2: PlayerStats = world.read_model(test_token_id);
         assert(stats2.hp > 0, 'should survive 2nd move');
         assert(stats2.hp <= stats2.max_hp, 'hp <= max after 2nd move');
 
@@ -999,19 +901,15 @@ mod tests {
     #[test]
     #[available_gas(30000000)]
     fn test_xp_saturates_at_max_u32() {
-        let caller = PLAYER_ADDR();
         let (mut world, game) = deploy_world();
 
         let max_u32: u32 = 0xFFFFFFFF;
-        let test_game_id: u32 = 999;
-        world
-            .write_model_test(
-                @GameSession { game_id: test_game_id, player: caller, is_active: true },
-            );
+        let test_token_id: felt252 = 999;
+        world.write_model_test(@GameSession { token_id: test_token_id, is_active: true });
         world
             .write_model_test(
                 @PlayerState {
-                    game_id: test_game_id,
+                    token_id: test_token_id,
                     position: Vec2 { x: 0, y: 0 },
                     last_direction: Option::None,
                     can_move: true,
@@ -1020,14 +918,14 @@ mod tests {
         world
             .write_model_test(
                 @PlayerStats {
-                    game_id: test_game_id, hp: STARTING_HP, max_hp: MAX_HP, xp: max_u32 - 3,
+                    token_id: test_token_id, hp: STARTING_HP, max_hp: MAX_HP, xp: max_u32 - 3,
                 },
             );
-        world.write_model_test(@TileOccupant { x: 0, y: 0, game_id: test_game_id });
+        world.write_model_test(@TileOccupant { x: 0, y: 0, token_id: test_token_id });
 
-        game.move(test_game_id, Direction::East);
+        game.move(test_token_id, Direction::East);
 
-        let stats: PlayerStats = world.read_model(test_game_id);
+        let stats: PlayerStats = world.read_model(test_token_id);
         // Explore XP (+10) saturates to max_u32 via add_xp.
         // Encounter may then drain some XP, but can never overflow u32.
         // The key invariant: XP near max doesn't overflow (no panic).
@@ -1042,18 +940,14 @@ mod tests {
     #[available_gas(60000000)]
     fn test_combat_higher_xp_defender_wins() {
         let attacker_addr = ATTACKER_ADDR();
-        let defender_addr = DEFENDER_ADDR();
         let (mut world, game) = deploy_world();
 
-        let attacker_id: u32 = 10;
-        world
-            .write_model_test(
-                @GameSession { game_id: attacker_id, player: attacker_addr, is_active: true },
-            );
+        let attacker_id: felt252 = 10;
+        world.write_model_test(@GameSession { token_id: attacker_id, is_active: true });
         world
             .write_model_test(
                 @PlayerState {
-                    game_id: attacker_id,
+                    token_id: attacker_id,
                     position: Vec2 { x: 0, y: 0 },
                     last_direction: Option::None,
                     can_move: true,
@@ -1061,19 +955,16 @@ mod tests {
             );
         world
             .write_model_test(
-                @PlayerStats { game_id: attacker_id, hp: MAX_HP, max_hp: MAX_HP, xp: 10 },
+                @PlayerStats { token_id: attacker_id, hp: MAX_HP, max_hp: MAX_HP, xp: 10 },
             );
-        world.write_model_test(@TileOccupant { x: 0, y: 0, game_id: attacker_id });
+        world.write_model_test(@TileOccupant { x: 0, y: 0, token_id: attacker_id });
 
-        let defender_id: u32 = 20;
-        world
-            .write_model_test(
-                @GameSession { game_id: defender_id, player: defender_addr, is_active: true },
-            );
+        let defender_id: felt252 = 20;
+        world.write_model_test(@GameSession { token_id: defender_id, is_active: true });
         world
             .write_model_test(
                 @PlayerState {
-                    game_id: defender_id,
+                    token_id: defender_id,
                     position: Vec2 { x: 1, y: 0 },
                     last_direction: Option::None,
                     can_move: true,
@@ -1081,9 +972,9 @@ mod tests {
             );
         world
             .write_model_test(
-                @PlayerStats { game_id: defender_id, hp: MAX_HP, max_hp: MAX_HP, xp: 50 },
+                @PlayerStats { token_id: defender_id, hp: MAX_HP, max_hp: MAX_HP, xp: 50 },
             );
-        world.write_model_test(@TileOccupant { x: 1, y: 0, game_id: defender_id });
+        world.write_model_test(@TileOccupant { x: 1, y: 0, token_id: defender_id });
 
         // Defender has higher XP (50 > 10), so defender wins.
         starknet::testing::set_contract_address(attacker_addr);
@@ -1106,18 +997,14 @@ mod tests {
     #[available_gas(60000000)]
     fn test_combat_equal_xp_favors_attacker() {
         let attacker_addr = ATTACKER_ADDR();
-        let defender_addr = DEFENDER_ADDR();
         let (mut world, game) = deploy_world();
 
-        let attacker_id: u32 = 10;
-        world
-            .write_model_test(
-                @GameSession { game_id: attacker_id, player: attacker_addr, is_active: true },
-            );
+        let attacker_id: felt252 = 10;
+        world.write_model_test(@GameSession { token_id: attacker_id, is_active: true });
         world
             .write_model_test(
                 @PlayerState {
-                    game_id: attacker_id,
+                    token_id: attacker_id,
                     position: Vec2 { x: 0, y: 0 },
                     last_direction: Option::None,
                     can_move: true,
@@ -1125,19 +1012,16 @@ mod tests {
             );
         world
             .write_model_test(
-                @PlayerStats { game_id: attacker_id, hp: MAX_HP, max_hp: MAX_HP, xp: 100 },
+                @PlayerStats { token_id: attacker_id, hp: MAX_HP, max_hp: MAX_HP, xp: 100 },
             );
-        world.write_model_test(@TileOccupant { x: 0, y: 0, game_id: attacker_id });
+        world.write_model_test(@TileOccupant { x: 0, y: 0, token_id: attacker_id });
 
-        let defender_id: u32 = 20;
-        world
-            .write_model_test(
-                @GameSession { game_id: defender_id, player: defender_addr, is_active: true },
-            );
+        let defender_id: felt252 = 20;
+        world.write_model_test(@GameSession { token_id: defender_id, is_active: true });
         world
             .write_model_test(
                 @PlayerState {
-                    game_id: defender_id,
+                    token_id: defender_id,
                     position: Vec2 { x: 1, y: 0 },
                     last_direction: Option::None,
                     can_move: true,
@@ -1145,9 +1029,9 @@ mod tests {
             );
         world
             .write_model_test(
-                @PlayerStats { game_id: defender_id, hp: MAX_HP, max_hp: MAX_HP, xp: 100 },
+                @PlayerStats { token_id: defender_id, hp: MAX_HP, max_hp: MAX_HP, xp: 100 },
             );
-        world.write_model_test(@TileOccupant { x: 1, y: 0, game_id: defender_id });
+        world.write_model_test(@TileOccupant { x: 1, y: 0, token_id: defender_id });
 
         // Both have equal XP (100 == 100), attacker wins (defender penalised).
         starknet::testing::set_contract_address(attacker_addr);
@@ -1175,20 +1059,16 @@ mod tests {
     #[test]
     #[available_gas(60000000)]
     fn test_encounter_triggers_on_empty_tile_move() {
-        let caller = PLAYER_ADDR();
         let (mut world, game) = deploy_world();
 
         // Start with 80 HP so every encounter outcome produces a visible stat change.
         // (A Heal at full HP would be invisible, but at 80 HP it heals to 100.)
-        let test_game_id: u32 = 999;
-        world
-            .write_model_test(
-                @GameSession { game_id: test_game_id, player: caller, is_active: true },
-            );
+        let test_token_id: felt252 = 999;
+        world.write_model_test(@GameSession { token_id: test_token_id, is_active: true });
         world
             .write_model_test(
                 @PlayerState {
-                    game_id: test_game_id,
+                    token_id: test_token_id,
                     position: Vec2 { x: 0, y: 0 },
                     last_direction: Option::None,
                     can_move: true,
@@ -1196,14 +1076,14 @@ mod tests {
             );
         world
             .write_model_test(
-                @PlayerStats { game_id: test_game_id, hp: 80, max_hp: MAX_HP, xp: 0 },
+                @PlayerStats { token_id: test_token_id, hp: 80, max_hp: MAX_HP, xp: 0 },
             );
-        world.write_model_test(@TileOccupant { x: 0, y: 0, game_id: test_game_id });
+        world.write_model_test(@TileOccupant { x: 0, y: 0, token_id: test_token_id });
 
-        game.move(test_game_id, Direction::East);
+        game.move(test_token_id, Direction::East);
 
-        let stats: PlayerStats = world.read_model(test_game_id);
-        let session: GameSession = world.read_model(test_game_id);
+        let stats: PlayerStats = world.read_model(test_token_id);
+        let session: GameSession = world.read_model(test_token_id);
 
         // Player with 80 HP cannot die from a single encounter (max damage = 15 from Poison)
         assert(session.is_active, 'should survive encounter');
@@ -1221,18 +1101,14 @@ mod tests {
     #[test]
     #[available_gas(60000000)]
     fn test_encounter_stats_invariants_after_move() {
-        let caller = PLAYER_ADDR();
         let (mut world, game) = deploy_world();
 
-        let test_game_id: u32 = 999;
-        world
-            .write_model_test(
-                @GameSession { game_id: test_game_id, player: caller, is_active: true },
-            );
+        let test_token_id: felt252 = 999;
+        world.write_model_test(@GameSession { token_id: test_token_id, is_active: true });
         world
             .write_model_test(
                 @PlayerState {
-                    game_id: test_game_id,
+                    token_id: test_token_id,
                     position: Vec2 { x: 0, y: 0 },
                     last_direction: Option::None,
                     can_move: true,
@@ -1240,23 +1116,23 @@ mod tests {
             );
         world
             .write_model_test(
-                @PlayerStats { game_id: test_game_id, hp: STARTING_HP, max_hp: MAX_HP, xp: 0 },
+                @PlayerStats { token_id: test_token_id, hp: STARTING_HP, max_hp: MAX_HP, xp: 0 },
             );
-        world.write_model_test(@TileOccupant { x: 0, y: 0, game_id: test_game_id });
+        world.write_model_test(@TileOccupant { x: 0, y: 0, token_id: test_token_id });
 
         // Move multiple times and check invariants hold every time
-        game.move(test_game_id, Direction::East);
-        let s1: PlayerStats = world.read_model(test_game_id);
+        game.move(test_token_id, Direction::East);
+        let s1: PlayerStats = world.read_model(test_token_id);
         assert(s1.hp <= s1.max_hp, 'hp <= max_hp after 1');
         assert(s1.max_hp >= MIN_MAX_HP, 'max_hp >= floor after 1');
 
-        game.move(test_game_id, Direction::East);
-        let s2: PlayerStats = world.read_model(test_game_id);
+        game.move(test_token_id, Direction::East);
+        let s2: PlayerStats = world.read_model(test_token_id);
         assert(s2.hp <= s2.max_hp, 'hp <= max_hp after 2');
         assert(s2.max_hp >= MIN_MAX_HP, 'max_hp >= floor after 2');
 
-        game.move(test_game_id, Direction::East);
-        let s3: PlayerStats = world.read_model(test_game_id);
+        game.move(test_token_id, Direction::East);
+        let s3: PlayerStats = world.read_model(test_token_id);
         assert(s3.hp <= s3.max_hp, 'hp <= max_hp after 3');
         assert(s3.max_hp >= MIN_MAX_HP, 'max_hp >= floor after 3');
     }
@@ -1264,54 +1140,37 @@ mod tests {
     #[test]
     #[available_gas(120000000)]
     fn test_encounter_death_by_poison() {
-        let caller = PLAYER_ADDR();
         let (mut world, game) = deploy_world();
 
         // Set HP to 1 so any damaging encounter (Poison -15, Hex -10) kills
-        let test_game_id: u32 = 50;
-        world
-            .write_model_test(
-                @GameSession { game_id: test_game_id, player: caller, is_active: true },
-            );
-        world
-            .write_model_test(
-                @PlayerState {
-                    game_id: test_game_id,
-                    position: Vec2 { x: 0, y: 0 },
-                    last_direction: Option::None,
-                    can_move: true,
-                },
-            );
-        // HP = 1: any Poison(-15), Hex(-10), or Wither (clamps hp to <=max then stays 1)
-        // will either kill or leave alive. We need a game_id/position/timestamp combo that
-        // produces a curse. We'll try multiple game_ids to find one that gets a lethal curse.
         // With 50% curse rate and 40% Poison + 35% Hex = 75% of curses are lethal at 1 HP,
         // probability of lethal encounter = 0.50 * 0.75 = 37.5% per try.
-        // We test the death cleanup logic by setting hp=1 and iterating game_ids.
+        // We test the death cleanup logic by iterating token_ids.
         let mut found_death = false;
         let mut gid: u32 = 50;
         while gid < 80 && !found_death {
-            world.write_model_test(@GameSession { game_id: gid, player: caller, is_active: true });
+            let tid: felt252 = gid.into();
+            world.write_model_test(@GameSession { token_id: tid, is_active: true });
             world
                 .write_model_test(
                     @PlayerState {
-                        game_id: gid,
+                        token_id: tid,
                         position: Vec2 { x: 0, y: 0 },
                         last_direction: Option::None,
                         can_move: true,
                     },
                 );
-            world.write_model_test(@PlayerStats { game_id: gid, hp: 1, max_hp: MAX_HP, xp: 100 });
-            world.write_model_test(@TileOccupant { x: 0, y: 0, game_id: gid });
+            world.write_model_test(@PlayerStats { token_id: tid, hp: 1, max_hp: MAX_HP, xp: 100 });
+            world.write_model_test(@TileOccupant { x: 0, y: 0, token_id: tid });
 
-            game.move(gid, Direction::East);
+            game.move(tid, Direction::East);
 
-            let stats: PlayerStats = world.read_model(gid);
+            let stats: PlayerStats = world.read_model(tid);
             if stats.hp == 0 {
                 // Verify death cleanup
-                let session: GameSession = world.read_model(gid);
+                let session: GameSession = world.read_model(tid);
                 assert(!session.is_active, 'dead session not deactivated');
-                let state: PlayerState = world.read_model(gid);
+                let state: PlayerState = world.read_model(tid);
                 assert(!state.can_move, 'dead player should not move');
                 found_death = true;
             }
@@ -1327,15 +1186,12 @@ mod tests {
         let (mut world, game) = deploy_world();
 
         // Place player on (0,0), empty tile at (1,0)
-        let player_id: u32 = 10;
-        world
-            .write_model_test(
-                @GameSession { game_id: player_id, player: attacker_addr, is_active: true },
-            );
+        let player_id: felt252 = 10;
+        world.write_model_test(@GameSession { token_id: player_id, is_active: true });
         world
             .write_model_test(
                 @PlayerState {
-                    game_id: player_id,
+                    token_id: player_id,
                     position: Vec2 { x: 0, y: 0 },
                     last_direction: Option::None,
                     can_move: true,
@@ -1343,9 +1199,9 @@ mod tests {
             );
         world
             .write_model_test(
-                @PlayerStats { game_id: player_id, hp: STARTING_HP, max_hp: MAX_HP, xp: 0 },
+                @PlayerStats { token_id: player_id, hp: STARTING_HP, max_hp: MAX_HP, xp: 0 },
             );
-        world.write_model_test(@TileOccupant { x: 0, y: 0, game_id: player_id });
+        world.write_model_test(@TileOccupant { x: 0, y: 0, token_id: player_id });
 
         starknet::testing::set_contract_address(attacker_addr);
         game.move(player_id, Direction::East);
@@ -1359,16 +1215,15 @@ mod tests {
     #[test]
     #[available_gas(60000000)]
     fn test_encounter_different_positions_different_outcomes() {
-        let caller = PLAYER_ADDR();
         let (mut world, game) = deploy_world();
 
         // Player 1: moves East from (0,0) to (1,0)
-        let id1: u32 = 100;
-        world.write_model_test(@GameSession { game_id: id1, player: caller, is_active: true });
+        let id1: felt252 = 100;
+        world.write_model_test(@GameSession { token_id: id1, is_active: true });
         world
             .write_model_test(
                 @PlayerState {
-                    game_id: id1,
+                    token_id: id1,
                     position: Vec2 { x: 0, y: 0 },
                     last_direction: Option::None,
                     can_move: true,
@@ -1376,20 +1231,20 @@ mod tests {
             );
         world
             .write_model_test(
-                @PlayerStats { game_id: id1, hp: STARTING_HP, max_hp: MAX_HP, xp: 0 },
+                @PlayerStats { token_id: id1, hp: STARTING_HP, max_hp: MAX_HP, xp: 0 },
             );
-        world.write_model_test(@TileOccupant { x: 0, y: 0, game_id: id1 });
+        world.write_model_test(@TileOccupant { x: 0, y: 0, token_id: id1 });
 
         game.move(id1, Direction::East);
         let s1: PlayerStats = world.read_model(id1);
 
         // Player 2: moves East from (5,5) to (6,5)
-        let id2: u32 = 200;
-        world.write_model_test(@GameSession { game_id: id2, player: caller, is_active: true });
+        let id2: felt252 = 200;
+        world.write_model_test(@GameSession { token_id: id2, is_active: true });
         world
             .write_model_test(
                 @PlayerState {
-                    game_id: id2,
+                    token_id: id2,
                     position: Vec2 { x: 5, y: 5 },
                     last_direction: Option::None,
                     can_move: true,
@@ -1397,14 +1252,14 @@ mod tests {
             );
         world
             .write_model_test(
-                @PlayerStats { game_id: id2, hp: STARTING_HP, max_hp: MAX_HP, xp: 0 },
+                @PlayerStats { token_id: id2, hp: STARTING_HP, max_hp: MAX_HP, xp: 0 },
             );
-        world.write_model_test(@TileOccupant { x: 5, y: 5, game_id: id2 });
+        world.write_model_test(@TileOccupant { x: 5, y: 5, token_id: id2 });
 
         game.move(id2, Direction::East);
         let s2: PlayerStats = world.read_model(id2);
 
-        // Different game_ids + different positions → different Poseidon seeds → different
+        // Different token_ids + different positions → different Poseidon seeds → different
         // outcomes.
         // At least one stat should differ between the two players' results.
         let hp_diff = s1.hp != s2.hp;
@@ -1423,14 +1278,15 @@ mod tests {
         let (mut world, game) = deploy_world();
 
         // Initially counter should be 0
-        let counter: GameCounter = world.read_model(0_u32);
+        let counter: GameCounter = world.read_model(0);
         assert(counter.active_games == 0, 'limit: start at 0');
 
         // Spawn a player
-        game.spawn();
+        let token_id: felt252 = 1;
+        game.spawn(token_id);
 
         // Counter should increment to 1
-        let counter: GameCounter = world.read_model(0_u32);
+        let counter: GameCounter = world.read_model(0);
         assert(counter.active_games == 1, 'limit: increment to 1');
     }
 
@@ -1440,17 +1296,19 @@ mod tests {
         let (mut world, game) = deploy_world();
 
         // Initially counter should be 0
-        let counter: GameCounter = world.read_model(0_u32);
+        let counter: GameCounter = world.read_model(0);
         assert(counter.active_games == 0, 'limit: start 0');
 
         // Spawn first player
-        game.spawn();
-        let counter: GameCounter = world.read_model(0_u32);
+        let token_id1: felt252 = 1;
+        game.spawn(token_id1);
+        let counter: GameCounter = world.read_model(0);
         assert(counter.active_games == 1, 'limit: 1st spawn');
 
         // Spawn second player
-        game.spawn();
-        let counter: GameCounter = world.read_model(0_u32);
+        let token_id2: felt252 = 2;
+        game.spawn(token_id2);
+        let counter: GameCounter = world.read_model(0);
         assert(counter.active_games == 2, 'limit: 2nd spawn');
     }
 
@@ -1460,21 +1318,188 @@ mod tests {
         let (mut world, _game) = deploy_world();
 
         // Verify we can read and write the counter model
-        let mut counter: GameCounter = world.read_model(0_u32);
+        let mut counter: GameCounter = world.read_model(0);
         assert(counter.active_games == 0, 'limit: initial 0');
 
         // Manually set counter to verify model works
         counter.active_games = 100;
         world.write_model_test(@counter);
 
-        let updated: GameCounter = world.read_model(0_u32);
+        let updated: GameCounter = world.read_model(0);
         assert(updated.active_games == 100, 'limit: manual set');
 
         // Decrement to test the behavior
         counter.active_games = 99;
         world.write_model_test(@counter);
 
-        let decremented: GameCounter = world.read_model(0_u32);
+        let decremented: GameCounter = world.read_model(0);
         assert(decremented.active_games == 99, 'limit: decrement');
+    }
+
+    // ------------------------------------------ //
+    // ----- Auto Score Registration Tests ----- //
+    // ------------------------------------------ //
+
+    #[test]
+    #[available_gas(60000000)]
+    fn test_score_registered_on_combat_death() {
+        let attacker_addr = ATTACKER_ADDR();
+        let (mut world, game) = deploy_world();
+
+        // Attacker with 0 XP at (0,0)
+        let attacker_id: felt252 = 10;
+        world.write_model_test(@GameSession { token_id: attacker_id, is_active: true });
+        world
+            .write_model_test(
+                @PlayerState {
+                    token_id: attacker_id,
+                    position: Vec2 { x: 0, y: 0 },
+                    last_direction: Option::None,
+                    can_move: true,
+                },
+            );
+        world
+            .write_model_test(
+                @PlayerStats { token_id: attacker_id, hp: STARTING_HP, max_hp: MAX_HP, xp: 0 },
+            );
+        world.write_model_test(@TileOccupant { x: 0, y: 0, token_id: attacker_id });
+
+        // Defender with high XP and low HP at (1,0) — will die on combat
+        let defender_id: felt252 = 20;
+        world.write_model_test(@GameSession { token_id: defender_id, is_active: true });
+        world
+            .write_model_test(
+                @PlayerState {
+                    token_id: defender_id,
+                    position: Vec2 { x: 1, y: 0 },
+                    last_direction: Option::None,
+                    can_move: true,
+                },
+            );
+        world
+            .write_model_test(
+                @PlayerStats { token_id: defender_id, hp: 5, max_hp: MAX_HP, xp: 200 },
+            );
+        world.write_model_test(@TileOccupant { x: 1, y: 0, token_id: defender_id });
+
+        // Verify no high score initially
+        let before: HighestScore = world.read_model(0);
+        assert(before.xp == 0, 'initial xp should be 0');
+
+        // Attacker wins (0 >= 200 is false, so defender wins... wait, xp: 0 vs 200 means defender wins)
+        // Let me fix: give attacker MORE XP so attacker wins and defender dies
+        world
+            .write_model_test(
+                @PlayerStats { token_id: attacker_id, hp: STARTING_HP, max_hp: MAX_HP, xp: 300 },
+            );
+
+        // Now attacker (xp:300) vs defender (xp:200) → attacker wins, defender (hp:5) dies
+        starknet::testing::set_contract_address(attacker_addr);
+        game.move(attacker_id, Direction::East);
+
+        // Defender died — their score (xp:200) should be auto-registered
+        let score: HighestScore = world.read_model(0);
+        assert(score.scoring_token_id == defender_id, 'should record defender token');
+        assert(score.xp == 200, 'should record defender xp');
+    }
+
+    #[test]
+    #[available_gas(60000000)]
+    fn test_score_not_updated_if_lower() {
+        let attacker_addr = ATTACKER_ADDR();
+        let (mut world, game) = deploy_world();
+
+        // Pre-set a high score
+        world
+            .write_model_test(
+                @HighestScore { token_id: 0, scoring_token_id: 99, xp: 500 },
+            );
+
+        // Attacker with high XP at (0,0)
+        let attacker_id: felt252 = 10;
+        world.write_model_test(@GameSession { token_id: attacker_id, is_active: true });
+        world
+            .write_model_test(
+                @PlayerState {
+                    token_id: attacker_id,
+                    position: Vec2 { x: 0, y: 0 },
+                    last_direction: Option::None,
+                    can_move: true,
+                },
+            );
+        world
+            .write_model_test(
+                @PlayerStats { token_id: attacker_id, hp: STARTING_HP, max_hp: MAX_HP, xp: 100 },
+            );
+        world.write_model_test(@TileOccupant { x: 0, y: 0, token_id: attacker_id });
+
+        // Defender with low XP and low HP at (1,0) — will die
+        let defender_id: felt252 = 20;
+        world.write_model_test(@GameSession { token_id: defender_id, is_active: true });
+        world
+            .write_model_test(
+                @PlayerState {
+                    token_id: defender_id,
+                    position: Vec2 { x: 1, y: 0 },
+                    last_direction: Option::None,
+                    can_move: true,
+                },
+            );
+        world
+            .write_model_test(
+                @PlayerStats { token_id: defender_id, hp: 5, max_hp: MAX_HP, xp: 50 },
+            );
+        world.write_model_test(@TileOccupant { x: 1, y: 0, token_id: defender_id });
+
+        // Attacker (xp:100) wins, defender (xp:50, hp:5) dies
+        starknet::testing::set_contract_address(attacker_addr);
+        game.move(attacker_id, Direction::East);
+
+        // Defender's score (50) is lower than existing record (500) — should NOT update
+        let score: HighestScore = world.read_model(0);
+        assert(score.scoring_token_id == 99, 'should keep old token');
+        assert(score.xp == 500, 'should keep old xp');
+    }
+
+    #[test]
+    #[available_gas(120000000)]
+    fn test_score_registered_on_encounter_death() {
+        let (mut world, game) = deploy_world();
+
+        // Set HP to 1 so a lethal encounter kills the player, triggering score registration.
+        // Loop over token IDs until we find one whose deterministic encounter is lethal.
+        let mut found_death = false;
+        let mut gid: u32 = 50;
+        while gid < 80 && !found_death {
+            let tid: felt252 = gid.into();
+            world.write_model_test(@GameSession { token_id: tid, is_active: true });
+            world
+                .write_model_test(
+                    @PlayerState {
+                        token_id: tid,
+                        position: Vec2 { x: 0, y: 0 },
+                        last_direction: Option::None,
+                        can_move: true,
+                    },
+                );
+            world
+                .write_model_test(@PlayerStats { token_id: tid, hp: 1, max_hp: MAX_HP, xp: 999 });
+            world.write_model_test(@TileOccupant { x: 0, y: 0, token_id: tid });
+            // Ensure destination is empty so encounter triggers (not combat with a survivor)
+            world.write_model_test(@TileOccupant { x: 1, y: 0, token_id: 0 });
+
+            game.move(tid, Direction::East);
+
+            let stats: PlayerStats = world.read_model(tid);
+            if stats.hp == 0 {
+                // Verify score was auto-registered (xp may differ from 999 if Hex drained it)
+                let score: HighestScore = world.read_model(0);
+                assert(score.scoring_token_id == tid, 'should record dead token');
+                assert(score.xp == stats.xp, 'should record xp at death');
+                found_death = true;
+            }
+            gid += 1;
+        }
+        assert(found_death, 'should find lethal encounter');
     }
 }

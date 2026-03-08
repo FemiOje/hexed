@@ -1,5 +1,3 @@
-use starknet::ContractAddress;
-
 // Combat & stat constants
 pub const STARTING_HP: u32 = 100;
 pub const MAX_HP: u32 = 110;
@@ -13,8 +11,8 @@ pub const EXPLORE_XP_REWARD: u32 = 10;
 pub const MIN_MAX_HP: u32 = 10;
 pub const GIFT_THRESHOLD: u8 = 50; // 0-49 = gift (50%), 50-99 = curse (50%)
 
-// Entry limit: ~80% of grid capacity (441 hexes, one player per hex)
-pub const MAX_CONCURRENT_GAMES: u32 = 350;
+// Entry limit: 400 / 441 hexes
+pub const MAX_CONCURRENT_GAMES: u32 = 400;
 
 // Gift amounts
 pub const HEAL_AMOUNT: u32 = 10;
@@ -33,13 +31,12 @@ pub const HEX_HP_AMOUNT: u32 = 10;
 pub const HEX_MAX_HP_AMOUNT: u32 = 5;
 pub const HEX_XP_AMOUNT: u32 = 10;
 
-// Maps game_id → player address and tracks active state
+// Tracks whether a game session is active (ownership comes from ERC721 token)
 #[derive(Copy, Drop, Serde, Debug)]
 #[dojo::model]
 pub struct GameSession {
     #[key]
-    pub game_id: u32,
-    pub player: ContractAddress,
+    pub token_id: felt252,
     pub is_active: bool,
 }
 
@@ -48,7 +45,7 @@ pub struct GameSession {
 #[dojo::model]
 pub struct PlayerState {
     #[key]
-    pub game_id: u32,
+    pub token_id: felt252,
     pub position: Vec2,
     pub last_direction: Option<Direction>,
     pub can_move: bool,
@@ -62,7 +59,7 @@ pub struct TileOccupant {
     pub x: i32,
     #[key]
     pub y: i32,
-    pub game_id: u32,
+    pub token_id: felt252,
 }
 
 // Player combat stats (separate from spatial state for ECS cleanliness)
@@ -70,37 +67,35 @@ pub struct TileOccupant {
 #[dojo::model]
 pub struct PlayerStats {
     #[key]
-    pub game_id: u32,
+    pub token_id: felt252,
     pub hp: u32,
     pub max_hp: u32,
     pub xp: u32,
 }
 
-// Global leaderboard - tracks the highest scoring player
+// Global leaderboard - tracks the highest scoring token (singleton with token_id = 0)
 #[derive(Copy, Drop, Serde, Debug)]
 #[dojo::model]
 pub struct HighestScore {
     #[key]
-    pub game_id: u32, // Always 0 for singleton
-    pub player: ContractAddress,
-    pub username: felt252, // Cartridge username as felt252
+    pub token_id: felt252, // Always 0 for singleton
+    pub scoring_token_id: felt252, // Token that achieved the score
     pub xp: u32,
 }
 
-// Tracks the count of active concurrent games (singleton with game_id = 0)
+// Tracks the count of active concurrent games (singleton with token_id = 0)
 #[derive(Copy, Drop, Serde, Debug)]
 #[dojo::model]
 pub struct GameCounter {
     #[key]
-    pub game_id: u32, // Always 0 for singleton
+    pub token_id: felt252, // Always 0 for singleton
     pub active_games: u32,
 }
 
 // Return struct for get_game_state view function (not a model)
 #[derive(Copy, Drop, Serde)]
 pub struct GameState {
-    pub game_id: u32,
-    pub player: ContractAddress,
+    pub token_id: felt252,
     pub position: Vec2,
     pub last_direction: Option<Direction>,
     pub can_move: bool,
