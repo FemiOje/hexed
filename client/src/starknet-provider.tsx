@@ -149,6 +149,7 @@ const cartridgeController =
         namespace: controllerConfig.namespace,
         slot: controllerConfig.slot,
         preset: controllerConfig.preset,
+        shouldOverridePresetPolicies: true,
         tokens: {
           erc20: ["eth", "strk"],
         },
